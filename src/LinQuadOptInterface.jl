@@ -235,4 +235,6 @@ include("lqoi_constraints.jl")
 include("lqoi_objective.jl")
 include("lqoi_solve.jl")
 
+include("ref.jl")
+
 end

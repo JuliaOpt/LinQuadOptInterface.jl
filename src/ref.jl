@@ -1,24 +1,24 @@
-Main
+# Main
 
-LinQuadSolver # Abstract type
-lqs_setparam!(env, name, val)
-lqs_setlogfile!(env, path)
-lqs_getprobtype(m)
+# LinQuadSolver # Abstract type
+function lqs_setparam!(env, name, val) end
+function lqs_setlogfile!(env, path) end
+function lqs_getprobtype(m) end
 
-Constraints
+# Constraints
 
-lqs_chgbds!(m, colvec, valvec, sensevec)
-lqs_getlb(m, col)
-lqs_getub(m, col)
-lqs_getnumrows(m)
-lqs_addrows!(m, rowvec, colvec, coefvec, sensevec, rhsvec)
-lqs_getrhs(m, row)
-colvec, coef = lqs_getrows(m, rowvec)
-lqs_getcoef(m, row, col) #??
-lqs_chgcoef!(m, row, col, coef)
-lqs_delrows!(m, row, row)
-lqs_chgctype!(m, colvec, typevec)
-lqs_chgsense!(m, rowvec, sensevec)
+function lqs_chgbds!(m, colvec, valvec, sensevec) end
+function lqs_getlb(m, col) end
+function lqs_getub(m, col) end
+function lqs_getnumrows(m) end
+function lqs_addrows!(m, rowvec, colvec, coefvec, sensevec, rhsvec) end
+function lqs_getrhs(m, row) end
+function lqs_getrows(m, rowvec) end
+function lqs_getcoef(m, row, col) end #??
+function lqs_chgcoef!(m, row, col, coef) end
+function lqs_delrows!(m, row, row2) end
+function lqs_chgctype!(m, colvec, typevec) end
+function lqs_chgsense!(m, rowvec, sensevec) end
 
 # lqs_addsos(m, colvec, valvec, typ)
 # lqs_delsos(m, idx, idx)
@@ -29,45 +29,46 @@ lqs_chgsense!(m, rowvec, sensevec)
 
 # lqs_chgrngval # later
 
-Objective
+#Objective
 
-lqs_copyquad(m, intvec,intvec, floatvec) #?
-lqs_chgobj!(m, colvec,coefvec)
-lqs_chgobjsen(!m, symbol)
-lqs_getobj(m)
+function lqs_copyquad(m, intvec,intvec2, floatvec) end#?
+function lqs_chgobj!(m, colvec,coefvec) end
+function lqs_chgobjsen!(m, symbol) end
+function lqs_getobj(m) end
+function lqs_getobjsen(m) end
 
-Solve
+#Solve
 
-lqs_mipopt!(m)
-lqs_qpopt!(m)
-lqs_lpopt!(m)
-lqs_getstat(m)
-lqs_solninfo(m) # complex
-lqs_getx!(m, place)
-lqs_getax!(m, place)
-lqs_getdj!(m, place)
-lqs_getpi!(m, place)
+function lqs_mipopt!(m) end
+function lqs_qpopt!(m) end
+function lqs_lpopt!(m) end
+function lqs_getstat(m) end
+function lqs_solninfo(m) end # complex
+function lqs_getx!(m, place) end
+function lqs_getax!(m, place) end
+function lqs_getdj!(m, place) end
+function lqs_getpi!(m, place) end
 
-lqs_getobjval(m)
-lqs_getbestobjval(m)
-lqs_getmiprelgap(m)
-lqs_getitcnt(m)
-lqs_getbaritcnt(m)
-lqs_getnodecnt(m)
+function lqs_getobjval(m) end
+function lqs_getbestobjval(m) end
+function lqs_getmiprelgap(m) end
+function lqs_getitcnt(m) end
+function lqs_getbaritcnt(m) end
+function lqs_getnodecnt(m) end
 
-lqs_termination_status_map(m) # = TERMINATION_STATUS_MAP
-lqs_sol_basic(m) #
-lqs_sol_nonbasic(m)
-lqs_sol_primal(m)
-lqs_sol_none(m)
+function lqs_termination_status_map(m) end # = TERMINATION_STATUS_MAP
+function lqs_sol_basic(m) end #
+function lqs_sol_nonbasic(m) end
+function lqs_sol_primal(m) end
+function lqs_sol_none(m) end
 
 # lqs_dualopt(m)
 # lqs_dualfarkas(m, place)
 # lqs_getray(m, place)
 
-Variables
+# Variables
 
-lqs_getnumcols(m)
-lqs_newcols!(m, int)
-lqs_delcols!(m, col, col)
+function lqs_getnumcols(m) end
+function lqs_newcols!(m, int) end
+function lqs_delcols!(m, col, col2) end
 # lqs_addmipstarts(m, colvec, valvec)

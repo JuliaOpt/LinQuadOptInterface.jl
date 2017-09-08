@@ -80,10 +80,10 @@ function MOI.optimize!(m::LinQuadSolverInstance)
         to correct that.
     =#
     # TODO
-    # if MOI.getattribute(m, MOI.ObjectiveSense()) == MOI.MaxSense
-    #     m.constraint_dual_solution *= -1
-    #     m.variable_dual_solution *= -1
-    # end
+    if MOI.getattribute(m, MOI.ObjectiveSense()) == MOI.MaxSense
+        m.constraint_dual_solution *= -1
+        m.variable_dual_solution *= -1
+    end
 end
 
 # function solvefordualfarkas!(m::LinQuadSolverInstance)
