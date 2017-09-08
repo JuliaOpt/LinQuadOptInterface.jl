@@ -1,4 +1,4 @@
-module LinQuadOptInteface
+module LinQuadOptInterface
 
 using MathOptInterface
 
