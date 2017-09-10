@@ -380,7 +380,7 @@ end
  we can revert to the old bounds
 =#
 function MOI.addconstraint!(m::LinQuadSolverInstance, v::SinVar, ::MOI.ZeroOne)
-    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_BINARY])
+    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_vartype_map(m)[:BINARY]])
     ub = lqs_getub(m.inner, getcol(m, v))
     lb = lqs_getlb(m.inner, getcol(m, v))
     m.last_constraint_reference += 1
@@ -389,18 +389,18 @@ function MOI.addconstraint!(m::LinQuadSolverInstance, v::SinVar, ::MOI.ZeroOne)
     dict[ref] = (v.variable, lb, ub)
     setvariablebound!(m, getcol(m, v), 1.0, _variableub(m))
     setvariablebound!(m, getcol(m, v), 0.0, _variablelb(m))
-    _make_problem_type_integer(m.inner)
+    lqs_make_problem_type_integer(m.inner)
     ref
 end
 function MOI.delete!(m::LinQuadSolverInstance, c::SVCR{MOI.ZeroOne})
     dict = constrdict(m, c)
     (v, lb, ub) = dict[c]
-    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_CONTINUOUS])
+    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_vartype_map(m)[:CONTINUOUS]])
     setvariablebound!(m, getcol(m, v), ub, _variableub(m))
     setvariablebound!(m, getcol(m, v), lb, _variablelb(m))
     delete!(dict, c)
     if !hasinteger(m)
-        _make_problem_type_continuous(m.inner)
+        lqs_make_problem_type_continuous(m.inner)
     end
 end
 MOI.candelete(m::LinQuadSolverInstance, c::SVCR{MOI.ZeroOne}) = true
@@ -417,22 +417,22 @@ MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{
 =#
 
 function MOI.addconstraint!(m::LinQuadSolverInstance, v::SinVar, ::MOI.Integer)
-    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_INTEGER])
+    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_vartype_map(m)[:INTEGER]])
     m.last_constraint_reference += 1
     ref = MOI.ConstraintReference{SinVar, MOI.Integer}(m.last_constraint_reference)
     dict = constrdict(m, ref)
     dict[ref] = v.variable
-    _make_problem_type_integer(m.inner)
+    lqs_make_problem_type_integer(m.inner)
     ref
 end
 
 function MOI.delete!(m::LinQuadSolverInstance, c::SVCR{MOI.Integer})
     dict = constrdict(m, c)
     v = dict[c]
-    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_CONTINUOUS])
+    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_vartype_map(m)[:CONTINUOUS]])
     delete!(dict, c)
     if !hasinteger(m)
-        _make_problem_type_continuous(m.inner)
+        lqs_make_problem_type_continuous(m.inner)
     end
 end
 MOI.candelete(m::LinQuadSolverInstance, c::SVCR{MOI.Integer}) = true
@@ -449,7 +449,7 @@ MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{
 =#
 
 # function MOI.addconstraint!(m::LinQuadSolverInstance, v::VecVar, sos::MOI.SOS1)
-#     _make_problem_type_integer(m.inner)
+#     lqs_make_problem_type_integer(m.inner)
 #     lqs_addsos!(m.inner, getcol.(m, v.variables), sos.weights, lqs_TYPE_SOS1)
 #     m.last_constraint_reference += 1
 #     ref = MOI.ConstraintReference{VecVar, MOI.SOS1}(m.last_constraint_reference)
@@ -459,7 +459,7 @@ MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{
 # end
 
 # function MOI.addconstraint!(m::LinQuadSolverInstance, v::VecVar, sos::MOI.SOS2)
-#     _make_problem_type_integer(m.inner)
+#     lqs_make_problem_type_integer(m.inner)
 #     lqs_addsos!(m.inner, getcol.(m, v.variables), sos.weights, lqs_TYPE_SOS2)
 #     m.last_constraint_reference += 1
 #     ref = MOI.ConstraintReference{VecVar, MOI.SOS2}(m.last_constraint_reference)
@@ -475,7 +475,7 @@ MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{
 #     deleteref!(cmap(m).sos1, idx, c)
 #     deleteref!(cmap(m).sos2, idx, c)
 #     if !hasinteger(m)
-#         _make_problem_type_continuous(m.inner)
+#         lqs_make_problem_type_continuous(m.inner)
 #     end
 # end
 # MOI.candelete(m::LinQuadSolverInstance, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true

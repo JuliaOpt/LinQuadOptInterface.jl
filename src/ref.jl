@@ -20,6 +20,10 @@ function lqs_delrows!(m, row, row2) end
 function lqs_chgctype!(m, colvec, typevec) end
 function lqs_chgsense!(m, rowvec, sensevec) end
 
+function lqs_vartype_map(m) end
+function lqs_make_problem_type_integer(m) end
+function lqs_make_problem_type_continuous(m) end
+
 # lqs_addsos(m, colvec, valvec, typ)
 # lqs_delsos(m, idx, idx)
 # lqs_getsos(m, idx)
