@@ -378,15 +378,17 @@ end
  for some reason CPLEX doesn't respect bounds on a binary variable, so we
  should store the previous bounds so that if we delete the binary constraint
  we can revert to the old bounds
+
+ Xpress is worse, once binary the bounds are changed independly of what the user does
 =#
 function MOI.addconstraint!(m::LinQuadSolverInstance, v::SinVar, ::MOI.ZeroOne)
-    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_vartype_map(m)[:BINARY]])
-    ub = lqs_getub(m.inner, getcol(m, v))
-    lb = lqs_getlb(m.inner, getcol(m, v))
     m.last_constraint_reference += 1
     ref = MOI.ConstraintReference{SinVar, MOI.ZeroOne}(m.last_constraint_reference)
     dict = constrdict(m, ref)
+    ub = lqs_getub(m.inner, getcol(m, v))
+    lb = lqs_getlb(m.inner, getcol(m, v))
     dict[ref] = (v.variable, lb, ub)
+    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_vartype_map(m)[:BINARY]])
     setvariablebound!(m, getcol(m, v), 1.0, _variableub(m))
     setvariablebound!(m, getcol(m, v), 0.0, _variablelb(m))
     lqs_make_problem_type_integer(m.inner)
