@@ -220,10 +220,10 @@ function addlinearconstraint!(m::LinQuadSolverInstance, func::Linear, set::S) wh
     addlinearconstraint!(m, func, _getsense(set), _getrhs(set))
 end
 
-# function addlinearconstraint!(m::LinQuadSolverInstance, func::Linear, set::IV)
-#     addlinearconstraint!(m, func, Cchar('R'), set.lower)
-#     lqs_chgrngval!(m.inner, [lqs_getnumrows(m.inner)], [set.upper - set.lower])
-# end
+function addlinearconstraint!(m::LinQuadSolverInstance, func::Linear, set::IV)
+    addlinearconstraint!(m, func, lqs_ctrtype_map(m)[:RANGE], set.lower)
+    lqs_chgrngval!(m.inner, [lqs_getnumrows(m.inner)], [set.upper - set.lower])
+end
 
 function addlinearconstraint!(m::LinQuadSolverInstance, func::Linear, sense::Cchar, rhs)
     if abs(func.constant) > eps(Float64)
@@ -257,12 +257,12 @@ function addlinearconstraints!(m::LinQuadSolverInstance, func::Vector{Linear}, s
     addlinearconstraints!(m, func, fill(_getsense(set[1]), length(func)), [_getrhs(s) for s in set])
 end
 
-# function addlinearconstraints!(m::LinQuadSolverInstance, func::Vector{Linear}, set::Vector{IV})
-#     numrows = lqs_getnumrows(m.inner)
-#     addlinearconstraints!(m, func, fill(Cchar('R'), length(func)), [s.lower for s in set])
-#     numrows2 = lqs_getnumrows(m.inner)
-#     lqs_chgrngval!(m.inner, collect(numrows+1:numrows2), [s.upper - s.lower for s in set])
-# end
+function addlinearconstraints!(m::LinQuadSolverInstance, func::Vector{Linear}, set::Vector{IV})
+    numrows = lqs_getnumrows(m.inner)
+    addlinearconstraints!(m, func, fill(lqs_ctrtype_map(m)[:RANGE], length(func)), [s.lower for s in set])
+    numrows2 = lqs_getnumrows(m.inner)
+    lqs_chgrngval!(m.inner, collect(numrows+1:numrows2), [s.upper - s.lower for s in set])
+end
 
 function addlinearconstraints!(m::LinQuadSolverInstance, func::Vector{Linear}, sense::Vector{Cchar}, rhs::Vector{Float64})
     # loop through once to get number of non-zeros and to move rhs across
@@ -331,15 +331,15 @@ function MOI.modifyconstraint!(m::LinQuadSolverInstance, c::LCR{S}, newset::S) w
 end
 MOI.canmodifyconstraint(m::LinQuadSolverInstance, c::LCR{S}, newset::S) where S <: Union{LE, GE, EQ} = true
 
-# function MOI.modifyconstraint!(m::LinQuadSolverInstance, c::LCR{IV}, set::IV)
-#     # the column 0 (or -1 in 0-index) is the rhs.
-#     # a range constraint has the RHS value of the lower limit of the range, and
-#     # a rngval equal to upper-lower.
-#     row = m[c]
-#     lqs_chgcoef!(m.inner, row, 0, set.lower)
-#     lqs_chgrngval!(m.inner, [row], [set.upper - set.lower])
-# end
-# MOI.canmodifyconstraint(m::LinQuadSolverInstance, c::LCR{IV}, set::IV) = true
+function MOI.modifyconstraint!(m::LinQuadSolverInstance, c::LCR{IV}, set::IV)
+    # the column 0 (or -1 in 0-index) is the rhs.
+    # a range constraint has the RHS value of the lower limit of the range, and
+    # a rngval equal to upper-lower.
+    row = m[c]
+    lqs_chgcoef!(m.inner, row, 0, set.lower)
+    lqs_chgrngval!(m.inner, [row], [set.upper - set.lower])
+end
+MOI.canmodifyconstraint(m::LinQuadSolverInstance, c::LCR{IV}, set::IV) = true
 
 #=
     Delete a linear constraint
@@ -448,58 +448,58 @@ MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{
     SOS constraints
 =#
 
-# function MOI.addconstraint!(m::LinQuadSolverInstance, v::VecVar, sos::MOI.SOS1)
-#     lqs_make_problem_type_integer(m.inner)
-#     lqs_addsos!(m.inner, getcol.(m, v.variables), sos.weights, lqs_TYPE_SOS1)
-#     m.last_constraint_reference += 1
-#     ref = MOI.ConstraintReference{VecVar, MOI.SOS1}(m.last_constraint_reference)
-#     dict = constrdict(m, ref)
-#     dict[ref] = length(cmap(m).sos1) + length(cmap(m).sos2) + 1
-#     ref
-# end
+function MOI.addconstraint!(m::LinQuadSolverInstance, v::VecVar, sos::MOI.SOS1)
+    lqs_make_problem_type_integer(m.inner)
+    lqs_addsos!(m.inner, getcol.(m, v.variables), sos.weights, lqs_sertype_map(m)[:SOS1])
+    m.last_constraint_reference += 1
+    ref = MOI.ConstraintReference{VecVar, MOI.SOS1}(m.last_constraint_reference)
+    dict = constrdict(m, ref)
+    dict[ref] = length(cmap(m).sos1) + length(cmap(m).sos2) + 1
+    ref
+end
 
-# function MOI.addconstraint!(m::LinQuadSolverInstance, v::VecVar, sos::MOI.SOS2)
-#     lqs_make_problem_type_integer(m.inner)
-#     lqs_addsos!(m.inner, getcol.(m, v.variables), sos.weights, lqs_TYPE_SOS2)
-#     m.last_constraint_reference += 1
-#     ref = MOI.ConstraintReference{VecVar, MOI.SOS2}(m.last_constraint_reference)
-#     dict = constrdict(m, ref)
-#     dict[ref] = length(cmap(m).sos1) + length(cmap(m).sos2) + 1
-#     ref
-# end
+function MOI.addconstraint!(m::LinQuadSolverInstance, v::VecVar, sos::MOI.SOS2)
+    lqs_make_problem_type_integer(m.inner)
+    lqs_addsos!(m.inner, getcol.(m, v.variables), sos.weights, lqs_sertype_map(m)[:SOS2])
+    m.last_constraint_reference += 1
+    ref = MOI.ConstraintReference{VecVar, MOI.SOS2}(m.last_constraint_reference)
+    dict = constrdict(m, ref)
+    dict[ref] = length(cmap(m).sos1) + length(cmap(m).sos2) + 1
+    ref
+end
 
-# function MOI.delete!(m::LinQuadSolverInstance, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}})
-#     dict = constrdict(m, c)
-#     idx = dict[c]
-#     lqs_delsos!(m.inner, idx, idx)
-#     deleteref!(cmap(m).sos1, idx, c)
-#     deleteref!(cmap(m).sos2, idx, c)
-#     if !hasinteger(m)
-#         lqs_make_problem_type_continuous(m.inner)
-#     end
-# end
-# MOI.candelete(m::LinQuadSolverInstance, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true
+function MOI.delete!(m::LinQuadSolverInstance, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}})
+    dict = constrdict(m, c)
+    idx = dict[c]
+    lqs_delsos!(m.inner, idx, idx)
+    deleteref!(cmap(m).sos1, idx, c)
+    deleteref!(cmap(m).sos2, idx, c)
+    if !hasinteger(m)
+        lqs_make_problem_type_continuous(m.inner)
+    end
+end
+MOI.candelete(m::LinQuadSolverInstance, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true
 
-# function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{MOI.SOS1})
-#     indices, weights, types = lqs_getsos(m.inner, m[c])
-#     @assert types == lqs_TYPE_SOS1
-#     return MOI.SOS1(weights)
-# end
+function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{MOI.SOS1})
+    indices, weights, types = lqs_getsos(m.inner, m[c])
+    @assert types == lqs_sertype_map(m)[:SOS1]
+    return MOI.SOS1(weights)
+end
 
-# function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{MOI.SOS2})
-#     indices, weights, types = lqs_getsos(m.inner, m[c])
-#     @assert types == lqs_TYPE_SOS2
-#     return MOI.SOS2(weights)
-# end
+function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{MOI.SOS2})
+    indices, weights, types = lqs_getsos(m.inner, m[c])
+    @assert types == lqs_sertype_map(m)[:SOS2]
+    return MOI.SOS2(weights)
+end
 
-# MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true
+MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true
 
-# function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}})
-#     indices, weights, types = lqs_getsos(m.inner, m[c])
-#     return MOI.VectorOfVariables(m.variable_references[indices])
-# end
+function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}})
+    indices, weights, types = lqs_getsos(m.inner, m[c])
+    return MOI.VectorOfVariables(m.variable_references[indices])
+end
 
-# MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true
+MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true
 
 
 #=

@@ -24,14 +24,16 @@ function lqs_vartype_map(m) end
 function lqs_make_problem_type_integer(m) end
 function lqs_make_problem_type_continuous(m) end
 
-# lqs_addsos(m, colvec, valvec, typ)
-# lqs_delsos(m, idx, idx)
-# lqs_getsos(m, idx)
+function lqs_addsos!(m, colvec, valvec, typ) end
+function lqs_delsos!(m, idx, idx2) end
+function lqs_sertype_map(m) end
+function lqs_getsos(m, idx) end
 
 # lqs_getnumqconstrs(m)
 # lqs_addqconstr(m, cols,coefs,rhs,sense, I,J,V)
 
-# lqs_chgrngval # later
+function lqs_chgrngval!(m, rows, vals) end# later
+function lqs_ctrtype_map(m) end
 
 #Objective
 
