@@ -2,14 +2,6 @@ function hasquadratic(m::LinQuadSolverInstance)
     m.obj_is_quad || (length(cmap(m).q_less_than) + length(cmap(m).q_greater_than) + length(cmap(m).q_equal_to) > 0)
 end
 
-function getterminationstatus(m::LinQuadSolverInstance, status)
-    if haskey(lqs_termination_status_map(m), status)
-        return lqs_termination_status_map(m)[status]
-    else
-        error("Status $(status) has not been mapped to a MOI termination status.")
-    end
-end
-
 #=
     Optimize the model
 =#
@@ -36,43 +28,30 @@ function MOI.optimize!(m::LinQuadSolverInstance)
     m.solvetime = time() - t
 
     # termination_status
-    code = lqs_getstat(m.inner)
-    m.termination_status = getterminationstatus(m, code)
+    m.termination_status = lqs_terminationstatus(m)
+    m.primal_status = lqs_primalstatus(m)
+    m.dual_status = lqs_dualstatus(m)
 
-    # get some more information about solution
-    mthd, soltype, prifeas, dualfeas = lqs_solninfo(m.inner)
-    #
-    @assert soltype in [lqs_sol_basic(m), lqs_sol_nonbasic(m), lqs_sol_primal(m), lqs_sol_none(m)]
-    if soltype == lqs_sol_basic(m) || soltype == lqs_sol_nonbasic(m) || soltype == lqs_sol_primal(m)
+    if m.primal_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
         # primal solution exists
         lqs_getx!(m.inner, m.variable_primal_solution)
         lqs_getax!(m.inner, m.constraint_primal_solution)
         m.primal_result_count = 1
         # CPLEX can return infeasible points
-        if prifeas > 0
-            m.primal_status = MOI.FeasiblePoint
-        else
-            m.primal_status = MOI.InfeasiblePoint
-        end
+    elseif m.primal_status == MOI.InfeasibilityCertificate
+        lqs_getray!(m.inner, m.variable_primal_solution)
+        m.primal_result_count = 1
     end
-    if soltype == lqs_sol_basic(m) || soltype == lqs_sol_nonbasic(m)
+    if m.dual_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
         # dual solution exists
         lqs_getdj!(m.inner, m.variable_dual_solution)
         lqs_getpi!(m.inner, m.constraint_dual_solution)
         m.dual_result_count = 1
         # dual solution may not be feasible
-        if dualfeas > 0
-            m.dual_status = MOI.FeasiblePoint
-        else
-            m.dual_status = MOI.InfeasiblePoint
-        end
+    elseif m.dual_status == MOI.InfeasibilityCertificate
+        lqs_dualfarkas!(m.inner, m.constraint_dual_solution)
+        m.dual_result_count = 1
     end
-
-    # if code == lqs_STAT_INFEASIBLE
-    #     solvefordualfarkas!(m)
-    # elseif code == lqs_STAT_UNBOUNDED
-    #     solveforunboundedray!(m)
-    # end
 
     #=
         CPLEX has the dual convention that the sign of the dual depends on the
@@ -84,28 +63,11 @@ function MOI.optimize!(m::LinQuadSolverInstance)
         m.constraint_dual_solution *= -1
         m.variable_dual_solution *= -1
     end
+@show pwd()
+    MOI.writeproblem(m, "debug.lp", "l")
+    @show m.variable_primal_solution
 end
 
-# function solvefordualfarkas!(m::LinQuadSolverInstance)
-#     lqs_dualopt!(m.inner)
-#     @assert lqs_getstat(m.inner) == lqs_STAT_INFEASIBLE
-#     mthd, soltype, prifeas, dualfeas = lqs_solninfo(m.inner)
-#     if dualfeas > 0
-#         # ensure we have a dual feasible solution
-#         lqs_dualfarkas!(m.inner, m.constraint_dual_solution)
-#         m.dual_status = MOI.InfeasibilityCertificate
-#         m.termination_status = MOI.Success
-#         m.dual_result_count = 1
-#     end
-# end
-
-# function solveforunboundedray!(m::LinQuadSolverInstance)
-#     @assert lqs_getstat(m.inner) == lqs_STAT_UNBOUNDED
-#     lqs_getray!(m.inner, m.variable_primal_solution)
-#     m.primal_status = MOI.InfeasibilityCertificate
-#     m.termination_status = MOI.Success
-#     m.primal_result_count = 1
-# end
 
 #=
     Result Count

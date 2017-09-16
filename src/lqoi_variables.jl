@@ -97,12 +97,12 @@ MOI.candelete(m::LinQuadSolverInstance, ref::MOI.VariableReference) = true
 #=
     MIP starts
 =#
-# function MOI.setattribute!(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ref::MOI.VariableReference, val::Float64)
-#     lqs_addmipstarts!(m.inner, [getcol(m, ref)], [val])
-# end
-# MOI.cansetattribute(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ::MOI.VariableReference) = true
+function MOI.setattribute!(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ref::MOI.VariableReference, val::Float64)
+    lqs_addmipstarts!(m.inner, [getcol(m, ref)], [val])
+end
+MOI.cansetattribute(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ::MOI.VariableReference) = true
 
-# function MOI.setattribute!(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, refs::Vector{MOI.VariableReference}, vals::Vector{Float64})
-#     lqs_addmipstarts!(m.inner, getcol.(m, refs), vals)
-# end
-# MOI.cansetattribute(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ::Vector{MOI.VariableReference}) = true
+function MOI.setattribute!(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, refs::Vector{MOI.VariableReference}, vals::Vector{Float64})
+    lqs_addmipstarts!(m.inner, getcol.(m, refs), vals)
+end
+MOI.cansetattribute(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ::Vector{MOI.VariableReference}) = true

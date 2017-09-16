@@ -71,10 +71,15 @@ function MOI.setobjective!(m::LinQuadSolverInstance, sense::MOI.OptimizationSens
         getcol.(m, objf.affine_variables),
         objf.affine_coefficients
     )
-    lqs_copyquad!(m.inner,
+    ri, ci, vi = reduceduplicates(
         getcol.(m, objf.quadratic_rowvariables),
         getcol.(m, objf.quadratic_colvariables),
         objf.quadratic_coefficients
+    )
+    lqs_copyquad!(m.inner,
+        ri,
+        ci,
+        vi
     )
     _setsense!(m, sense)
     m.objective_constant = objf.constant
