@@ -29,15 +29,15 @@ function lqs_delsos!(m, idx, idx2) end
 function lqs_sertype_map(m) end
 function lqs_getsos(m, idx) end
 
-# lqs_getnumqconstrs(m)
-# lqs_addqconstr(m, cols,coefs,rhs,sense, I,J,V)
+function lqs_getnumqconstrs(m) end
+function lqs_addqconstr!(m, cols,coefs,rhs,sense, I,J,V) end
 
 function lqs_chgrngval!(m, rows, vals) end# later
 function lqs_ctrtype_map(m) end
 
 #Objective
 
-function lqs_copyquad(m, intvec,intvec2, floatvec) end#?
+function lqs_copyquad!(m, intvec,intvec2, floatvec) end#?
 function lqs_chgobj!(m, colvec,coefvec) end
 function lqs_chgobjsen!(m, symbol) end
 function lqs_getobj(m) end
@@ -62,19 +62,16 @@ function lqs_getitcnt(m) end
 function lqs_getbaritcnt(m) end
 function lqs_getnodecnt(m) end
 
-function lqs_termination_status_map(m) end # = TERMINATION_STATUS_MAP
-function lqs_sol_basic(m) end #
-function lqs_sol_nonbasic(m) end
-function lqs_sol_primal(m) end
-function lqs_sol_none(m) end
+function lqs_dualfarkas!(m, place) end
+function lqs_getray!(m, place) end
 
-# lqs_dualopt(m)
-# lqs_dualfarkas(m, place)
-# lqs_getray(m, place)
+function lqs_terminationstatus end
+function lqs_primalstatus end
+function lqs_dualstatus end
 
 # Variables
 
 function lqs_getnumcols(m) end
 function lqs_newcols!(m, int) end
 function lqs_delcols!(m, col, col2) end
-# lqs_addmipstarts(m, colvec, valvec)
+function lqs_addmipstarts!(m, colvec, valvec) end
