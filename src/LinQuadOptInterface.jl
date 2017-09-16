@@ -145,75 +145,73 @@ ConstraintMapping() = ConstraintMapping(
     Dict{VVCR{MOI.SOS1}, Int}(),
     Dict{VVCR{MOI.SOS2}, Int}()
 )
+macro def(name, definition)
+    return quote
+        macro $(esc(name))()
+            esc($(Expr(:quote, definition)))
+        end
+    end
+end
 
 # Abstract + macro
 abstract type LinQuadSolverInstance <: MOI.AbstractSolverInstance end
-# mutable struct LinQuadSolverInstance <: MOI.AbstractSolverInstance
-#     inner::Model
+@def LinQuadSolverInstanceBase begin
+    inner::Model
 
-#     obj_is_quad::Bool
+    obj_is_quad::Bool
 
-#     last_variable_reference::UInt64
-#     variable_mapping::Dict{MOI.VariableReference, Int}
-#     variable_references::Vector{MOI.VariableReference}
+    last_variable_reference::UInt64
+    variable_mapping::Dict{MathOptInterface.VariableReference, Int}
+    variable_references::Vector{MathOptInterface.VariableReference}
 
-#     variable_primal_solution::Vector{Float64}
-#     variable_dual_solution::Vector{Float64}
+    variable_primal_solution::Vector{Float64}
+    variable_dual_solution::Vector{Float64}
 
-#     last_constraint_reference::UInt64
-#     constraint_mapping::ConstraintMapping
+    last_constraint_reference::UInt64
+    constraint_mapping::LinQuadOptInterface.ConstraintMapping
 
-#     constraint_primal_solution::Vector{Float64}
-#     constraint_dual_solution::Vector{Float64}
+    constraint_primal_solution::Vector{Float64}
+    constraint_dual_solution::Vector{Float64}
 
-#     qconstraint_primal_solution::Vector{Float64}
-#     qconstraint_dual_solution::Vector{Float64}
+    qconstraint_primal_solution::Vector{Float64}
+    qconstraint_dual_solution::Vector{Float64}
 
-#     objective_constant::Float64
+    objective_constant::Float64
 
-#     termination_status::MOI.TerminationStatusCode
-#     primal_status::MOI.ResultStatusCode
-#     dual_status::MOI.ResultStatusCode
-#     primal_result_count::Int
-#     dual_result_count::Int
+    termination_status::MathOptInterface.TerminationStatusCode
+    primal_status::MathOptInterface.ResultStatusCode
+    dual_status::MathOptInterface.ResultStatusCode
+    primal_result_count::Int
+    dual_result_count::Int
 
-#     solvetime::Float64
-# end
+    solvetime::Float64
+end
 
-# function MOI.SolverInstance(s::LinQuadSolver)
-#     env = Env()
-#     lqs_setparam!(env, lqs_PARAM_SCRIND, 1) # output logs to stdout by default
-#     for (name,value) in s.options
-#         lqs_setparam!(env, string(name), value)
-#     end
-#     csi = LinQuadSolverInstance(
-#         Model(env),
-#         false,
-#         0,
-#         Dict{MOI.VariableReference, Int}(),
-#         MOI.VariableReference[],
-#         Float64[],
-#         Float64[],
-#         0,
-#         ConstraintMapping(),
-#         Float64[],
-#         Float64[],
-#         Float64[],
-#         Float64[],
-#         0.0,
-#         MOI.OtherError, # not solved
-#         MOI.UnknownResultStatus,
-#         MOI.UnknownResultStatus,
-#         0,
-#         0,
-#         0.0
-#     )
-#     csi.inner.mipstart_effort = s.mipstart_effortlevel
-#     if s.logfile != ""
-#         lqs_setlogfile!(env, s.logfile)
-#     end
-#     return csi
-# end
+
+
+@def LinQuadSolverInstanceBaseInit begin
+    Model(env),
+    false,
+    0,
+    Dict{MathOptInterface.VariableReference, Int}(),
+    MathOptInterface.VariableReference[],
+    Float64[],
+    Float64[],
+    0,
+    LinQuadOptInterface.ConstraintMapping(),
+    Float64[],
+    Float64[],
+    Float64[],
+    Float64[],
+    0.0,
+    MathOptInterface.OtherError, # not solved
+    MathOptInterface.UnknownResultStatus,
+    MathOptInterface.UnknownResultStatus,
+    0,
+    0,
+    0.0
+end
+
 
 # a useful helper function
 function deleteref!(dict::Dict, i::Int, ref)
