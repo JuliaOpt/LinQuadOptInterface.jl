@@ -63,9 +63,6 @@ function MOI.optimize!(m::LinQuadSolverInstance)
         m.constraint_dual_solution *= -1
         m.variable_dual_solution *= -1
     end
-@show pwd()
-    MOI.writeproblem(m, "debug.lp", "l")
-    @show m.variable_primal_solution
 end
 
 
