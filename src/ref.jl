@@ -5,6 +5,9 @@ function lqs_setparam!(env, name, val) end
 function lqs_setlogfile!(env, path) end
 function lqs_getprobtype(m) end
 
+lqs_supported_constraints(s) = SUPPORTED_CONSTRAINTS
+lqs_supported_objectives(s) = SUPPORTED_OBJECTIVES
+
 # Constraints
 
 function lqs_chgbds!(m, colvec, valvec, sensevec) end

@@ -35,18 +35,19 @@ constrdict(m::LinQuadSolverInstance, ::SVCR{MOI.Integer}) = cmap(m).integer
 constrdict(m::LinQuadSolverInstance, ::VVCR{MOI.SOS1}) = cmap(m).sos1
 constrdict(m::LinQuadSolverInstance, ::VVCR{MOI.SOS2}) = cmap(m).sos2
 
-
-_getsense(::EQ) = Cchar('E')
-_getsense(::LE) = Cchar('L')
-_getsense(::GE) = Cchar('G')
-_getsense(::MOI.Zeros)        = Cchar('E')
-_getsense(::MOI.Nonpositives) = Cchar('L')
-_getsense(::MOI.Nonnegatives) = Cchar('G')
-_getboundsense(::MOI.Nonpositives) = Cchar('U')
-_getboundsense(::MOI.Nonnegatives) = Cchar('L')
 _getrhs(set::LE) = set.upper
 _getrhs(set::GE) = set.lower
 _getrhs(set::EQ) = set.value
+
+_getsense(m::LinQuadSolverInstance, ::EQ) = Cchar('E')
+_getsense(m::LinQuadSolverInstance, ::LE) = Cchar('L')
+_getsense(m::LinQuadSolverInstance, ::GE) = Cchar('G')
+_getsense(m::LinQuadSolverInstance, ::MOI.Zeros)        = Cchar('E')
+_getsense(m::LinQuadSolverInstance, ::MOI.Nonpositives) = Cchar('L')
+_getsense(m::LinQuadSolverInstance, ::MOI.Nonnegatives) = Cchar('G')
+_getboundsense(m::LinQuadSolverInstance, ::MOI.Nonpositives) = Cchar('U')
+_getboundsense(m::LinQuadSolverInstance, ::MOI.Nonnegatives) = Cchar('L')
+
 
 _variableub(m::LinQuadSolverInstance) = Cchar('U')
 _variablelb(m::LinQuadSolverInstance) = Cchar('L')
@@ -66,7 +67,7 @@ function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.NumberOfConstraints{F,
     length(constrdict(m, MOI.ConstraintReference{F,S}(UInt(0))))
 end
 function MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.NumberOfConstraints{F, S}) where F where S
-    return (F,S) in SUPPORTED_CONSTRAINTS
+    return (F,S) in lqs_supported_constraints(m)
 end
 
 #=
@@ -77,7 +78,7 @@ function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ListOfConstraintRefere
     collect(keys(constrdict(m, MOI.ConstraintReference{F,S}(UInt(0)))))
 end
 function MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ListOfConstraintReferences{F, S}) where F where S
-    return (F,S) in SUPPORTED_CONSTRAINTS
+    return (F,S) in lqs_supported_constraints(m)
 end
 
 #=
@@ -86,7 +87,7 @@ end
 
 function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ListOfConstraints)
     ret = []
-    for (F,S) in SUPPORTED_CONSTRAINTS
+    for (F,S) in lqs_supported_constraints(m)
         if MOI.getattribute(m, MOI.NumberOfConstraints{F,S}()) > 0
             push!(ret, (F,S))
         end
@@ -183,7 +184,7 @@ MOI.candelete(m::LinQuadSolverInstance, c::SVCR{S}) where S <: Union{LE, GE, EQ,
 =#
 function setvariablebounds!(m::LinQuadSolverInstance, func::VecVar, set::S)  where S <: Union{MOI.Nonnegatives, MOI.Nonpositives}
     n = MOI.dimension(set)
-    lqs_chgbds!(m.inner, getcol.(m, func.variables), fill(0.0, n), fill(_getboundsense(set), n))
+    lqs_chgbds!(m.inner, getcol.(m, func.variables), fill(0.0, n), fill(_getboundsense(m,set), n))
 end
 function setvariablebounds!(m::LinQuadSolverInstance, func::VecVar, set::MOI.Zeros)
     n = MOI.dimension(set)
@@ -217,7 +218,7 @@ function MOI.addconstraint!(m::LinQuadSolverInstance, func::Linear, set::T) wher
 end
 
 function addlinearconstraint!(m::LinQuadSolverInstance, func::Linear, set::S) where S <: Union{LE, GE, EQ}
-    addlinearconstraint!(m, func, _getsense(set), _getrhs(set))
+    addlinearconstraint!(m, func, _getsense(m,set), _getrhs(set))
 end
 
 function addlinearconstraint!(m::LinQuadSolverInstance, func::Linear, set::IV)
@@ -254,7 +255,7 @@ function MOI.addconstraints!(m::LinQuadSolverInstance, func::Vector{Linear}, set
 end
 
 function addlinearconstraints!(m::LinQuadSolverInstance, func::Vector{Linear}, set::Vector{S}) where S <: Union{LE, GE, EQ, IV}
-    addlinearconstraints!(m, func, fill(_getsense(set[1]), length(func)), [_getrhs(s) for s in set])
+    addlinearconstraints!(m, func, fill(_getsense(m,set[1]), length(func)), [_getrhs(s) for s in set])
 end
 
 function addlinearconstraints!(m::LinQuadSolverInstance, func::Vector{Linear}, set::Vector{IV})
@@ -520,7 +521,7 @@ function MOI.addconstraint!(m::LinQuadSolverInstance, func::Quad, set::S) where 
 end
 
 function addquadraticconstraint!(m::LinQuadSolverInstance, func::Quad, set::S) where S<: Union{LE, GE, EQ}
-    addquadraticconstraint!(m, func, _getsense(set), _getrhs(set))
+    addquadraticconstraint!(m, func, _getsense(m,set), _getrhs(set))
 end
 
 function addquadraticconstraint!(m::LinQuadSolverInstance, f::Quad, sense::Cchar, rhs::Float64)
@@ -571,7 +572,7 @@ function MOI.addconstraint!(m::LinQuadSolverInstance, func::VecLin, set::S) wher
     @assert MOI.dimension(set) == length(func.constant)
 
     nrows = lqs_getnumrows(m.inner)
-    addlinearconstraint!(m, func, _getsense(set))
+    addlinearconstraint!(m, func, _getsense(m,set))
     nrows2 = lqs_getnumrows(m.inner)
 
     m.last_constraint_reference += 1
@@ -625,7 +626,7 @@ end
 function MOI.transformconstraint!(m::LinQuadSolverInstance, ref::LCR{S1}, newset::S2) where S1 where S2 <: Union{LE, GE, EQ}
     dict = constrdict(m, ref)
     row = dict[ref]
-    lqs_chgsense!(m.inner, [row], [_getsense(newset)])
+    lqs_chgsense!(m.inner, [row], [_getsense(m,newset)])
     m.last_constraint_reference += 1
     ref2 = MOI.ConstraintReference{Linear, S2}(m.last_constraint_reference)
     dict2 = constrdict(m, ref2)

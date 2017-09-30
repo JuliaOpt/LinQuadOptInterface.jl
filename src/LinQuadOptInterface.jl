@@ -73,11 +73,11 @@ const SUPPORTED_CONSTRAINTS = [
 ]
 
 function MOI.supportsproblem(s::LinQuadSolver, objective_type, constraint_types)
-    if !(objective_type in SUPPORTED_OBJECTIVES)
+    if !(objective_type in lqs_supported_objectives(s))
         return false
     end
     for c in constraint_types
-        if !(c in SUPPORTED_CONSTRAINTS)
+        if !(c in lqs_supported_constraints(s))
             return false
         end
     end
