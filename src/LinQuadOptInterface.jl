@@ -16,11 +16,11 @@ abstract type LinQuadSolver <: MOI.AbstractSolver end
 #     LinQuadSolver(mipstart_effortlevel, logfile, options)
 # end
 
-MOI.getattribute(s::LinQuadSolver, ::MOI.SupportsDuals) = true
-MOI.getattribute(s::LinQuadSolver, ::MOI.SupportsAddConstraintAfterSolve) = true
-MOI.getattribute(s::LinQuadSolver, ::MOI.SupportsAddVariableAfterSolve) = true
-MOI.getattribute(s::LinQuadSolver, ::MOI.SupportsDeleteConstraint) = true
-MOI.getattribute(s::LinQuadSolver, ::MOI.SupportsDeleteVariable) = true
+MOI.get(s::LinQuadSolver, ::MOI.SupportsDuals) = true
+MOI.get(s::LinQuadSolver, ::MOI.SupportsAddConstraintAfterSolve) = true
+MOI.get(s::LinQuadSolver, ::MOI.SupportsAddVariableAfterSolve) = true
+MOI.get(s::LinQuadSolver, ::MOI.SupportsDeleteConstraint) = true
+MOI.get(s::LinQuadSolver, ::MOI.SupportsDeleteVariable) = true
 
 # functions
 const Linear = MOI.ScalarAffineFunction{Float64}

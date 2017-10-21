@@ -8,19 +8,19 @@ getcol(m::LinQuadSolverInstance, v::SinVar) = getcol(m, v.variable)
     Get number of variables
 =#
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.NumberOfVariables)
+function MOI.get(m::LinQuadSolverInstance, ::MOI.NumberOfVariables)
     return lqs_getnumcols(m.inner)
 end
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.NumberOfVariables) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.NumberOfVariables) = true
 
 #=
     Get variable references
 =#
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ListOfVariableReferences)
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ListOfVariableReferences)
     return m.variable_references
 end
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ListOfVariableReferences) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ListOfVariableReferences) = true
 
 #=
     Add a variable to the LinQuadSolverInstance
@@ -34,7 +34,7 @@ function MOI.addvariable!(m::LinQuadSolverInstance)
     # assumes we add columns linearly
     m.last_variable_reference += 1
     ref = MOI.VariableReference(m.last_variable_reference)
-    m.variable_mapping[ref] = MOI.getattribute(m, MOI.NumberOfVariables())
+    m.variable_mapping[ref] = MOI.get(m, MOI.NumberOfVariables())
     push!(m.variable_references, ref)
     push!(m.variable_primal_solution, NaN)
     push!(m.variable_dual_solution, NaN)
@@ -42,7 +42,7 @@ function MOI.addvariable!(m::LinQuadSolverInstance)
 end
 
 function MOI.addvariables!(m::LinQuadSolverInstance, n::Int)
-    previous_vars = MOI.getattribute(m, MOI.NumberOfVariables())
+    previous_vars = MOI.get(m, MOI.NumberOfVariables())
     lqs_newcols!(m.inner, n)
     variable_references = MOI.VariableReference[]
     sizehint!(variable_references, n)
@@ -66,7 +66,7 @@ end
 function MOI.isvalid(m::LinQuadSolverInstance, ref::MOI.VariableReference)
     if haskey(m.variable_mapping.refmap, ref.value)
         column = m.variable_mapping.refmap[ref.value]
-        if column > 0 && column <= MOI.getattribute(m, MOI.NumberOfVariables())
+        if column > 0 && column <= MOI.get(m, MOI.NumberOfVariables())
             return true
         end
     end
@@ -97,12 +97,12 @@ MOI.candelete(m::LinQuadSolverInstance, ref::MOI.VariableReference) = true
 #=
     MIP starts
 =#
-function MOI.setattribute!(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ref::MOI.VariableReference, val::Float64)
+function MOI.set!(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ref::MOI.VariableReference, val::Float64)
     lqs_addmipstarts!(m.inner, [getcol(m, ref)], [val])
 end
-MOI.cansetattribute(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ::MOI.VariableReference) = true
+MOI.canset(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ::MOI.VariableReference) = true
 
-function MOI.setattribute!(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, refs::Vector{MOI.VariableReference}, vals::Vector{Float64})
+function MOI.set!(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, refs::Vector{MOI.VariableReference}, vals::Vector{Float64})
     lqs_addmipstarts!(m.inner, getcol.(m, refs), vals)
 end
-MOI.cansetattribute(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ::Vector{MOI.VariableReference}) = true
+MOI.canset(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ::Vector{MOI.VariableReference}) = true

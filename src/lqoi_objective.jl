@@ -1,8 +1,11 @@
 #=
     Set the objective
 =#
-
-function MOI.setobjective!(m::LinQuadSolverInstance, sense::MOI.OptimizationSense, objf::Linear)
+function MOI.set!(m, ::MOI.ObjectiveSense, sense::MOI.OptimizationSense)
+    _setsense!(m, sense)
+    nothing
+end
+function MOI.set!(m::LinQuadSolverInstance, ::MOI.ObjectiveFunction, objf::Linear)
     if m.obj_is_quad
         # previous objective was quadratic...
         m.obj_is_quad = false
@@ -10,7 +13,6 @@ function MOI.setobjective!(m::LinQuadSolverInstance, sense::MOI.OptimizationSens
         lqs_copyquad!(m.inner, Int[], Int[], Float64[])
     end
     lqs_chgobj!(m.inner, getcol.(m, objf.variables), objf.coefficients)
-    _setsense!(m, sense)
     m.objective_constant = objf.constant
     nothing
 end
@@ -36,19 +38,19 @@ end
     Get the objective sense
 =#
 
-MOI.getattribute(m::LinQuadSolverInstance,::MOI.ObjectiveSense) = lqs_getobjsen(m.inner)
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ObjectiveSense) = true
+MOI.get(m::LinQuadSolverInstance,::MOI.ObjectiveSense) = lqs_getobjsen(m.inner)
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ObjectiveSense) = true
 
 #=
     Get the objective function
 =#
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ObjectiveFunction)
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ObjectiveFunction)
     variable_coefficients = lqs_getobj(m.inner)
     MOI.ScalarAffineFunction(m.variable_references, variable_coefficients, m.objective_constant)
 end
 # can't get quadratic objective functions
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ObjectiveFunction) = !m.obj_is_quad
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ObjectiveFunction) = !m.obj_is_quad
 
 #=
     Modify objective function
@@ -65,7 +67,7 @@ MOI.canmodifyobjective(m::LinQuadSolverInstance, chg::MOI.ScalarCoefficientChang
     Set quadratic objective
 =#
 
-function MOI.setobjective!(m::LinQuadSolverInstance, sense::MOI.OptimizationSense, objf::Quad)
+function MOI.set!(m::LinQuadSolverInstance, ::MOI.ObjectiveFunction, objf::Quad)
     m.obj_is_quad = true
     lqs_chgobj!(m.inner,
         getcol.(m, objf.affine_variables),
@@ -81,7 +83,6 @@ function MOI.setobjective!(m::LinQuadSolverInstance, sense::MOI.OptimizationSens
         ci,
         vi
     )
-    _setsense!(m, sense)
     m.objective_constant = objf.constant
     nothing
 end

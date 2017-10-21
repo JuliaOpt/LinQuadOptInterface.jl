@@ -63,10 +63,10 @@ end
     Get number of constraints
 =#
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.NumberOfConstraints{F, S}) where F where S
+function MOI.get(m::LinQuadSolverInstance, ::MOI.NumberOfConstraints{F, S}) where F where S
     length(constrdict(m, MOI.ConstraintReference{F,S}(UInt(0))))
 end
-function MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.NumberOfConstraints{F, S}) where F where S
+function MOI.canget(m::LinQuadSolverInstance, ::MOI.NumberOfConstraints{F, S}) where F where S
     return (F,S) in lqs_supported_constraints(m)
 end
 
@@ -74,10 +74,10 @@ end
     Get list of constraint references
 =#
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ListOfConstraintReferences{F, S}) where F where S
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ListOfConstraintReferences{F, S}) where F where S
     collect(keys(constrdict(m, MOI.ConstraintReference{F,S}(UInt(0)))))
 end
-function MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ListOfConstraintReferences{F, S}) where F where S
+function MOI.canget(m::LinQuadSolverInstance, ::MOI.ListOfConstraintReferences{F, S}) where F where S
     return (F,S) in lqs_supported_constraints(m)
 end
 
@@ -85,16 +85,16 @@ end
     Get list of constraint types in model
 =#
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ListOfConstraints)
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ListOfConstraints)
     ret = []
     for (F,S) in lqs_supported_constraints(m)
-        if MOI.getattribute(m, MOI.NumberOfConstraints{F,S}()) > 0
+        if MOI.get(m, MOI.NumberOfConstraints{F,S}()) > 0
             push!(ret, (F,S))
         end
     end
     ret
 end
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ListOfConstraints) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ListOfConstraints) = true
 
 #=
     Set variable bounds
@@ -136,27 +136,27 @@ getbound(m::LinQuadSolverInstance, c::SVCR{LE}) = lqs_getub(m.inner, getcol(m, m
 getbound(m::LinQuadSolverInstance, c::SVCR{GE}) = lqs_getlb(m.inner, getcol(m, m[c]))
 getbound(m::LinQuadSolverInstance, c::SVCR{EQ}) = lqs_getlb(m.inner, getcol(m, m[c]))
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{S}) where S <: Union{LE, GE, EQ}
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{S}) where S <: Union{LE, GE, EQ}
     S(getbound(m, c))
 end
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{IV})
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{IV})
     col = getcol(m, m[c])
     lb = lqs_getlb(m.inner, col)
     ub = lqs_getub(m.inner, col)
     return Interval{Float64}(lb, ub)
 end
 
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{S}) where S <: Union{LE, GE, EQ, IV} = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{S}) where S <: Union{LE, GE, EQ, IV} = true
 
 #=
     Get constraint function of variable bound
 =#
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{<: Union{LE, GE, EQ, IV}})
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{<: Union{LE, GE, EQ, IV}})
     return MOI.SingleVariable(m[c])
 end
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{<: Union{LE, GE, EQ, IV}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{<: Union{LE, GE, EQ, IV}}) = true
 
 #=
     Change variable bounds of same set
@@ -295,22 +295,22 @@ end
     Constraint set of Linear function
 =#
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::LCR{S}) where S <: Union{LE, GE, EQ}
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::LCR{S}) where S <: Union{LE, GE, EQ}
     rhs = lqs_getrhs(m.inner, m[c])
     S(rhs)
 end
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, ::LCR{<: Union{LE, GE, EQ}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintSet, ::LCR{<: Union{LE, GE, EQ}}) = true
 
 #=
     Constraint function of Linear function
 =#
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::LCR{<: Union{LE, GE, EQ, IV}})
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::LCR{<: Union{LE, GE, EQ, IV}})
     # TODO more efficiently
     colidx, coefs = lqs_getrows(m.inner, m[c])
     MOI.ScalarAffineFunction(m.variable_references[colidx+1] , coefs, 0.0)
 end
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::LCR{<: Union{LE, GE, EQ, IV}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::LCR{<: Union{LE, GE, EQ, IV}}) = true
 
 #=
     Scalar Coefficient Change of Linear Constraint
@@ -408,11 +408,11 @@ function MOI.delete!(m::LinQuadSolverInstance, c::SVCR{MOI.ZeroOne})
 end
 MOI.candelete(m::LinQuadSolverInstance, c::SVCR{MOI.ZeroOne}) = true
 
-MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{MOI.ZeroOne}) =MOI.ZeroOne()
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{MOI.ZeroOne}) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{MOI.ZeroOne}) =MOI.ZeroOne()
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{MOI.ZeroOne}) = true
 
-MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{MOI.ZeroOne}) = m[c]
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{MOI.ZeroOne}) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{MOI.ZeroOne}) = m[c]
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{MOI.ZeroOne}) = true
 
 
 #=
@@ -440,11 +440,11 @@ function MOI.delete!(m::LinQuadSolverInstance, c::SVCR{MOI.Integer})
 end
 MOI.candelete(m::LinQuadSolverInstance, c::SVCR{MOI.Integer}) = true
 
-MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{MOI.Integer}) =MOI.Integer()
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{MOI.Integer}) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{MOI.Integer}) =MOI.Integer()
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{MOI.Integer}) = true
 
-MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{MOI.Integer}) = m[c]
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{MOI.Integer}) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{MOI.Integer}) = m[c]
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{MOI.Integer}) = true
 
 
 #=
@@ -483,26 +483,26 @@ function MOI.delete!(m::LinQuadSolverInstance, c::VVCR{<:Union{MOI.SOS1, MOI.SOS
 end
 MOI.candelete(m::LinQuadSolverInstance, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{MOI.SOS1})
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{MOI.SOS1})
     indices, weights, types = lqs_getsos(m.inner, m[c])
     @assert types == lqs_sertype_map(m)[:SOS1]
     return MOI.SOS1(weights)
 end
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{MOI.SOS2})
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{MOI.SOS2})
     indices, weights, types = lqs_getsos(m.inner, m[c])
     @assert types == lqs_sertype_map(m)[:SOS2]
     return MOI.SOS2(weights)
 end
 
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}})
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}})
     indices, weights, types = lqs_getsos(m.inner, m[c])
     return MOI.VectorOfVariables(m.variable_references[indices])
 end
 
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true
 
 
 #=

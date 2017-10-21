@@ -59,7 +59,7 @@ function MOI.optimize!(m::LinQuadSolverInstance)
         to correct that.
     =#
     # TODO
-    if MOI.getattribute(m, MOI.ObjectiveSense()) == MOI.MaxSense
+    if MOI.get(m, MOI.ObjectiveSense()) == MOI.MaxSense
         m.constraint_dual_solution *= -1
         m.variable_dual_solution *= -1
     end
@@ -69,28 +69,28 @@ end
 #=
     Result Count
 =#
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ResultCount)
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ResultCount)
     max(m.primal_result_count, m.dual_result_count)
 end
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ResultCount) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ResultCount) = true
 
 #=
     Termination status
 =#
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.TerminationStatus)
+function MOI.get(m::LinQuadSolverInstance, ::MOI.TerminationStatus)
     m.termination_status
 end
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.TerminationStatus) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.TerminationStatus) = true
 
 #=
     Primal status
 =#
 
-function MOI.getattribute(m::LinQuadSolverInstance, p::MOI.PrimalStatus)
+function MOI.get(m::LinQuadSolverInstance, p::MOI.PrimalStatus)
     m.primal_status
 end
-function MOI.cangetattribute(m::LinQuadSolverInstance, p::MOI.PrimalStatus)
+function MOI.canget(m::LinQuadSolverInstance, p::MOI.PrimalStatus)
     m.primal_result_count >= p.N
 end
 
@@ -98,10 +98,10 @@ end
     Dual status
 =#
 
-function MOI.getattribute(m::LinQuadSolverInstance, d::MOI.DualStatus)
+function MOI.get(m::LinQuadSolverInstance, d::MOI.DualStatus)
     m.dual_status
 end
-function MOI.cangetattribute(m::LinQuadSolverInstance, d::MOI.DualStatus)
+function MOI.canget(m::LinQuadSolverInstance, d::MOI.DualStatus)
     m.dual_result_count >= d.N
 end
 
@@ -110,14 +110,14 @@ end
 =#
 
 
-function MOI.getattribute(m::LinQuadSolverInstance, attr::MOI.ObjectiveValue)
+function MOI.get(m::LinQuadSolverInstance, attr::MOI.ObjectiveValue)
     if attr.resultindex == 1
         lqs_getobjval(m.inner) + m.objective_constant
     else
         error("Unable to access multiple objective values")
     end
 end
-function MOI.cangetattribute(m::LinQuadSolverInstance, attr::MOI.ObjectiveValue)
+function MOI.canget(m::LinQuadSolverInstance, attr::MOI.ObjectiveValue)
     if attr.resultindex == 1
         return true
     else
@@ -130,43 +130,43 @@ end
 =#
 
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::MOI.VariableReference)
+function MOI.get(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::MOI.VariableReference)
     col = m.variable_mapping[v]
     return m.variable_primal_solution[col]
 end
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::MOI.VariableReference) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::MOI.VariableReference) = true
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::Vector{MOI.VariableReference})
-    MOI.getattribute.(m, MOI.VariablePrimal(), v)
+function MOI.get(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::Vector{MOI.VariableReference})
+    MOI.get.(m, MOI.VariablePrimal(), v)
 end
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::Vector{MOI.VariableReference}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::Vector{MOI.VariableReference}) = true
 
 #=
     Variable Dual solution
 =#
 
 
-function MOI.getattribute(m::LinQuadSolverInstance,::MOI.ConstraintDual, c::SVCR{<: Union{LE, GE, EQ, IV}})
+function MOI.get(m::LinQuadSolverInstance,::MOI.ConstraintDual, c::SVCR{<: Union{LE, GE, EQ, IV}})
     vref = m[c]
     col = m.variable_mapping[vref]
     return m.variable_dual_solution[col]
 end
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::SVCR{<: Union{LE, GE, EQ, IV}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::SVCR{<: Union{LE, GE, EQ, IV}}) = true
 
 #=
     Constraint Primal solution
 =#
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal, c::LCR{<: Union{LE, GE, EQ, IV}})
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal, c::LCR{<: Union{LE, GE, EQ, IV}})
     row = m[c]
     return m.constraint_primal_solution[row]
 end
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal,c::LCR{<: Union{LE, GE, EQ, IV}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal,c::LCR{<: Union{LE, GE, EQ, IV}}) = true
 
 
 # vector valued constraint duals
-MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal, c::VLCR{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = m.constraint_primal_solution[m[c]]
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal,c::VLCR{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal, c::VLCR{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = m.constraint_primal_solution[m[c]]
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal,c::VLCR{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = true
 
 #=
     Constraint Dual solution
@@ -177,46 +177,46 @@ _checkdualsense(::LCR{GE}, dual) = dual >= 0.0
 _checkdualsense(::LCR{IV}, dual) = true
 _checkdualsense(::LCR{EQ}, dual) = true
 
-function MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::LCR{<: Union{LE, GE, EQ, IV}})
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::LCR{<: Union{LE, GE, EQ, IV}})
     row = m[c]
     dual = m.constraint_dual_solution[row]
     @assert _checkdualsense(c, dual)
     return dual
 end
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintDual,c::LCR{<: Union{LE, GE, EQ, IV}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintDual,c::LCR{<: Union{LE, GE, EQ, IV}}) = true
 
 # vector valued constraint duals
-MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::VLCR{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = m.constraint_dual_solution[m[c]]
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ConstraintDual,c::VLCR{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::VLCR{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = m.constraint_dual_solution[m[c]]
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintDual,c::VLCR{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = true
 
 #=
     Solution Attributes
 =#
 
 # struct ObjectiveBound <: AbstractSolverInstanceAttribute end
-MOI.getattribute(m::LinQuadSolverInstance, ::MOI.ObjectiveBound) = lqs_getbestobjval(m.inner)
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.ObjectiveBound) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.ObjectiveBound) = lqs_getbestobjval(m.inner)
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ObjectiveBound) = true
 
 # struct RelativeGap <: AbstractSolverInstanceAttribute  end
-MOI.getattribute(m::LinQuadSolverInstance, ::MOI.RelativeGap) = lqs_getmiprelgap(m.inner)
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.RelativeGap) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.RelativeGap) = lqs_getmiprelgap(m.inner)
+MOI.canget(m::LinQuadSolverInstance, ::MOI.RelativeGap) = true
 
 # struct SolveTime <: AbstractSolverInstanceAttribute end
-MOI.getattribute(m::LinQuadSolverInstance, ::MOI.SolveTime) = m.solvetime
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.SolveTime) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.SolveTime) = m.solvetime
+MOI.canget(m::LinQuadSolverInstance, ::MOI.SolveTime) = true
 
 # struct SimplexIterations <: AbstractSolverInstanceAttribute end
-MOI.getattribute(m::LinQuadSolverInstance, ::MOI.SimplexIterations) = lqs_getitcnt(m.inner)
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.SimplexIterations) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.SimplexIterations) = lqs_getitcnt(m.inner)
+MOI.canget(m::LinQuadSolverInstance, ::MOI.SimplexIterations) = true
 
 # struct BarrierIterations <: AbstractSolverInstanceAttribute end
-MOI.getattribute(m::LinQuadSolverInstance, ::MOI.BarrierIterations) = lqs_getbaritcnt(m.inner)
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.BarrierIterations) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.BarrierIterations) = lqs_getbaritcnt(m.inner)
+MOI.canget(m::LinQuadSolverInstance, ::MOI.BarrierIterations) = true
 
 # struct NodeCount <: AbstractSolverInstanceAttribute end
-MOI.getattribute(m::LinQuadSolverInstance, ::MOI.NodeCount) = lqs_getnodecnt(m.inner)
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.NodeCount) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.NodeCount) = lqs_getnodecnt(m.inner)
+MOI.canget(m::LinQuadSolverInstance, ::MOI.NodeCount) = true
 
 # struct RawSolver <: AbstractSolverInstanceAttribute end
-MOI.getattribute(m::LinQuadSolverInstance, ::MOI.RawSolver) = m.inner
-MOI.cangetattribute(m::LinQuadSolverInstance, ::MOI.RawSolver) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.RawSolver) = m.inner
+MOI.canget(m::LinQuadSolverInstance, ::MOI.RawSolver) = true
