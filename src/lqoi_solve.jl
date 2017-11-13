@@ -19,11 +19,11 @@ function MOI.optimize!(m::LinQuadSolverInstance)
 
     t = time()
     if hasinteger(m)
-        lqs_mipopt!(m.inner)
+        lqs_mipopt!(m)
     elseif hasquadratic(m)
-        lqs_qpopt!(m.inner)
+        lqs_qpopt!(m)
     else
-        lqs_lpopt!(m.inner)
+        lqs_lpopt!(m)
     end
     m.solvetime = time() - t
 
@@ -34,22 +34,22 @@ function MOI.optimize!(m::LinQuadSolverInstance)
 
     if m.primal_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
         # primal solution exists
-        lqs_getx!(m.inner, m.variable_primal_solution)
-        lqs_getax!(m.inner, m.constraint_primal_solution)
+        lqs_getx!(m, m.variable_primal_solution)
+        lqs_getax!(m, m.constraint_primal_solution)
         m.primal_result_count = 1
         # CPLEX can return infeasible points
     elseif m.primal_status == MOI.InfeasibilityCertificate
-        lqs_getray!(m.inner, m.variable_primal_solution)
+        lqs_getray!(m, m.variable_primal_solution)
         m.primal_result_count = 1
     end
     if m.dual_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
         # dual solution exists
-        lqs_getdj!(m.inner, m.variable_dual_solution)
-        lqs_getpi!(m.inner, m.constraint_dual_solution)
+        lqs_getdj!(m, m.variable_dual_solution)
+        lqs_getpi!(m, m.constraint_dual_solution)
         m.dual_result_count = 1
         # dual solution may not be feasible
     elseif m.dual_status == MOI.InfeasibilityCertificate
-        lqs_dualfarkas!(m.inner, m.constraint_dual_solution)
+        lqs_dualfarkas!(m, m.constraint_dual_solution)
         m.dual_result_count = 1
     end
 
@@ -112,7 +112,7 @@ end
 
 function MOI.get(m::LinQuadSolverInstance, attr::MOI.ObjectiveValue)
     if attr.resultindex == 1
-        lqs_getobjval(m.inner) + m.objective_constant
+        lqs_getobjval(m) + m.objective_constant
     else
         error("Unable to access multiple objective values")
     end
@@ -194,11 +194,11 @@ MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintDual,c::VLCR{<: Union{MOI.Z
 =#
 
 # struct ObjectiveBound <: AbstractSolverInstanceAttribute end
-MOI.get(m::LinQuadSolverInstance, ::MOI.ObjectiveBound) = lqs_getbestobjval(m.inner)
+MOI.get(m::LinQuadSolverInstance, ::MOI.ObjectiveBound) = lqs_getbestobjval(m)
 MOI.canget(m::LinQuadSolverInstance, ::MOI.ObjectiveBound) = true
 
 # struct RelativeGap <: AbstractSolverInstanceAttribute  end
-MOI.get(m::LinQuadSolverInstance, ::MOI.RelativeGap) = lqs_getmiprelgap(m.inner)
+MOI.get(m::LinQuadSolverInstance, ::MOI.RelativeGap) = lqs_getmiprelgap(m)
 MOI.canget(m::LinQuadSolverInstance, ::MOI.RelativeGap) = true
 
 # struct SolveTime <: AbstractSolverInstanceAttribute end
@@ -206,17 +206,17 @@ MOI.get(m::LinQuadSolverInstance, ::MOI.SolveTime) = m.solvetime
 MOI.canget(m::LinQuadSolverInstance, ::MOI.SolveTime) = true
 
 # struct SimplexIterations <: AbstractSolverInstanceAttribute end
-MOI.get(m::LinQuadSolverInstance, ::MOI.SimplexIterations) = lqs_getitcnt(m.inner)
+MOI.get(m::LinQuadSolverInstance, ::MOI.SimplexIterations) = lqs_getitcnt(m)
 MOI.canget(m::LinQuadSolverInstance, ::MOI.SimplexIterations) = true
 
 # struct BarrierIterations <: AbstractSolverInstanceAttribute end
-MOI.get(m::LinQuadSolverInstance, ::MOI.BarrierIterations) = lqs_getbaritcnt(m.inner)
+MOI.get(m::LinQuadSolverInstance, ::MOI.BarrierIterations) = lqs_getbaritcnt(m)
 MOI.canget(m::LinQuadSolverInstance, ::MOI.BarrierIterations) = true
 
 # struct NodeCount <: AbstractSolverInstanceAttribute end
-MOI.get(m::LinQuadSolverInstance, ::MOI.NodeCount) = lqs_getnodecnt(m.inner)
+MOI.get(m::LinQuadSolverInstance, ::MOI.NodeCount) = lqs_getnodecnt(m)
 MOI.canget(m::LinQuadSolverInstance, ::MOI.NodeCount) = true
 
 # struct RawSolver <: AbstractSolverInstanceAttribute end
-MOI.get(m::LinQuadSolverInstance, ::MOI.RawSolver) = m.inner
+MOI.get(m::LinQuadSolverInstance, ::MOI.RawSolver) = m
 MOI.canget(m::LinQuadSolverInstance, ::MOI.RawSolver) = true
