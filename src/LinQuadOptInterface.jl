@@ -43,35 +43,6 @@ const VVCR{S}  = CR{VecVar, S}
 # variable reference
 const VarRef = MOI.VariableReference
 
-const SUPPORTED_OBJECTIVES = [
-    Linear,
-    Quad
-]
-
-const SUPPORTED_CONSTRAINTS = [
-    (Linear, EQ),
-    (Linear, LE),
-    (Linear, GE),
-    (Linear, IV),
-    (Quad, EQ),
-    (Quad, LE),
-    (Quad, GE),
-    (SinVar, EQ),
-    (SinVar, LE),
-    (SinVar, GE),
-    (SinVar, IV),
-    (SinVar, MOI.ZeroOne),
-    (SinVar, MOI.Integer),
-    (VecVar, MOI.SOS1),
-    (VecVar, MOI.SOS2),
-    (VecVar, MOI.Nonnegatives),
-    (VecVar, MOI.Nonpositives),
-    (VecVar, MOI.Zeros),
-    (VecLin, MOI.Nonnegatives),
-    (VecLin, MOI.Nonpositives),
-    (VecLin, MOI.Zeros)
-]
-
 function MOI.supportsproblem(s::LinQuadSolver, objective_type, constraint_types)
     if !(objective_type in lqs_supported_objectives(s))
         return false
@@ -224,7 +195,7 @@ function deleteref!(dict::Dict, i::Int, ref)
 end
 
 # function problemtype(m::LinQuadSolverInstance)
-#     code = lqs_getprobtype(m.inner)
+#     code = lqs_getprobtype(m)
 #     PROB_TYPE_MAP[code]
 # end
 

@@ -10,9 +10,9 @@ function MOI.set!(m::LinQuadSolverInstance, ::MOI.ObjectiveFunction, objf::Linea
         # previous objective was quadratic...
         m.obj_is_quad = false
         # zero quadratic part
-        lqs_copyquad!(m.inner, Int[], Int[], Float64[])
+        lqs_copyquad!(m, Int[], Int[], Float64[])
     end
-    lqs_chgobj!(m.inner, getcol.(m, objf.variables), objf.coefficients)
+    lqs_chgobj!(m, getcol.(m, objf.variables), objf.coefficients)
     m.objective_constant = objf.constant
     nothing
 end
@@ -23,12 +23,12 @@ end
 
 function _setsense!(m::LinQuadSolverInstance, sense::MOI.OptimizationSense)
     if sense == MOI.MinSense
-        lqs_chgobjsen!(m.inner, :Min)
+        lqs_chgobjsen!(m, :Min)
     elseif sense == MOI.MaxSense
-        lqs_chgobjsen!(m.inner, :Max)
+        lqs_chgobjsen!(m, :Max)
     elseif sense == MOI.FeasibilitySense
         warn("FeasibilitySense not supported. Using MinSense")
-        lqs_chgobjsen!(m.inner, :Min)
+        lqs_chgobjsen!(m, :Min)
     else
         error("Sense $(sense) unknown.")
     end
@@ -38,7 +38,7 @@ end
     Get the objective sense
 =#
 
-MOI.get(m::LinQuadSolverInstance,::MOI.ObjectiveSense) = lqs_getobjsen(m.inner)
+MOI.get(m::LinQuadSolverInstance,::MOI.ObjectiveSense) = lqs_getobjsen(m)
 MOI.canget(m::LinQuadSolverInstance, ::MOI.ObjectiveSense) = true
 
 #=
@@ -46,7 +46,7 @@ MOI.canget(m::LinQuadSolverInstance, ::MOI.ObjectiveSense) = true
 =#
 
 function MOI.get(m::LinQuadSolverInstance, ::MOI.ObjectiveFunction)
-    variable_coefficients = lqs_getobj(m.inner)
+    variable_coefficients = lqs_getobj(m)
     MOI.ScalarAffineFunction(m.variable_references, variable_coefficients, m.objective_constant)
 end
 # can't get quadratic objective functions
@@ -59,7 +59,7 @@ MOI.canget(m::LinQuadSolverInstance, ::MOI.ObjectiveFunction) = !m.obj_is_quad
 function MOI.modifyobjective!(m::LinQuadSolverInstance, chg::MOI.ScalarCoefficientChange{Float64})
     col = m.variable_mapping[chg.variable]
     # 0 row is the objective
-    lqs_chgcoef!(m.inner, 0, col, chg.new_coefficient)
+    lqs_chgcoef!(m, 0, col, chg.new_coefficient)
 end
 MOI.canmodifyobjective(m::LinQuadSolverInstance, chg::MOI.ScalarCoefficientChange{Float64}) = true
 
@@ -69,7 +69,7 @@ MOI.canmodifyobjective(m::LinQuadSolverInstance, chg::MOI.ScalarCoefficientChang
 
 function MOI.set!(m::LinQuadSolverInstance, ::MOI.ObjectiveFunction, objf::Quad)
     m.obj_is_quad = true
-    lqs_chgobj!(m.inner,
+    lqs_chgobj!(m,
         getcol.(m, objf.affine_variables),
         objf.affine_coefficients
     )
@@ -78,7 +78,7 @@ function MOI.set!(m::LinQuadSolverInstance, ::MOI.ObjectiveFunction, objf::Quad)
         getcol.(m, objf.quadratic_colvariables),
         objf.quadratic_coefficients
     )
-    lqs_copyquad!(m.inner,
+    lqs_copyquad!(m,
         ri,
         ci,
         vi

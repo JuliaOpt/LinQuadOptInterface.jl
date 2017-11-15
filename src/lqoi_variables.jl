@@ -9,7 +9,7 @@ getcol(m::LinQuadSolverInstance, v::SinVar) = getcol(m, v.variable)
 =#
 
 function MOI.get(m::LinQuadSolverInstance, ::MOI.NumberOfVariables)
-    return lqs_getnumcols(m.inner)
+    return lqs_getnumcols(m)
 end
 MOI.canget(m::LinQuadSolverInstance, ::MOI.NumberOfVariables) = true
 
@@ -30,7 +30,7 @@ in the dictionary
 =#
 
 function MOI.addvariable!(m::LinQuadSolverInstance)
-    lqs_newcols!(m.inner, 1)
+    lqs_newcols!(m, 1)
     # assumes we add columns linearly
     m.last_variable_reference += 1
     ref = MOI.VariableReference(m.last_variable_reference)
@@ -43,7 +43,7 @@ end
 
 function MOI.addvariables!(m::LinQuadSolverInstance, n::Int)
     previous_vars = MOI.get(m, MOI.NumberOfVariables())
-    lqs_newcols!(m.inner, n)
+    lqs_newcols!(m, n)
     variable_references = MOI.VariableReference[]
     sizehint!(variable_references, n)
     for i in 1:n
@@ -79,7 +79,7 @@ end
 
 function MOI.delete!(m::LinQuadSolverInstance, ref::MOI.VariableReference)
     col = m.variable_mapping[ref]
-    lqs_delcols!(m.inner, col, col)
+    lqs_delcols!(m, col, col)
     deleteat!(m.variable_references, col)
     deleteat!(m.variable_primal_solution, col)
     deleteat!(m.variable_dual_solution, col)
@@ -98,11 +98,11 @@ MOI.candelete(m::LinQuadSolverInstance, ref::MOI.VariableReference) = true
     MIP starts
 =#
 function MOI.set!(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ref::MOI.VariableReference, val::Float64)
-    lqs_addmipstarts!(m.inner, [getcol(m, ref)], [val])
+    lqs_addmipstarts!(m, [getcol(m, ref)], [val])
 end
 MOI.canset(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ::MOI.VariableReference) = true
 
 function MOI.set!(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, refs::Vector{MOI.VariableReference}, vals::Vector{Float64})
-    lqs_addmipstarts!(m.inner, getcol.(m, refs), vals)
+    lqs_addmipstarts!(m, getcol.(m, refs), vals)
 end
 MOI.canset(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ::Vector{MOI.VariableReference}) = true

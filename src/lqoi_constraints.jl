@@ -101,7 +101,7 @@ MOI.canget(m::LinQuadSolverInstance, ::MOI.ListOfConstraints) = true
 =#
 
 function setvariablebound!(m::LinQuadSolverInstance, col::Int, bound::Float64, sense::Cchar)
-    lqs_chgbds!(m.inner, [col], [bound], [sense])
+    lqs_chgbds!(m, [col], [bound], [sense])
 end
 
 function setvariablebound!(m::LinQuadSolverInstance, v::MOI.SingleVariable, set::LE)
@@ -132,9 +132,9 @@ end
     Get constraint set of variable bound
 =#
 
-getbound(m::LinQuadSolverInstance, c::SVCR{LE}) = lqs_getub(m.inner, getcol(m, m[c]))
-getbound(m::LinQuadSolverInstance, c::SVCR{GE}) = lqs_getlb(m.inner, getcol(m, m[c]))
-getbound(m::LinQuadSolverInstance, c::SVCR{EQ}) = lqs_getlb(m.inner, getcol(m, m[c]))
+getbound(m::LinQuadSolverInstance, c::SVCR{LE}) = lqs_getub(m, getcol(m, m[c]))
+getbound(m::LinQuadSolverInstance, c::SVCR{GE}) = lqs_getlb(m, getcol(m, m[c]))
+getbound(m::LinQuadSolverInstance, c::SVCR{EQ}) = lqs_getlb(m, getcol(m, m[c]))
 
 function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{S}) where S <: Union{LE, GE, EQ}
     S(getbound(m, c))
@@ -142,8 +142,8 @@ end
 
 function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::SVCR{IV})
     col = getcol(m, m[c])
-    lb = lqs_getlb(m.inner, col)
-    ub = lqs_getub(m.inner, col)
+    lb = lqs_getlb(m, col)
+    ub = lqs_getub(m, col)
     return Interval{Float64}(lb, ub)
 end
 
@@ -184,12 +184,12 @@ MOI.candelete(m::LinQuadSolverInstance, c::SVCR{S}) where S <: Union{LE, GE, EQ,
 =#
 function setvariablebounds!(m::LinQuadSolverInstance, func::VecVar, set::S)  where S <: Union{MOI.Nonnegatives, MOI.Nonpositives}
     n = MOI.dimension(set)
-    lqs_chgbds!(m.inner, getcol.(m, func.variables), fill(0.0, n), fill(_getboundsense(m,set), n))
+    lqs_chgbds!(m, getcol.(m, func.variables), fill(0.0, n), fill(_getboundsense(m,set), n))
 end
 function setvariablebounds!(m::LinQuadSolverInstance, func::VecVar, set::MOI.Zeros)
     n = MOI.dimension(set)
-    lqs_chgbds!(m.inner, getcol.(m, func.variables), fill(0.0, n), fill(_variablelb(m), n))
-    lqs_chgbds!(m.inner, getcol.(m, func.variables), fill(0.0, n), fill(_variableub(m), n))
+    lqs_chgbds!(m, getcol.(m, func.variables), fill(0.0, n), fill(_variablelb(m), n))
+    lqs_chgbds!(m, getcol.(m, func.variables), fill(0.0, n), fill(_variableub(m), n))
 end
 
 function MOI.addconstraint!(m::LinQuadSolverInstance, func::VecVar, set::S) where S <: Union{MOI.Nonnegatives, MOI.Nonpositives, MOI.Zeros}
@@ -211,7 +211,7 @@ function MOI.addconstraint!(m::LinQuadSolverInstance, func::Linear, set::T) wher
     m.last_constraint_reference += 1
     ref = MOI.ConstraintReference{Linear, T}(m.last_constraint_reference)
     dict = constrdict(m, ref)
-    dict[ref] = lqs_getnumrows(m.inner)
+    dict[ref] = lqs_getnumrows(m)
     push!(m.constraint_primal_solution, NaN)
     push!(m.constraint_dual_solution, NaN)
     return ref
@@ -223,14 +223,14 @@ end
 
 function addlinearconstraint!(m::LinQuadSolverInstance, func::Linear, set::IV)
     addlinearconstraint!(m, func, lqs_ctrtype_map(m)[:RANGE], set.lower)
-    lqs_chgrngval!(m.inner, [lqs_getnumrows(m.inner)], [set.upper - set.lower])
+    lqs_chgrngval!(m, [lqs_getnumrows(m)], [set.upper - set.lower])
 end
 
 function addlinearconstraint!(m::LinQuadSolverInstance, func::Linear, sense::Cchar, rhs)
     if abs(func.constant) > eps(Float64)
         warn("Constant in scalar function moved into set.")
     end
-    lqs_addrows!(m.inner, [1], getcol.(m, func.variables), func.coefficients, [sense], [rhs - func.constant])
+    lqs_addrows!(m, [1], getcol.(m, func.variables), func.coefficients, [sense], [rhs - func.constant])
 end
 
 #=
@@ -239,7 +239,7 @@ end
 
 function MOI.addconstraints!(m::LinQuadSolverInstance, func::Vector{Linear}, set::Vector{S}) where S <: Union{LE, GE, EQ, IV}
     @assert length(func) == length(set)
-    numrows = lqs_getnumrows(m.inner)
+    numrows = lqs_getnumrows(m)
     addlinearconstraints!(m, func, set)
     crefs = Vector{MOI.ConstraintReference{Linear, S}}(length(func))
     for i in 1:length(func)
@@ -259,10 +259,10 @@ function addlinearconstraints!(m::LinQuadSolverInstance, func::Vector{Linear}, s
 end
 
 function addlinearconstraints!(m::LinQuadSolverInstance, func::Vector{Linear}, set::Vector{IV})
-    numrows = lqs_getnumrows(m.inner)
+    numrows = lqs_getnumrows(m)
     addlinearconstraints!(m, func, fill(lqs_ctrtype_map(m)[:RANGE], length(func)), [s.lower for s in set])
-    numrows2 = lqs_getnumrows(m.inner)
-    lqs_chgrngval!(m.inner, collect(numrows+1:numrows2), [s.upper - s.lower for s in set])
+    numrows2 = lqs_getnumrows(m)
+    lqs_chgrngval!(m, collect(numrows+1:numrows2), [s.upper - s.lower for s in set])
 end
 
 function addlinearconstraints!(m::LinQuadSolverInstance, func::Vector{Linear}, sense::Vector{Cchar}, rhs::Vector{Float64})
@@ -288,7 +288,7 @@ function addlinearconstraints!(m::LinQuadSolverInstance, func::Vector{Linear}, s
             cnt += 1
         end
     end
-    lqs_addrows!(m.inner, rowbegins, column_indices, nnz_vals, sense, rhs)
+    lqs_addrows!(m, rowbegins, column_indices, nnz_vals, sense, rhs)
 end
 
 #=
@@ -296,7 +296,7 @@ end
 =#
 
 function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::LCR{S}) where S <: Union{LE, GE, EQ}
-    rhs = lqs_getrhs(m.inner, m[c])
+    rhs = lqs_getrhs(m, m[c])
     S(rhs)
 end
 MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintSet, ::LCR{<: Union{LE, GE, EQ}}) = true
@@ -307,7 +307,7 @@ MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintSet, ::LCR{<: Union{LE, GE,
 
 function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::LCR{<: Union{LE, GE, EQ, IV}})
     # TODO more efficiently
-    colidx, coefs = lqs_getrows(m.inner, m[c])
+    colidx, coefs = lqs_getrows(m, m[c])
     MOI.ScalarAffineFunction(m.variable_references[colidx+1] , coefs, 0.0)
 end
 MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::LCR{<: Union{LE, GE, EQ, IV}}) = true
@@ -318,7 +318,7 @@ MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::LCR{<: Union{L
 
 function MOI.modifyconstraint!(m::LinQuadSolverInstance, c::LCR{<: Union{LE, GE, EQ, IV}}, chg::MOI.ScalarCoefficientChange{Float64})
     col = m.variable_mapping[chg.variable]
-    lqs_chgcoef!(m.inner, m[c], col, chg.new_coefficient)
+    lqs_chgcoef!(m, m[c], col, chg.new_coefficient)
 end
 MOI.canmodifyconstraint(m::LinQuadSolverInstance, c::LCR{<: Union{LE, GE, EQ, IV}}, chg::MOI.ScalarCoefficientChange{Float64}) = true
 
@@ -328,7 +328,7 @@ MOI.canmodifyconstraint(m::LinQuadSolverInstance, c::LCR{<: Union{LE, GE, EQ, IV
 
 function MOI.modifyconstraint!(m::LinQuadSolverInstance, c::LCR{S}, newset::S) where S <: Union{LE, GE, EQ}
     # the column 0 (or -1 in 0-index) is the rhs.
-    lqs_chgcoef!(m.inner, m[c], 0, _getrhs(newset))
+    lqs_chgcoef!(m, m[c], 0, _getrhs(newset))
 end
 MOI.canmodifyconstraint(m::LinQuadSolverInstance, c::LCR{S}, newset::S) where S <: Union{LE, GE, EQ} = true
 
@@ -337,8 +337,8 @@ function MOI.modifyconstraint!(m::LinQuadSolverInstance, c::LCR{IV}, set::IV)
     # a range constraint has the RHS value of the lower limit of the range, and
     # a rngval equal to upper-lower.
     row = m[c]
-    lqs_chgcoef!(m.inner, row, 0, set.lower)
-    lqs_chgrngval!(m.inner, [row], [set.upper - set.lower])
+    lqs_chgcoef!(m, row, 0, set.lower)
+    lqs_chgrngval!(m, [row], [set.upper - set.lower])
 end
 MOI.canmodifyconstraint(m::LinQuadSolverInstance, c::LCR{IV}, set::IV) = true
 
@@ -355,7 +355,7 @@ end
 function MOI.delete!(m::LinQuadSolverInstance, c::LCR{<: Union{LE, GE, EQ, IV}})
     dict = constrdict(m, c)
     row = dict[c]
-    lqs_delrows!(m.inner, row, row)
+    lqs_delrows!(m, row, row)
     deleteat!(m.constraint_primal_solution, row)
     deleteat!(m.constraint_dual_solution, row)
     deleteref!(m, row, c)
@@ -386,24 +386,24 @@ function MOI.addconstraint!(m::LinQuadSolverInstance, v::SinVar, ::MOI.ZeroOne)
     m.last_constraint_reference += 1
     ref = MOI.ConstraintReference{SinVar, MOI.ZeroOne}(m.last_constraint_reference)
     dict = constrdict(m, ref)
-    ub = lqs_getub(m.inner, getcol(m, v))
-    lb = lqs_getlb(m.inner, getcol(m, v))
+    ub = lqs_getub(m, getcol(m, v))
+    lb = lqs_getlb(m, getcol(m, v))
     dict[ref] = (v.variable, lb, ub)
-    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_vartype_map(m)[:BINARY]])
+    lqs_chgctype!(m, [getcol(m, v)], [lqs_vartype_map(m)[:BINARY]])
     setvariablebound!(m, getcol(m, v), 1.0, _variableub(m))
     setvariablebound!(m, getcol(m, v), 0.0, _variablelb(m))
-    lqs_make_problem_type_integer(m.inner)
+    lqs_make_problem_type_integer(m)
     ref
 end
 function MOI.delete!(m::LinQuadSolverInstance, c::SVCR{MOI.ZeroOne})
     dict = constrdict(m, c)
     (v, lb, ub) = dict[c]
-    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_vartype_map(m)[:CONTINUOUS]])
+    lqs_chgctype!(m, [getcol(m, v)], [lqs_vartype_map(m)[:CONTINUOUS]])
     setvariablebound!(m, getcol(m, v), ub, _variableub(m))
     setvariablebound!(m, getcol(m, v), lb, _variablelb(m))
     delete!(dict, c)
     if !hasinteger(m)
-        lqs_make_problem_type_continuous(m.inner)
+        lqs_make_problem_type_continuous(m)
     end
 end
 MOI.candelete(m::LinQuadSolverInstance, c::SVCR{MOI.ZeroOne}) = true
@@ -420,22 +420,22 @@ MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{MOI.ZeroO
 =#
 
 function MOI.addconstraint!(m::LinQuadSolverInstance, v::SinVar, ::MOI.Integer)
-    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_vartype_map(m)[:INTEGER]])
+    lqs_chgctype!(m, [getcol(m, v)], [lqs_vartype_map(m)[:INTEGER]])
     m.last_constraint_reference += 1
     ref = MOI.ConstraintReference{SinVar, MOI.Integer}(m.last_constraint_reference)
     dict = constrdict(m, ref)
     dict[ref] = v.variable
-    lqs_make_problem_type_integer(m.inner)
+    lqs_make_problem_type_integer(m)
     ref
 end
 
 function MOI.delete!(m::LinQuadSolverInstance, c::SVCR{MOI.Integer})
     dict = constrdict(m, c)
     v = dict[c]
-    lqs_chgctype!(m.inner, [getcol(m, v)], [lqs_vartype_map(m)[:CONTINUOUS]])
+    lqs_chgctype!(m, [getcol(m, v)], [lqs_vartype_map(m)[:CONTINUOUS]])
     delete!(dict, c)
     if !hasinteger(m)
-        lqs_make_problem_type_continuous(m.inner)
+        lqs_make_problem_type_continuous(m)
     end
 end
 MOI.candelete(m::LinQuadSolverInstance, c::SVCR{MOI.Integer}) = true
@@ -452,8 +452,8 @@ MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::SVCR{MOI.Integ
 =#
 
 function MOI.addconstraint!(m::LinQuadSolverInstance, v::VecVar, sos::MOI.SOS1)
-    lqs_make_problem_type_integer(m.inner)
-    lqs_addsos!(m.inner, getcol.(m, v.variables), sos.weights, lqs_sertype_map(m)[:SOS1])
+    lqs_make_problem_type_integer(m)
+    lqs_addsos!(m, getcol.(m, v.variables), sos.weights, lqs_sertype_map(m)[:SOS1])
     m.last_constraint_reference += 1
     ref = MOI.ConstraintReference{VecVar, MOI.SOS1}(m.last_constraint_reference)
     dict = constrdict(m, ref)
@@ -462,8 +462,8 @@ function MOI.addconstraint!(m::LinQuadSolverInstance, v::VecVar, sos::MOI.SOS1)
 end
 
 function MOI.addconstraint!(m::LinQuadSolverInstance, v::VecVar, sos::MOI.SOS2)
-    lqs_make_problem_type_integer(m.inner)
-    lqs_addsos!(m.inner, getcol.(m, v.variables), sos.weights, lqs_sertype_map(m)[:SOS2])
+    lqs_make_problem_type_integer(m)
+    lqs_addsos!(m, getcol.(m, v.variables), sos.weights, lqs_sertype_map(m)[:SOS2])
     m.last_constraint_reference += 1
     ref = MOI.ConstraintReference{VecVar, MOI.SOS2}(m.last_constraint_reference)
     dict = constrdict(m, ref)
@@ -474,23 +474,23 @@ end
 function MOI.delete!(m::LinQuadSolverInstance, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}})
     dict = constrdict(m, c)
     idx = dict[c]
-    lqs_delsos!(m.inner, idx, idx)
+    lqs_delsos!(m, idx, idx)
     deleteref!(cmap(m).sos1, idx, c)
     deleteref!(cmap(m).sos2, idx, c)
     if !hasinteger(m)
-        lqs_make_problem_type_continuous(m.inner)
+        lqs_make_problem_type_continuous(m)
     end
 end
 MOI.candelete(m::LinQuadSolverInstance, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true
 
 function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{MOI.SOS1})
-    indices, weights, types = lqs_getsos(m.inner, m[c])
+    indices, weights, types = lqs_getsos(m, m[c])
     @assert types == lqs_sertype_map(m)[:SOS1]
     return MOI.SOS1(weights)
 end
 
 function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{MOI.SOS2})
-    indices, weights, types = lqs_getsos(m.inner, m[c])
+    indices, weights, types = lqs_getsos(m, m[c])
     @assert types == lqs_sertype_map(m)[:SOS2]
     return MOI.SOS2(weights)
 end
@@ -498,7 +498,7 @@ end
 MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintSet, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}}) = true
 
 function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::VVCR{<:Union{MOI.SOS1, MOI.SOS2}})
-    indices, weights, types = lqs_getsos(m.inner, m[c])
+    indices, weights, types = lqs_getsos(m, m[c])
     return MOI.VectorOfVariables(m.variable_references[indices])
 end
 
@@ -514,7 +514,7 @@ function MOI.addconstraint!(m::LinQuadSolverInstance, func::Quad, set::S) where 
     m.last_constraint_reference += 1
     ref = MOI.ConstraintReference{Quad, S}(m.last_constraint_reference)
     dict = constrdict(m, ref)
-    dict[ref] = lqs_getnumqconstrs(m.inner)
+    dict[ref] = lqs_getnumqconstrs(m)
     push!(m.qconstraint_primal_solution, NaN)
     push!(m.qconstraint_dual_solution, NaN)
     return ref
@@ -533,7 +533,7 @@ function addquadraticconstraint!(m::LinQuadSolverInstance, f::Quad, sense::Cchar
         getcol.(m, f.quadratic_colvariables),
         f.quadratic_coefficients
     )
-    lqs_addqconstr!(m.inner,
+    lqs_addqconstr!(m,
         getcol.(m, f.affine_variables),
         f.affine_coefficients,
         rhs - f.constant,
@@ -571,9 +571,9 @@ end
 function MOI.addconstraint!(m::LinQuadSolverInstance, func::VecLin, set::S) where S <: Union{MOI.Nonnegatives, MOI.Nonpositives, MOI.Zeros}
     @assert MOI.dimension(set) == length(func.constant)
 
-    nrows = lqs_getnumrows(m.inner)
+    nrows = lqs_getnumrows(m)
     addlinearconstraint!(m, func, _getsense(m,set))
-    nrows2 = lqs_getnumrows(m.inner)
+    nrows2 = lqs_getnumrows(m)
 
     m.last_constraint_reference += 1
     ref = MOI.ConstraintReference{VecLin, S}(m.last_constraint_reference)
@@ -606,13 +606,13 @@ function addlinearconstraint!(m::LinQuadSolverInstance, func::VecLin, sense::Cch
             rowbegins[cnt] = i
         end
     end
-    lqs_addrows!(m.inner, rowbegins, cols, vals, fill(sense, length(rows)), -func.constant)
+    lqs_addrows!(m, rowbegins, cols, vals, fill(sense, length(rows)), -func.constant)
 end
 
 function MOI.modifyconstraint!(m::LinQuadSolverInstance, ref::VLCR{<: Union{MOI.Nonnegatives, MOI.Nonpositives, MOI.Zeros}}, chg::MOI.VectorConstantChange{Float64})
     @assert length(chg.new_constant) == length(m[ref])
     for (r, v) in zip(m[ref], chg.new_constant)
-        lqs_chgcoef!(m.inner, r, 0, -v)
+        lqs_chgcoef!(m, r, 0, -v)
     end
 end
 MOI.canmodifyconstraint(m::LinQuadSolverInstance, ref::VLCR{<: Union{MOI.Nonnegatives, MOI.Nonpositives, MOI.Zeros}}, chg::MOI.VectorConstantChange{Float64}) = true
@@ -626,7 +626,7 @@ end
 function MOI.transformconstraint!(m::LinQuadSolverInstance, ref::LCR{S1}, newset::S2) where S1 where S2 <: Union{LE, GE, EQ}
     dict = constrdict(m, ref)
     row = dict[ref]
-    lqs_chgsense!(m.inner, [row], [_getsense(m,newset)])
+    lqs_chgsense!(m, [row], [_getsense(m,newset)])
     m.last_constraint_reference += 1
     ref2 = MOI.ConstraintReference{Linear, S2}(m.last_constraint_reference)
     dict2 = constrdict(m, ref2)
