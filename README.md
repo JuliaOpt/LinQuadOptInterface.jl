@@ -1,6 +1,6 @@
 # LinQuadOptInterface.jl
 
-LinQuadOptInterface is a intermediate wrapper designed to bridge low-level Integer Linear and Quadratic solvers. I provides access to many MathOptInterface functionalities mainly related to problem modifications: 
+LinQuadOptInterface (LQOI) is a intermediate wrapper designed to bridge low-level Integer Linear and Quadratic solvers. It provides access to many MathOptInterface functionalities mainly related to problem modifications: 
 
 1. add constraints/variables 1-by-1 and in batches 
 2. remove constraints/variables
@@ -11,7 +11,7 @@ LinQuadOptInterface is a intermediate wrapper designed to bridge low-level Integ
 
 All these modification are caried out by the low-level solver own functionalities and hence it differs from MathOptInterfaceUtilities' `Instance`. The latter will keep all problem data in the julia level and typically push to a low-level solver the complete problem at once.
 
-Here the data in the julia level is minimal, basically only references to constraints and varibles.
+Here the data in the julia level is minimal, basically only references to constraints and variables.
 
 ## Current uses
 
