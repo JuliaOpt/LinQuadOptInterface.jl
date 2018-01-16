@@ -130,64 +130,71 @@ end
 =#
 
 
-function MOI.get(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::MOI.VariableReference)
+function MOI.get(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::MOI.VariableIndex)
     col = m.variable_mapping[v]
     return m.variable_primal_solution[col]
 end
-MOI.canget(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::MOI.VariableReference) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::MOI.VariableIndex) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.VariablePrimal, ::Type{<:MOI.VariableIndex}) = true
 
-function MOI.get(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::Vector{MOI.VariableReference})
+function MOI.get(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::Vector{MOI.VariableIndex})
     MOI.get.(m, MOI.VariablePrimal(), v)
 end
-MOI.canget(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::Vector{MOI.VariableReference}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.VariablePrimal, v::Vector{MOI.VariableIndex}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.VariablePrimal, ::Type{<:Vector{MOI.VariableIndex}}) = true
 
 #=
     Variable Dual solution
 =#
 
 
-function MOI.get(m::LinQuadSolverInstance,::MOI.ConstraintDual, c::SVCR{<: Union{LE, GE, EQ, IV}})
+function MOI.get(m::LinQuadSolverInstance,::MOI.ConstraintDual, c::SVCI{<: Union{LE, GE, EQ, IV}})
     vref = m[c]
     col = m.variable_mapping[vref]
     return m.variable_dual_solution[col]
 end
-MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::SVCR{<: Union{LE, GE, EQ, IV}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::SVCI{<: Union{LE, GE, EQ, IV}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintDual, ::Type{<:SVCI{<: Union{LE, GE, EQ, IV}}}) = true
 
 #=
     Constraint Primal solution
 =#
 
-function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal, c::LCR{<: Union{LE, GE, EQ, IV}})
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal, c::LCI{<: Union{LE, GE, EQ, IV}})
     row = m[c]
     return m.constraint_primal_solution[row]
 end
-MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal,c::LCR{<: Union{LE, GE, EQ, IV}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal, c::LCI{<: Union{LE, GE, EQ, IV}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal, ::Type{<:LCI{<: Union{LE, GE, EQ, IV}}}) = true
 
 
 # vector valued constraint duals
-MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal, c::VLCR{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = m.constraint_primal_solution[m[c]]
-MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal,c::VLCR{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal, c::VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = m.constraint_primal_solution[m[c]]
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal, c::VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintPrimal, ::Type{<:VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}}) = true
 
 #=
     Constraint Dual solution
 =#
 
-_checkdualsense(::LCR{LE}, dual) = dual <= 0.0
-_checkdualsense(::LCR{GE}, dual) = dual >= 0.0
-_checkdualsense(::LCR{IV}, dual) = true
-_checkdualsense(::LCR{EQ}, dual) = true
+_checkdualsense(::LCI{LE}, dual) = dual <= 0.0
+_checkdualsense(::LCI{GE}, dual) = dual >= 0.0
+_checkdualsense(::LCI{IV}, dual) = true
+_checkdualsense(::LCI{EQ}, dual) = true
 
-function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::LCR{<: Union{LE, GE, EQ, IV}})
+function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::LCI{<: Union{LE, GE, EQ, IV}})
     row = m[c]
     dual = m.constraint_dual_solution[row]
     @assert _checkdualsense(c, dual)
     return dual
 end
-MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintDual,c::LCR{<: Union{LE, GE, EQ, IV}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::LCI{<: Union{LE, GE, EQ, IV}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintDual, ::Type{<:LCI{<: Union{LE, GE, EQ, IV}}}) = true
 
 # vector valued constraint duals
-MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::VLCR{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = m.constraint_dual_solution[m[c]]
-MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintDual,c::VLCR{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = true
+MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = m.constraint_dual_solution[m[c]]
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintDual, c::VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = true
+MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintDual, ::Type{<:VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}}) = true
 
 #=
     Solution Attributes

@@ -1,7 +1,7 @@
 #=
     Set the objective
 =#
-function MOI.set!(m, ::MOI.ObjectiveSense, sense::MOI.OptimizationSense)
+function MOI.set!(m::LinQuadSolverInstance, ::MOI.ObjectiveSense, sense::MOI.OptimizationSense)
     _setsense!(m, sense)
     nothing
 end
@@ -47,7 +47,15 @@ MOI.canget(m::LinQuadSolverInstance, ::MOI.ObjectiveSense) = true
 
 function MOI.get(m::LinQuadSolverInstance, ::MOI.ObjectiveFunction)
     variable_coefficients = lqs_getobj(m)
-    MOI.ScalarAffineFunction(m.variable_references, variable_coefficients, m.objective_constant)
+    coefs = Float64[]
+    vars = VarInd[]
+    for i in eachindex(variable_coefficients)
+        if abs(variable_coefficients[i]) > 1e-20
+            push!(coefs, variable_coefficients[i])
+            push!(vars, m.variable_references[i])
+        end
+    end
+    MOI.ScalarAffineFunction(vars, coefs, m.objective_constant)
 end
 # can't get quadratic objective functions
 MOI.canget(m::LinQuadSolverInstance, ::MOI.ObjectiveFunction) = !m.obj_is_quad
