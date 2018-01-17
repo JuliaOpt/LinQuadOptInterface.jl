@@ -216,6 +216,7 @@ function MOI.addconstraint!(m::LinQuadSolverInstance, func::Linear, set::T) wher
     dict[ref] = lqs_getnumrows(m)
     push!(m.constraint_primal_solution, NaN)
     push!(m.constraint_dual_solution, NaN)
+    push!(m.constraint_constant, func.constant)    
     return ref
 end
 
@@ -251,6 +252,7 @@ function MOI.addconstraints!(m::LinQuadSolverInstance, func::Vector{Linear}, set
         dict[ref] = numrows + i
         push!(m.constraint_primal_solution, NaN)
         push!(m.constraint_dual_solution, NaN)
+        push!(m.constraint_constant, func[i].constant)
         crefs[i] = ref
     end
     return crefs
@@ -311,7 +313,7 @@ MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintSet, ::Type{<:LCI{<: Union{
 function MOI.get(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::LCI{<: Union{LE, GE, EQ, IV}})
     # TODO more efficiently
     colidx, coefs = lqs_getrows(m, m[c])
-    MOI.ScalarAffineFunction(m.variable_references[colidx+1] , coefs, 0.0)
+    MOI.ScalarAffineFunction(m.variable_references[colidx+1], coefs, 0.0)
 end
 MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, c::LCI{<: Union{LE, GE, EQ, IV}}) = true
 MOI.canget(m::LinQuadSolverInstance, ::MOI.ConstraintFunction, ::Type{<:LCI{<: Union{LE, GE, EQ, IV}}}) = true
@@ -362,6 +364,7 @@ function MOI.delete!(m::LinQuadSolverInstance, c::LCI{<: Union{LE, GE, EQ, IV}})
     lqs_delrows!(m, row, row)
     deleteat!(m.constraint_primal_solution, row)
     deleteat!(m.constraint_dual_solution, row)
+    deleteat!(m.constraint_constant, row)
     deleteref!(m, row, c)
 end
 MOI.candelete(m::LinQuadSolverInstance, c::LCI{<: Union{LE, GE, EQ, IV}}) = true
@@ -593,6 +596,7 @@ function MOI.addconstraint!(m::LinQuadSolverInstance, func::VecLin, set::S) wher
     for i in 1:MOI.dimension(set)
         push!(m.constraint_primal_solution, NaN)
         push!(m.constraint_dual_solution, NaN)
+        push!(m.constraint_constant, func.constant[i])
     end
     ref
 end
@@ -623,12 +627,13 @@ function MOI.modifyconstraint!(m::LinQuadSolverInstance, ref::VLCI{<: Union{MOI.
     @assert length(chg.new_constant) == length(m[ref])
     for (r, v) in zip(m[ref], chg.new_constant)
         lqs_chgcoef!(m, r, 0, -v)
+        m.constraint_constant[r] = v
     end
 end
 MOI.canmodifyconstraint(m::LinQuadSolverInstance, ref::VLCI{<: Union{MOI.Nonnegatives, MOI.Nonpositives, MOI.Zeros}}, chg::MOI.VectorConstantChange{Float64}) = true
 
 #=
-    Transform constraint
+    Transform scalar constraint
 =#
 function MOI.transformconstraint!(m::LinQuadSolverInstance, ref::LCI{S}, newset::S) where S
     error("Cannot transform constraint of same set. use `modifyconstraint!` instead.")

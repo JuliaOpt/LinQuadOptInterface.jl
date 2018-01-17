@@ -111,6 +111,8 @@ abstract type LinQuadSolverInstance <: MOI.AbstractSolverInstance end
     last_constraint_reference::UInt64
     constraint_mapping::LinQuadOptInterface.ConstraintMapping
 
+    constraint_constant::Vector{Float64}
+
     constraint_primal_solution::Vector{Float64}
     constraint_dual_solution::Vector{Float64}
 
@@ -140,12 +142,6 @@ end
 #     return true
 # end
 
-# MOI.get(s::LinQuadSolverInstance, ::MOI.SupportsDuals) = true
-# MOI.get(s::LinQuadSolverInstance, ::MOI.SupportsAddConstraintAfterSolve) = true
-# MOI.get(s::LinQuadSolverInstance, ::MOI.SupportsAddVariableAfterSolve) = true
-# MOI.get(s::LinQuadSolverInstance, ::MOI.SupportsDeleteConstraint) = true
-# MOI.get(s::LinQuadSolverInstance, ::MOI.SupportsDeleteVariable) = true
-
 @def LinQuadSolverInstanceBaseInit begin
     Model(env),
     false,
@@ -156,6 +152,7 @@ end
     Float64[],
     0,
     LinQuadOptInterface.ConstraintMapping(),
+    Float64[],
     Float64[],
     Float64[],
     Float64[],
