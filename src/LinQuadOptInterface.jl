@@ -95,7 +95,7 @@ macro def(name, definition)
 end
 
 # Abstract + macro
-abstract type LinQuadSolverInstance <: MOI.AbstractSolverInstance end
+abstract type LinQuadSolverInstance <: MOI.AbstractOptimizer end
 @def LinQuadSolverInstanceBase begin
     inner::Model
 
