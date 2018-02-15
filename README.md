@@ -1,2 +1,2 @@
 # LinQuadOptInterface.jl
-Intermediate wrapper for MOI of CPLEX, Gurobi and Xpress
+Intermediate wrapper for MOI of GLPK, CPLEX, Gurobi and Xpress
