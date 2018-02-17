@@ -1,39 +1,39 @@
 #=
     Helper functions
 =#
-getcol(m::LinQuadSolverInstance, ref::VarInd) = m.variable_mapping[ref]
-getcol(m::LinQuadSolverInstance, v::SinVar) = getcol(m, v.variable)
+getcol(m::LinQuadOptimizer, ref::VarInd) = m.variable_mapping[ref]
+getcol(m::LinQuadOptimizer, v::SinVar) = getcol(m, v.variable)
 
 #=
     Get number of variables
 =#
 
-function MOI.get(m::LinQuadSolverInstance, ::MOI.NumberOfVariables)
+function MOI.get(m::LinQuadOptimizer, ::MOI.NumberOfVariables)
     return lqs_getnumcols(m)
 end
-MOI.canget(m::LinQuadSolverInstance, ::MOI.NumberOfVariables) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.NumberOfVariables) = true
 
 #=
     Get variable references
 =#
 
-function MOI.get(m::LinQuadSolverInstance, ::MOI.ListOfVariableIndices)
+function MOI.get(m::LinQuadOptimizer, ::MOI.ListOfVariableIndices)
     return m.variable_references
 end
-MOI.canget(m::LinQuadSolverInstance, ::MOI.ListOfVariableIndices) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ListOfVariableIndices) = true
 
 #=
-    Add a variable to the LinQuadSolverInstance
+    Add a variable to the LinQuadOptimizer
 Returns a MathOptInterface VariableIndex. So we need to increment the
 variable reference counter in the m.variablemapping, and store the column number
 in the dictionary
 =#
 
-function MOI.addvariable!(m::LinQuadSolverInstance)
+function MOI.addvariable!(m::LinQuadOptimizer)
     lqs_newcols!(m, 1)
     # assumes we add columns linearly
     m.last_variable_reference += 1
-    ref = MOI.VariableIndex(m.last_variable_reference)
+    ref = VarInd(m.last_variable_reference)
     m.variable_mapping[ref] = MOI.get(m, MOI.NumberOfVariables())
     push!(m.variable_references, ref)
     push!(m.variable_primal_solution, NaN)
@@ -41,15 +41,15 @@ function MOI.addvariable!(m::LinQuadSolverInstance)
     return ref
 end
 
-function MOI.addvariables!(m::LinQuadSolverInstance, n::Int)
+function MOI.addvariables!(m::LinQuadOptimizer, n::Int)
     previous_vars = MOI.get(m, MOI.NumberOfVariables())
     lqs_newcols!(m, n)
-    variable_references = MOI.VariableIndex[]
+    variable_references = VarInd[]
     sizehint!(variable_references, n)
     for i in 1:n
         # assumes we add columns linearly
         m.last_variable_reference += 1
-        ref = MOI.VariableIndex(m.last_variable_reference)
+        ref = VarInd(m.last_variable_reference)
         push!(variable_references, ref)
         m.variable_mapping[ref] = previous_vars + i
         push!(m.variable_references, ref)
@@ -63,7 +63,7 @@ end
     Check if reference is valid
 =#
 
-function MOI.isvalid(m::LinQuadSolverInstance, ref::MOI.VariableIndex)
+function MOI.isvalid(m::LinQuadOptimizer, ref::VarInd)
     if haskey(m.variable_mapping.refmap, ref.value)
         column = m.variable_mapping.refmap[ref.value]
         if column > 0 && column <= MOI.get(m, MOI.NumberOfVariables())
@@ -77,7 +77,7 @@ end
     Delete a variable
 =#
 
-function MOI.delete!(m::LinQuadSolverInstance, ref::MOI.VariableIndex)
+function MOI.delete!(m::LinQuadOptimizer, ref::VarInd)
     col = m.variable_mapping[ref]
     lqs_delcols!(m, col, col)
     deleteat!(m.variable_references, col)
@@ -92,7 +92,7 @@ function MOI.delete!(m::LinQuadSolverInstance, ref::MOI.VariableIndex)
     deletebyval!(cmap(m).interval_bound, ref)
 
 end
-MOI.candelete(m::LinQuadSolverInstance, ref::MOI.VariableIndex) = true
+MOI.candelete(m::LinQuadOptimizer, ref::VarInd) = true
 
 # temp fix - change storage for bounds TODO
 function deletebyval!(dict::Dict{S,T}, in::T) where {S,T}
@@ -105,12 +105,12 @@ end
 #=
     MIP starts
 =#
-function MOI.set!(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ref::MOI.VariableIndex, val::Float64)
+function MOI.set!(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ref::VarInd, val::Float64)
     lqs_addmipstarts!(m, [getcol(m, ref)], [val])
 end
-MOI.canset(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ::MOI.VariableIndex) = true
+MOI.canset(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::VarInd) = true
 
-function MOI.set!(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, refs::Vector{MOI.VariableIndex}, vals::Vector{Float64})
+function MOI.set!(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, refs::Vector{VarInd}, vals::Vector{Float64})
     lqs_addmipstarts!(m, getcol.(m, refs), vals)
 end
-MOI.canset(m::LinQuadSolverInstance, ::MOI.VariablePrimalStart, ::Vector{MOI.VariableIndex}) = true
+MOI.canset(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::Vector{VarInd}) = true
