@@ -1,8 +1,11 @@
+__precompile__()
 module LinQuadOptInterface
 
 using MathOptInterface
+using MathOptInterface.Utilities
 
 const MOI = MathOptInterface
+const MOIU = MathOptInterface.Utilities
 
 # functions
 const Linear = MOI.ScalarAffineFunction{Float64}
@@ -234,22 +237,12 @@ function deleteref!(dict::Dict, i::Int, ref)
     delete!(dict, ref)
 end
 
-# TODO REMOVE
-# Define conversion SingleVariable -> ScalarAffineFunction and VectorOfVariable -> VectorAffineFunction{T}
-function MOI.ScalarAffineFunction{T}(f::MOI.SingleVariable) where T
-    MOI.ScalarAffineFunction([f.variable], ones(T, 1), zero(T))
-end
-function MOI.VectorAffineFunction{T}(f::MOI.VectorOfVariables) where T
-    n = length(f.variables)
-    MOI.VectorAffineFunction(collect(1:n), f.variables, ones(T, n), zeros(T, n))
-end
-
 MOI.canaddvariable(::LinQuadOptimizer) = true
 MOI.canset(::LinQuadOptimizer, ::MOI.ObjectiveSense) = true
-include("lqoi_variables.jl")
-include("lqoi_constraints.jl")
-include("lqoi_objective.jl")
-include("lqoi_solve.jl")
+include("variables.jl")
+include("constraints.jl")
+include("objective.jl")
+include("solve.jl")
 
 include("ref.jl")
 

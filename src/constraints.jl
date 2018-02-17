@@ -212,7 +212,12 @@ end
     Add linear constraints
 =#
 
+
 function MOI.addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <: Union{LE, GE, EQ, IV}
+    cfunc = MOIU.canonical(func)
+    unsafe_addconstraint!(m, cfunc, set)
+end
+function unsafe_addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <: Union{LE, GE, EQ, IV}
     addlinearconstraint!(m, func, set)
     m.last_constraint_reference += 1
     ref = LCI{T}(m.last_constraint_reference)
@@ -245,6 +250,10 @@ end
 =#
 
 function MOI.addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: Union{LE, GE, EQ, IV}
+    cfunc = MOIU.canonical.(func)
+    unsafe_addconstraints!(m, cfunc, set)
+end
+function unsafe_addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: Union{LE, GE, EQ, IV}
     @assert length(func) == length(set)
     numrows = lqs_getnumrows(m)
     addlinearconstraints!(m, func, set)

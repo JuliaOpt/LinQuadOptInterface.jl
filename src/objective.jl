@@ -10,6 +10,10 @@ function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveSense, sense::MOI.Optimiza
     nothing
 end
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction, objf::Linear)
+    cobjf = MOIU.canonical(objf)
+    unsafe_set!(m, MOI.ObjectiveFunction{Linear}(), cobjf)
+end
+function unsafe_set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction, objf::Linear)
     if m.obj_is_quad
         # previous objective was quadratic...
         m.obj_is_quad = false
@@ -49,7 +53,7 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveSense) = true
     Get the objective function
 =#
 
-function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction)
+function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear})
     variable_coefficients = lqs_getobj(m)
     Linear(m.variable_references, variable_coefficients, m.objective_constant)
 end
