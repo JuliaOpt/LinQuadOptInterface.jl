@@ -21,7 +21,7 @@ Here the data in the julia level is minimal, basically only references to constr
 
 This package is currently used to implement [MathOptInterfaceXpress.jl](https://github.com/JuliaOpt/MathOptInterfaceXpress.jl), [MathOptInterfaceCPLEX.jl](https://github.com/JuliaOpt/MathOptInterfaceCPLEX.jl), [MathOptInterfaceGurobi.jl](https://github.com/JuliaOpt/MathOptInterfaceGurobi.jl) and [MathOptInterfaceGLPK.jl](https://github.com/JuliaOpt/MathOptInterfaceGLPK.jl). The last one being only a integer linear solver.
 
-All these solver have in common a low-level API which supports most of these modifications. Hence, data storage is simplified and duplications are avoided.
+All these solvers have low-level APIs which supports most of these modifications. Hence, data storage is simplified and duplications are avoided.
 
 ## Other possible uses
 
