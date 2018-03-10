@@ -1,8 +1,6 @@
 # LinQuadOptInterface.jl
 
-**Attention**: This is an intermediary layer used by some implementations of the MathOptInterface.
-
-LinQuadOptInterface (LQOI) is designed to make it easier for low-level wrapper designed to bridge low-level Integer Linear and Quadratic solvers to implement the [MathOptInterface](https://github.com/JuliaOpt/MathOptInterface.jl) (MOI) interface. It provides access to many MOI functionalities mainly related to problem modifications:
+LinQuadOptInterface (LQOI) is designed to make it easier for low-level wrapper designed to bridge low-level Integer Linear and Quadratic solvers to implement the [MathOptInterface](https://github.com/JuliaOpt/MathOptInterface.jl) (MOI). It provides access to many MOI functionalities mainly related to problem modifications:
 
 1. add constraints/variables 1-by-1 and in batches
 2. remove constraints/variables
@@ -11,9 +9,11 @@ LinQuadOptInterface (LQOI) is designed to make it easier for low-level wrapper d
 5. change constraint rhs
 6. change variable bounds and type
 
+The use of LQOI for MOI implementations is entirely optional. Using LQOI introduces an extra abstraction layer between a solver and MOI. Its recommended to carefully analyse if the solver's low-level API is close to what LQOI expects, otherwise a direct implementation of MOI might be a better option.
+
 ## LinQuadOptInterface Instance
 
-In LinQuadOptInterface.jl the MOI `AbstractOptimizer` is specialized to `LinQuadOptimizer`. In this implementation all the above mentioned modifications are caried out by the low-level solver own functionalities and hence it differs from MathOptInterface.Utilities' `CachingOptimizer`. The latter will keep all problem data in the julia level and typically push to a low-level solver the complete problem at once.
+In LinQuadOptInterface.jl the MOI `AbstractOptimizer` is specialized to `LinQuadOptimizer`. In this implementation all the above mentioned modifications are carried out by the low-level solver's own functionalities and hence the `LinQuadOptimizer` can be used without a `CachingOptimizer`. The latter will keep all problem data in the julia level and typically push to a low-level solver the complete problem at once.
 
 Here the data in the julia level is minimal, basically only references to constraints and variables.
 
