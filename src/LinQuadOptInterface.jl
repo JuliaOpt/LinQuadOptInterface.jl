@@ -1,26 +1,11 @@
+__precompile__()
 module LinQuadOptInterface
 
 using MathOptInterface
+using MathOptInterface.Utilities
 
 const MOI = MathOptInterface
-
-# Abstract
-abstract type LinQuadSolver <: MOI.AbstractSolver end
-# struct LinQuadSolver <: MOI.AbstractSolver
-#     mipstart_effortlevel::Cint
-#     logfile::String
-#     options
-# end
-
-# function LinQuadSolver(;mipstart_effortlevel::Cint = lqs_MIPSTART_AUTO, logfile::String="", options...)
-#     LinQuadSolver(mipstart_effortlevel, logfile, options)
-# end
-
-MOI.get(s::LinQuadSolver, ::MOI.SupportsDuals) = true
-MOI.get(s::LinQuadSolver, ::MOI.SupportsAddConstraintAfterSolve) = true
-MOI.get(s::LinQuadSolver, ::MOI.SupportsAddVariableAfterSolve) = true
-MOI.get(s::LinQuadSolver, ::MOI.SupportsDeleteConstraint) = true
-MOI.get(s::LinQuadSolver, ::MOI.SupportsDeleteVariable) = true
+const MOIU = MathOptInterface.Utilities
 
 # functions
 const Linear = MOI.ScalarAffineFunction{Float64}
@@ -29,93 +14,111 @@ const SinVar = MOI.SingleVariable
 const VecVar = MOI.VectorOfVariables
 const VecLin = MOI.VectorAffineFunction{Float64}
 # sets
-const LE     = MOI.LessThan{Float64}
-const GE     = MOI.GreaterThan{Float64}
-const EQ     = MOI.EqualTo{Float64}
-const IV     = MOI.Interval{Float64}
+const LE = MOI.LessThan{Float64}
+const GE = MOI.GreaterThan{Float64}
+const EQ = MOI.EqualTo{Float64}
+const IV = MOI.Interval{Float64}
+const SOS1 = MOI.SOS1{Float64}
+const SOS2 = MOI.SOS2{Float64}
 # constraint references
-const CR{F,S} = MOI.ConstraintReference{F,S}
-const LCR{S} = CR{Linear,S}
-const VLCR{S} = CR{VecLin,S}
-const QCR{S} = CR{Quad,S}
-const SVCR{S}  = CR{SinVar, S}
-const VVCR{S}  = CR{VecVar, S}
+const CI{F,S} = MOI.ConstraintIndex{F,S}
+const LCI{S} = CI{Linear,S}
+const VLCI{S} = CI{VecLin,S}
+const QCI{S} = CI{Quad,S}
+const SVCI{S} = CI{SinVar,S}
+const VVCI{S} = CI{VecVar,S}
 # variable reference
-const VarRef = MOI.VariableReference
-
-function MOI.supportsproblem(s::LinQuadSolver, objective_type, constraint_types)
-    if !(objective_type in lqs_supported_objectives(s))
-        return false
-    end
-    for c in constraint_types
-        if !(c in lqs_supported_constraints(s))
-            return false
-        end
-    end
-    return true
-end
+const VarInd = MOI.VariableIndex
 
 struct ConstraintMapping
     # rows in constraint matrix
-    less_than::Dict{LCR{LE}, Int}
-    greater_than::Dict{LCR{GE}, Int}
-    equal_to::Dict{LCR{EQ}, Int}
-    interval::Dict{LCR{IV}, Int}
+    less_than::Dict{LCI{LE}, Int}
+    greater_than::Dict{LCI{GE}, Int}
+    equal_to::Dict{LCI{EQ}, Int}
+    interval::Dict{LCI{IV}, Int}
 
     # vectors of rows in constraint matrix
-    nonnegatives::Dict{VLCR{MOI.Nonnegatives}, Vector{Int}}
-    nonpositives::Dict{VLCR{MOI.Nonpositives}, Vector{Int}}
-    zeros::Dict{VLCR{MOI.Zeros}, Vector{Int}}
+    nonnegatives::Dict{VLCI{MOI.Nonnegatives}, Vector{Int}}
+    nonpositives::Dict{VLCI{MOI.Nonpositives}, Vector{Int}}
+    zeros::Dict{VLCI{MOI.Zeros}, Vector{Int}}
 
     # rows in quadratic constraint matrix
-    q_less_than::Dict{QCR{LE}, Int}
-    q_greater_than::Dict{QCR{GE}, Int}
-    q_equal_to::Dict{QCR{EQ}, Int}
+    q_less_than::Dict{QCI{LE}, Int}
+    q_greater_than::Dict{QCI{GE}, Int}
+    q_equal_to::Dict{QCI{EQ}, Int}
 
     # references to variable
-    upper_bound::Dict{SVCR{LE}, VarRef}
-    lower_bound::Dict{SVCR{GE}, VarRef}
-    fixed_bound::Dict{SVCR{EQ}, VarRef}
-    interval_bound::Dict{SVCR{MOI.Interval{Float64}}, VarRef}
+    upper_bound::Dict{SVCI{LE}, VarInd}
+    lower_bound::Dict{SVCI{GE}, VarInd}
+    fixed_bound::Dict{SVCI{EQ}, VarInd}
+    interval_bound::Dict{SVCI{IV}, VarInd}
 
     # vectors of rows in constraint matrix
-    vv_nonnegatives::Dict{VVCR{MOI.Nonnegatives}, Vector{VarRef}}
-    vv_nonpositives::Dict{VVCR{MOI.Nonpositives}, Vector{VarRef}}
-    vv_zeros::Dict{VVCR{MOI.Zeros}, Vector{VarRef}}
+    vv_nonnegatives::Dict{VVCI{MOI.Nonnegatives}, Vector{VarInd}}
+    vv_nonpositives::Dict{VVCI{MOI.Nonpositives}, Vector{VarInd}}
+    vv_zeros::Dict{VVCI{MOI.Zeros}, Vector{VarInd}}
 
-    integer::Dict{SVCR{MOI.Integer}, VarRef}
+    integer::Dict{SVCI{MOI.Integer}, VarInd}
     #=
      for some reason CPLEX doesn't respect bounds on a binary variable, so we
      should store the previous bounds so that if we delete the binary constraint
      we can revert to the old bounds
     =#
-    binary::Dict{SVCR{MOI.ZeroOne}, Tuple{VarRef, Float64, Float64}}
-    sos1::Dict{VVCR{MOI.SOS1}, Int}
-    sos2::Dict{VVCR{MOI.SOS2}, Int}
+    binary::Dict{SVCI{MOI.ZeroOne}, Tuple{VarInd, Float64, Float64}}
+    sos1::Dict{VVCI{SOS1}, Int}
+    sos2::Dict{VVCI{SOS2}, Int}
 end
 ConstraintMapping() = ConstraintMapping(
-    Dict{LCR{LE}, Int}(),
-    Dict{LCR{GE}, Int}(),
-    Dict{LCR{EQ}, Int}(),
-    Dict{LCR{IV}, Int}(),
-    Dict{VLCR{MOI.Nonnegatives}, Vector{Int}}(),
-    Dict{VLCR{MOI.Nonpositives}, Vector{Int}}(),
-    Dict{VLCR{MOI.Zeros}, Vector{Int}}(),
-    Dict{QCR{LE}, Int}(),
-    Dict{QCR{GE}, Int}(),
-    Dict{QCR{EQ}, Int}(),
-    Dict{SVCR{LE}, VarRef}(),
-    Dict{SVCR{GE}, VarRef}(),
-    Dict{SVCR{EQ}, VarRef}(),
-    Dict{SVCR{IV}, VarRef}(),
-    Dict{VVCR{MOI.Nonnegatives}, Vector{VarRef}}(),
-    Dict{VVCR{MOI.Nonpositives}, Vector{VarRef}}(),
-    Dict{VVCR{MOI.Zeros}, Vector{VarRef}}(),
-    Dict{SVCR{MOI.Integer}, VarRef}(),
-    Dict{SVCR{MOI.ZeroOne}, Tuple{VarRef, Float64, Float64}}(),
-    Dict{VVCR{MOI.SOS1}, Int}(),
-    Dict{VVCR{MOI.SOS2}, Int}()
+    Dict{LCI{LE}, Int}(),
+    Dict{LCI{GE}, Int}(),
+    Dict{LCI{EQ}, Int}(),
+    Dict{LCI{IV}, Int}(),
+    Dict{VLCI{MOI.Nonnegatives}, Vector{Int}}(),
+    Dict{VLCI{MOI.Nonpositives}, Vector{Int}}(),
+    Dict{VLCI{MOI.Zeros}, Vector{Int}}(),
+    Dict{QCI{LE}, Int}(),
+    Dict{QCI{GE}, Int}(),
+    Dict{QCI{EQ}, Int}(),
+    Dict{SVCI{LE}, VarInd}(),
+    Dict{SVCI{GE}, VarInd}(),
+    Dict{SVCI{EQ}, VarInd}(),
+    Dict{SVCI{IV}, VarInd}(),
+    Dict{VVCI{MOI.Nonnegatives}, Vector{VarInd}}(),
+    Dict{VVCI{MOI.Nonpositives}, Vector{VarInd}}(),
+    Dict{VVCI{MOI.Zeros}, Vector{VarInd}}(),
+    Dict{SVCI{MOI.Integer}, VarInd}(),
+    Dict{SVCI{MOI.ZeroOne}, Tuple{VarInd, Float64, Float64}}(),
+    Dict{VVCI{SOS1}, Int}(),
+    Dict{VVCI{SOS2}, Int}()
 )
+function Base.isempty(map::ConstraintMapping)
+
+    ret = true
+    ret = ret && isempty(map.less_than)
+    ret = ret && isempty(map.greater_than)
+    ret = ret && isempty(map.equal_to)
+    ret = ret && isempty(map.interval)
+    ret = ret && isempty(map.nonnegatives)
+    ret = ret && isempty(map.nonpositives)
+    ret = ret && isempty(map.zeros)
+    ret = ret && isempty(map.q_greater_than)
+    ret = ret && isempty(map.q_greater_than)
+    ret = ret && isempty(map.q_equal_to)
+    ret = ret && isempty(map.upper_bound)
+    ret = ret && isempty(map.lower_bound)
+    ret = ret && isempty(map.fixed_bound)
+    ret = ret && isempty(map.interval_bound)
+    ret = ret && isempty(map.vv_nonnegatives)
+    ret = ret && isempty(map.vv_nonpositives)
+    ret = ret && isempty(map.vv_zeros)
+    ret = ret && isempty(map.integer)
+    ret = ret && isempty(map.binary)
+    ret = ret && isempty(map.sos1)
+    ret = ret && isempty(map.sos2)
+
+    return ret
+end
+
 macro def(name, definition)
     return quote
         macro $(esc(name))()
@@ -125,21 +128,23 @@ macro def(name, definition)
 end
 
 # Abstract + macro
-abstract type LinQuadSolverInstance <: MOI.AbstractSolverInstance end
-@def LinQuadSolverInstanceBase begin
-    inner::Model
+abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
+@def LinQuadOptimizerBase begin
+    inner#::LinQuadOptInterface.LinQuadOptimizer
 
     obj_is_quad::Bool
 
     last_variable_reference::UInt64
-    variable_mapping::Dict{MathOptInterface.VariableReference, Int}
-    variable_references::Vector{MathOptInterface.VariableReference}
+    variable_mapping::Dict{MathOptInterface.VariableIndex, Int}
+    variable_references::Vector{MathOptInterface.VariableIndex}
 
     variable_primal_solution::Vector{Float64}
     variable_dual_solution::Vector{Float64}
 
     last_constraint_reference::UInt64
     constraint_mapping::LinQuadOptInterface.ConstraintMapping
+
+    constraint_constant::Vector{Float64}
 
     constraint_primal_solution::Vector{Float64}
     constraint_dual_solution::Vector{Float64}
@@ -158,31 +163,69 @@ abstract type LinQuadSolverInstance <: MOI.AbstractSolverInstance end
     solvetime::Float64
 end
 
+function MOI.isempty(m::LinQuadOptimizer)
 
+    ret = true
 
-@def LinQuadSolverInstanceBaseInit begin
-    Model(env),
-    false,
-    0,
-    Dict{MathOptInterface.VariableReference, Int}(),
-    MathOptInterface.VariableReference[],
-    Float64[],
-    Float64[],
-    0,
-    LinQuadOptInterface.ConstraintMapping(),
-    Float64[],
-    Float64[],
-    Float64[],
-    Float64[],
-    0.0,
-    MathOptInterface.OtherError, # not solved
-    MathOptInterface.UnknownResultStatus,
-    MathOptInterface.UnknownResultStatus,
-    0,
-    0,
-    0.0
+    ret = ret && m.obj_is_quad == false
+    ret = ret && m.last_variable_reference == 0
+    ret = ret && isempty(m.variable_mapping)
+    ret = ret && isempty(m.variable_references)
+    ret = ret && isempty(m.variable_primal_solution)
+    ret = ret && isempty(m.variable_dual_solution)
+    ret = ret && m.last_constraint_reference == 0
+    ret = ret && isempty(m.constraint_mapping)
+    ret = ret && isempty(m.constraint_constant)
+    ret = ret && isempty(m.constraint_primal_solution)
+    ret = ret && isempty(m.constraint_dual_solution)
+    ret = ret && isempty(m.qconstraint_primal_solution)
+    ret = ret && isempty(m.qconstraint_dual_solution)
+    ret = ret && m.objective_constant == 0.0
+    ret = ret && m.termination_status == MOI.OtherError
+    ret = ret && m.primal_status == MOI.UnknownResultStatus
+    ret = ret && m.dual_status == MOI.UnknownResultStatus
+    ret = ret && m.primal_result_count == 0
+    ret = ret && m.dual_result_count == 0
+    ret = ret && m.solvetime == 0.0
+
+    return ret
 end
+function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
 
+    m.inner = LinQuadModel(M,env)
+
+    m.obj_is_quad = false
+
+    m.last_variable_reference = 0
+    m.variable_mapping = Dict{MathOptInterface.VariableIndex, Int}()
+    m.variable_references = MathOptInterface.VariableIndex[]
+
+    m.variable_primal_solution = Float64[]
+    m.variable_dual_solution = Float64[]
+
+    m.last_constraint_reference = 0
+    m.constraint_mapping = LinQuadOptInterface.ConstraintMapping()
+
+    m.constraint_constant = Float64[]
+
+    m.constraint_primal_solution = Float64[]
+    m.constraint_dual_solution = Float64[]
+
+    m.qconstraint_primal_solution = Float64[]
+    m.qconstraint_dual_solution = Float64[]
+
+    m.objective_constant = 0.0
+
+    m.termination_status = MathOptInterface.OtherError
+    m.primal_status = MathOptInterface.UnknownResultStatus
+    m.dual_status = MathOptInterface.UnknownResultStatus
+    m.primal_result_count = 0
+    m.dual_result_count = 0
+
+    m.solvetime = 0.0
+
+    nothing
+end
 
 # a useful helper function
 function deleteref!(dict::Dict, i::Int, ref)
@@ -194,15 +237,12 @@ function deleteref!(dict::Dict, i::Int, ref)
     delete!(dict, ref)
 end
 
-# function problemtype(m::LinQuadSolverInstance)
-#     code = lqs_getprobtype(m)
-#     PROB_TYPE_MAP[code]
-# end
-
-include("lqoi_variables.jl")
-include("lqoi_constraints.jl")
-include("lqoi_objective.jl")
-include("lqoi_solve.jl")
+MOI.canaddvariable(::LinQuadOptimizer) = true
+MOI.canset(::LinQuadOptimizer, ::MOI.ObjectiveSense) = true
+include("variables.jl")
+include("constraints.jl")
+include("objective.jl")
+include("solve.jl")
 
 include("ref.jl")
 
