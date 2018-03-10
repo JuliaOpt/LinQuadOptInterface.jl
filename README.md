@@ -1,8 +1,13 @@
 # LinQuadOptInterface.jl
 
-LinQuadOptInterface (LQOI) is designed to make it easier for low-level wrapper designed to bridge low-level Integer Linear and Quadratic solvers to implement the [MathOptInterface](https://github.com/JuliaOpt/MathOptInterface.jl) (MOI). It provides access to many MOI functionalities mainly related to problem modifications:
+LinQuadOptInterface.jl (LQOI) is designed to simplify [MathOptInterface.jl](https://github.com/JuliaOpt/MathOptInterface.jl)'s (MOI) implementation. The target use cases are low-level wrappers designed to bridge low-level Integer Linear and Quadratic solvers, for instance [GLPK.jl](https://github.com/JuliaOpt/GLPK.jl), [Gurobi.jl](https://github.com/JuliaOpt/Gurobi.jl), [Xpress.jl](https://github.com/JuliaOpt/Xpress.jl) and [CPLEX.jl](https://github.com/JuliaOpt/CPLEX.jl).
 
-<a name="modifications"></a>
+The use of LQOI for MOI implementations is entirely optional. Using LQOI introduces an extra abstraction layer between a solver and MOI. Its recommended to carefully analyse if the solver's low-level API is close to what LQOI expects, otherwise a direct implementation of MOI might be a better option.
+
+## <a name="modifications"></a> Problem Modifications
+
+LQOI provides access to many MOI functionalities mainly related to problem modifications:
+
 1. add constraints/variables 1-by-1 and in batches
 2. remove constraints/variables
 3. change constraint coefficients
@@ -10,9 +15,7 @@ LinQuadOptInterface (LQOI) is designed to make it easier for low-level wrapper d
 5. change constraint rhs
 6. change variable bounds and type
 
-The use of LQOI for MOI implementations is entirely optional. Using LQOI introduces an extra abstraction layer between a solver and MOI. Its recommended to carefully analyse if the solver's low-level API is close to what LQOI expects, otherwise a direct implementation of MOI might be a better option.
-
-## LinQuadOptInterface Optimizer
+## LinQuadOptimizer
 
 In LinQuadOptInterface.jl the MOI [`AbstractOptimizer`](http://www.juliaopt.org/MathOptInterface.jl/latest/apireference.html#MathOptInterface.AbstractOptimizer) is specialized to [`LinQuadOptimizer`](https://github.com/JuliaOpt/LinQuadOptInterface.jl/blob/99b2a3dfe78e000330475f08766f6681ecf633ab/src/LinQuadOptInterface.jl#L131). In this implementation all the above mentioned modifications are carried out by the low-level solver's own functionalities and hence the `LinQuadOptimizer` can be used without a [`CachingOptimizer`](https://github.com/JuliaOpt/MathOptInterface.jl/blob/60c5ee85addb65ada33cb1d922691f23e5a518e2/src/Utilities/cachingoptimizer.jl#L8). The latter will keep all problem data in the Julia level and typically push to a low-level solver the complete problem at once.
 
