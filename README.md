@@ -23,7 +23,7 @@ In contrast, since `LinQuadOptimizer` incrementally pushes data to the low-level
 
 ## Current uses
 
-This package is currently used to implement [MathOptInterfaceXpress.jl](https://github.com/JuliaOpt/MathOptInterfaceXpress.jl), [MathOptInterfaceCPLEX.jl](https://github.com/JuliaOpt/MathOptInterfaceCPLEX.jl), [MathOptInterfaceGurobi.jl](https://github.com/JuliaOpt/MathOptInterfaceGurobi.jl) and [MathOptInterfaceGLPK.jl](https://github.com/JuliaOpt/MathOptInterfaceGLPK.jl). The last one being only a integer linear solver.
+This package is currently used to implement [MathOptInterfaceXpress.jl](https://github.com/JuliaOpt/MathOptInterfaceXpress.jl), [MathOptInterfaceCPLEX.jl](https://github.com/JuliaOpt/MathOptInterfaceCPLEX.jl), [MathOptInterfaceGurobi.jl](https://github.com/JuliaOpt/MathOptInterfaceGurobi.jl) and [MathOptInterfaceGLPK.jl](https://github.com/JuliaOpt/MathOptInterfaceGLPK.jl). The last one being only a mixed integer linear solver.
 
 All these solvers have low-level APIs which support most of the above mentioned [modifications](#modifications). Hence, data storage is simplified and duplications are avoided.
 
