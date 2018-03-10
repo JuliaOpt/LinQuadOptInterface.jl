@@ -11,7 +11,7 @@ LinQuadOptInterface (LQOI) is designed to make it easier for low-level wrapper d
 
 The use of LQOI for MOI implementations is entirely optional. Using LQOI introduces an extra abstraction layer between a solver and MOI. Its recommended to carefully analyse if the solver's low-level API is close to what LQOI expects, otherwise a direct implementation of MOI might be a better option.
 
-## LinQuadOptInterface Instance
+## LinQuadOptInterface Optimizer
 
 In LinQuadOptInterface.jl the MOI `AbstractOptimizer` is specialized to `LinQuadOptimizer`. In this implementation all the above mentioned modifications are carried out by the low-level solver's own functionalities and hence the `LinQuadOptimizer` can be used without a `CachingOptimizer`. The latter will keep all problem data in the julia level and typically push to a low-level solver the complete problem at once.
 
