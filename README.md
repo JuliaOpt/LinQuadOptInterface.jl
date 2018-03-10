@@ -2,6 +2,7 @@
 
 LinQuadOptInterface (LQOI) is designed to make it easier for low-level wrapper designed to bridge low-level Integer Linear and Quadratic solvers to implement the [MathOptInterface](https://github.com/JuliaOpt/MathOptInterface.jl) (MOI). It provides access to many MOI functionalities mainly related to problem modifications:
 
+(#modifications)
 1. add constraints/variables 1-by-1 and in batches
 2. remove constraints/variables
 3. change constraint coefficients
@@ -13,18 +14,18 @@ The use of LQOI for MOI implementations is entirely optional. Using LQOI introdu
 
 ## LinQuadOptInterface Optimizer
 
-In LinQuadOptInterface.jl the MOI `AbstractOptimizer` is specialized to `LinQuadOptimizer`. In this implementation all the above mentioned modifications are carried out by the low-level solver's own functionalities and hence the `LinQuadOptimizer` can be used without a `CachingOptimizer`. The latter will keep all problem data in the julia level and typically push to a low-level solver the complete problem at once.
+In LinQuadOptInterface.jl the MOI [`AbstractOptimizer`](http://www.juliaopt.org/MathOptInterface.jl/latest/apireference.html#MathOptInterface.AbstractOptimizer) is specialized to [`LinQuadOptimizer`](https://github.com/JuliaOpt/LinQuadOptInterface.jl/blob/99b2a3dfe78e000330475f08766f6681ecf633ab/src/LinQuadOptInterface.jl#L131). In this implementation all the above mentioned modifications are carried out by the low-level solver's own functionalities and hence the `LinQuadOptimizer` can be used without a [`CachingOptimizer`](https://github.com/JuliaOpt/MathOptInterface.jl/blob/60c5ee85addb65ada33cb1d922691f23e5a518e2/src/Utilities/cachingoptimizer.jl#L8). The latter will keep all problem data in the Julia level and typically push to a low-level solver the complete problem at once.
 
-Here the data in the julia level is minimal, basically only references to constraints and variables.
+In contrast, since `LinQuadOptimizer` incrementally pushes data to the low-level solver, it stores a small subset of the problem data at the Julia level; typically only references to constraints and variables.
 
 ## Current uses
 
 This package is currently used to implement [MathOptInterfaceXpress.jl](https://github.com/JuliaOpt/MathOptInterfaceXpress.jl), [MathOptInterfaceCPLEX.jl](https://github.com/JuliaOpt/MathOptInterfaceCPLEX.jl), [MathOptInterfaceGurobi.jl](https://github.com/JuliaOpt/MathOptInterfaceGurobi.jl) and [MathOptInterfaceGLPK.jl](https://github.com/JuliaOpt/MathOptInterfaceGLPK.jl). The last one being only a integer linear solver.
 
-All these solvers have low-level APIs which supports most of these modifications. Hence, data storage is simplified and duplications are avoided.
+All these solvers have low-level APIs which supports most of the above metioned [modifications](#modifications). Hence, data storage is simplified and duplications are avoided.
 
 ## Other possible uses
 
-This package is only recommended if a solver low-level API which supports most of these modifications.
+This package is only recommended if a solver low-level API which supports most of the above mentioned [modifications](#modifications).
 
-If a solver low-level API does not support most of these modifications, then following the example of [MathOptInterfaceSCS.jl](https://github.com/JuliaOpt/MathOptInterfaceSCS.jl) and [MathOptInterfaceECOS.jl](https://github.com/JuliaOpt/MathOptInterfaceECOS.jl) might be a better idea.
+If a solver low-level API does not support most of the above mentioned [modifications](#modifications), then following the example of [MathOptInterfaceSCS.jl](https://github.com/JuliaOpt/MathOptInterfaceSCS.jl) and [MathOptInterfaceECOS.jl](https://github.com/JuliaOpt/MathOptInterfaceECOS.jl) might be a better idea.
