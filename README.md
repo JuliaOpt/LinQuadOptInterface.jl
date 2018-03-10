@@ -2,7 +2,7 @@
 
 LinQuadOptInterface (LQOI) is designed to make it easier for low-level wrapper designed to bridge low-level Integer Linear and Quadratic solvers to implement the [MathOptInterface](https://github.com/JuliaOpt/MathOptInterface.jl) (MOI). It provides access to many MOI functionalities mainly related to problem modifications:
 
-(#modifications)
+<a name="modifications"></a>
 1. add constraints/variables 1-by-1 and in batches
 2. remove constraints/variables
 3. change constraint coefficients
