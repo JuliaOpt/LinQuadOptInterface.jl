@@ -133,6 +133,7 @@ abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
     inner#::LinQuadOptInterface.LinQuadOptimizer
 
     obj_is_quad::Bool
+    obj_sense::MOI.OptimizationSense
 
     last_variable_reference::UInt64
     variable_mapping::Dict{MathOptInterface.VariableIndex, Int}
@@ -168,6 +169,7 @@ function MOI.isempty(m::LinQuadOptimizer)
     ret = true
 
     ret = ret && m.obj_is_quad == false
+    ret = ret && m.obj_sense == MOI.FeasibilitySense
     ret = ret && m.last_variable_reference == 0
     ret = ret && isempty(m.variable_mapping)
     ret = ret && isempty(m.variable_references)
@@ -195,6 +197,7 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.inner = LinQuadModel(M,env)
 
     m.obj_is_quad = false
+    m.obj_sense = MOI.FeasibilitySense
 
     m.last_variable_reference = 0
     m.variable_mapping = Dict{MathOptInterface.VariableIndex, Int}()
@@ -243,6 +246,7 @@ include("variables.jl")
 include("constraints.jl")
 include("objective.jl")
 include("solve.jl")
+include("copy.jl")
 
 include("ref.jl")
 

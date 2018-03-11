@@ -32,11 +32,15 @@ end
 function _setsense!(m::LinQuadOptimizer, sense::MOI.OptimizationSense)
     if sense == MOI.MinSense
         lqs_chgobjsen!(m, :Min)
+        m.obj_sense = MOI.MinSense
     elseif sense == MOI.MaxSense
         lqs_chgobjsen!(m, :Max)
+        m.obj_sense = MOI.MaxSense
     elseif sense == MOI.FeasibilitySense
-        warn("FeasibilitySense not supported. Using MinSense")
         lqs_chgobjsen!(m, :Min)
+        unsafe_set!(m, MOI.ObjectiveFunction{Linear}(), MOI.ScalarAffineFunction(VarInd[],Float64[],0.0))
+        m.obj_is_quad = false
+        m.obj_sense = MOI.FeasibilitySense
     else
         error("Sense $(sense) unknown.")
     end
@@ -46,7 +50,7 @@ end
     Get the objective sense
 =#
 
-MOI.get(m::LinQuadOptimizer,::MOI.ObjectiveSense) = lqs_getobjsen(m)
+MOI.get(m::LinQuadOptimizer,::MOI.ObjectiveSense) = m.obj_sense#lqs_getobjsen(m)
 MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveSense) = true
 
 #=
