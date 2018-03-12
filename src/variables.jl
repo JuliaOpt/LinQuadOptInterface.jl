@@ -1,4 +1,10 @@
 #=
+    Can do
+=#
+
+MOI.canaddvariable(::LinQuadOptimizer) = true
+
+#=
     Helper functions
 =#
 getcol(m::LinQuadOptimizer, ref::VarInd) = m.variable_mapping[ref]
@@ -64,8 +70,8 @@ end
 =#
 
 function MOI.isvalid(m::LinQuadOptimizer, ref::VarInd)
-    if haskey(m.variable_mapping.refmap, ref.value)
-        column = m.variable_mapping.refmap[ref.value]
+    if haskey(m.variable_mapping, ref)
+        column = m.variable_mapping[ref]
         if column > 0 && column <= MOI.get(m, MOI.NumberOfVariables())
             return true
         end

@@ -30,6 +30,9 @@ const VVCI{S} = CI{VecVar,S}
 # variable reference
 const VarInd = MOI.VariableIndex
 
+const LinSets = Union{LE, GE, EQ, IV}
+const VecLinSets = Union{MOI.Nonnegatives, MOI.Nonpositives, MOI.Zeros}
+
 struct ConstraintMapping
     # rows in constraint matrix
     less_than::Dict{LCI{LE}, Int}
@@ -240,8 +243,6 @@ function deleteref!(dict::Dict, i::Int, ref)
     delete!(dict, ref)
 end
 
-MOI.canaddvariable(::LinQuadOptimizer) = true
-MOI.canset(::LinQuadOptimizer, ::MOI.ObjectiveSense) = true
 include("variables.jl")
 include("constraints.jl")
 include("objective.jl")

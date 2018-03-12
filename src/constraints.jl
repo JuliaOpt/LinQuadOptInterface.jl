@@ -39,6 +39,8 @@ constrdict(m::LinQuadOptimizer, ::SVCI{MOI.Integer}) = cmap(m).integer
 constrdict(m::LinQuadOptimizer, ::VVCI{SOS1}) = cmap(m).sos1
 constrdict(m::LinQuadOptimizer, ::VVCI{SOS2}) = cmap(m).sos2
 
+constrdict(m::LinQuadOptimizer, ref) = false
+
 _getrhs(set::LE) = set.upper
 _getrhs(set::GE) = set.lower
 _getrhs(set::EQ) = set.value
@@ -56,13 +58,19 @@ _getboundsense(m::LinQuadOptimizer, ::MOI.Nonnegatives) = Cchar('L')
 _variableub(m::LinQuadOptimizer) = Cchar('U')
 _variablelb(m::LinQuadOptimizer) = Cchar('L')
 
+MOI.isvalid(m::LinQuadOptimizer, ref) = false
+
 function MOI.isvalid(m::LinQuadOptimizer, ref::CI{F,S}) where F where S
     dict = constrdict(m, ref)
+    if dict == false
+        return false
+    end
     if haskey(dict, ref)
         return true
     end
     return false
 end
+
 #=
     Get number of constraints
 =#
@@ -123,7 +131,7 @@ function setvariablebound!(m::LinQuadOptimizer, v::SinVar, set::IV)
     setvariablebound!(m, getcol(m, v), set.lower, _variablelb(m))
 end
 
-function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: Union{LE, GE, EQ, IV}
+function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: LinSets
     setvariablebound!(m, v, set)
     m.last_constraint_reference += 1
     ref = SVCI{S}(m.last_constraint_reference)
@@ -151,39 +159,39 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{IV})
     return Interval{Float64}(lb, ub)
 end
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{S}) where S <: Union{LE, GE, EQ, IV} = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{<:SVCI{S}}) where S <: Union{LE, GE, EQ, IV} = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{S}) where S <: LinSets = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{<:SVCI{S}}) where S <: LinSets = true
 
 #=
     Get constraint function of variable bound
 =#
 
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{<: Union{LE, GE, EQ, IV}})
+function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{<: LinSets})
     return SinVar(m[c])
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{<: Union{LE, GE, EQ, IV}}) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:SVCI{<: Union{LE, GE, EQ, IV}}}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{<: LinSets}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:SVCI{<: LinSets}}) = true
 
 #=
     Change variable bounds of same set
 =#
 
-function MOI.modifyconstraint!(m::LinQuadOptimizer, c::SVCI{S}, newset::S) where S <: Union{LE, GE, EQ, IV}
+function MOI.modifyconstraint!(m::LinQuadOptimizer, c::SVCI{S}, newset::S) where S <: LinSets
     setvariablebound!(m, SinVar(m[c]), newset)
 end
-MOI.canmodifyconstraint(::LinQuadOptimizer, ::SVCI{S}, ::Type{S}) where S <: Union{LE, GE, EQ, IV} = true
+MOI.canmodifyconstraint(::LinQuadOptimizer, ::SVCI{S}, ::Type{S}) where S <: LinSets = true
 
 #=
     Delete a variable bound
 =#
 
-function MOI.delete!(m::LinQuadOptimizer, c::SVCI{S}) where S <: Union{LE, GE, EQ, IV}
+function MOI.delete!(m::LinQuadOptimizer, c::SVCI{S}) where S <: LinSets
     dict = constrdict(m, c)
     vref = dict[c]
     setvariablebound!(m, SinVar(vref), IV(-Inf, Inf))
     delete!(dict, c)
 end
-MOI.candelete(m::LinQuadOptimizer, c::SVCI{S}) where S <: Union{LE, GE, EQ, IV} = true
+MOI.candelete(m::LinQuadOptimizer, c::SVCI{S}) where S <: LinSets = true
 
 #=
     Vector valued bounds
@@ -198,7 +206,7 @@ function setvariablebounds!(m::LinQuadOptimizer, func::VecVar, set::MOI.Zeros)
     lqs_chgbds!(m, getcol.(m, func.variables), fill(0.0, n), fill(_variableub(m), n))
 end
 
-function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <: Union{MOI.Nonnegatives, MOI.Nonpositives, MOI.Zeros}
+function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <: VecLinSets
     @assert length(func.variables) == MOI.dimension(set)
     setvariablebounds!(m, func, set)
     m.last_constraint_reference += 1
@@ -208,16 +216,44 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <
     return ref
 end
 
+
+#=
+    Get constraint set of vector variable bound
+=#
+
+function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::VVCI{S}) where S <: VecLinSets
+    S(length(m[c]))
+end
+
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::VVCI{S}) where S <: VecLinSets = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{<:VVCI{S}}) where S <: VecLinSets = true
+
+#=
+    Get constraint function of vector variable bound
+=#
+
+function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VVCI{<: VecLinSets})
+    return VecVar(m[c])
+end
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VVCI{<: VecLinSets}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:VVCI{<: VecLinSets}}) = true
+
+#=
+    Delete a vector variable bound
+=#
+
+# TODO
+
 #=
     Add linear constraints
 =#
 
 
-function MOI.addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <: Union{LE, GE, EQ, IV}
+function MOI.addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <: LinSets
     cfunc = MOIU.canonical(func)
     unsafe_addconstraint!(m, cfunc, set)
 end
-function unsafe_addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <: Union{LE, GE, EQ, IV}
+function unsafe_addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <: LinSets
     addlinearconstraint!(m, func, set)
     m.last_constraint_reference += 1
     ref = LCI{T}(m.last_constraint_reference)
@@ -249,11 +285,11 @@ end
     Add linear constraints (plural)
 =#
 
-function MOI.addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: Union{LE, GE, EQ, IV}
+function MOI.addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: LinSets
     cfunc = MOIU.canonical.(func)
     unsafe_addconstraints!(m, cfunc, set)
 end
-function unsafe_addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: Union{LE, GE, EQ, IV}
+function unsafe_addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: LinSets
     @assert length(func) == length(set)
     numrows = lqs_getnumrows(m)
     addlinearconstraints!(m, func, set)
@@ -271,7 +307,7 @@ function unsafe_addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::
     return crefs
 end
 
-function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: Union{LE, GE, EQ, IV}
+function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: LinSets
     addlinearconstraints!(m, func, fill(_getsense(m,set[1]), length(func)), [_getrhs(s) for s in set])
 end
 
@@ -314,7 +350,7 @@ end
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{S}) where S <: Union{LE, GE, EQ}
     rhs = lqs_getrhs(m, m[c])
-    S(rhs)
+    S(rhs+m.constraint_constant[m[c]])
 end
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::LCI{<: Union{LE, GE, EQ}}) = true
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{<:LCI{<: Union{LE, GE, EQ}}}) = true
@@ -323,23 +359,23 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{<:LCI{<: Union{LE, G
     Constraint function of Linear function
 =#
 
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::LCI{<: Union{LE, GE, EQ, IV}})
+function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::LCI{<: LinSets})
     # TODO more efficiently
     colidx, coefs = lqs_getrows(m, m[c])
-    Linear(m.variable_references[colidx+1], coefs, 0.0)
+    Linear(m.variable_references[colidx+1], coefs, -m.constraint_constant[m[c]])
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::LCI{<: Union{LE, GE, EQ, IV}}) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:LCI{<: Union{LE, GE, EQ, IV}}}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::LCI{<: LinSets}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:LCI{<: LinSets}}) = true
 
 #=
     Scalar Coefficient Change of Linear Constraint
 =#
 
-function MOI.modifyconstraint!(m::LinQuadOptimizer, c::LCI{<: Union{LE, GE, EQ, IV}}, chg::MOI.ScalarCoefficientChange{Float64})
+function MOI.modifyconstraint!(m::LinQuadOptimizer, c::LCI{<: LinSets}, chg::MOI.ScalarCoefficientChange{Float64})
     col = m.variable_mapping[chg.variable]
     lqs_chgcoef!(m, m[c], col, chg.new_coefficient)
 end
-MOI.canmodifyconstraint(m::LinQuadOptimizer, c::LCI{<: Union{LE, GE, EQ, IV}}, ::Type{MOI.ScalarCoefficientChange{Float64}}) = true
+MOI.canmodifyconstraint(m::LinQuadOptimizer, c::LCI{<: LinSets}, ::Type{MOI.ScalarCoefficientChange{Float64}}) = true
 
 #=
     Change RHS of linear constraint without modifying sense
@@ -365,13 +401,13 @@ MOI.canmodifyconstraint(m::LinQuadOptimizer, c::LCI{IV}, ::Type{IV}) = true
     Delete a linear constraint
 =#
 
-function deleteref!(m::LinQuadOptimizer, row::Int, ref::LCI{<: Union{LE, GE, EQ, IV}})
+function deleteref!(m::LinQuadOptimizer, row::Int, ref::LCI{<: LinSets})
     deleteref!(cmap(m).less_than, row, ref)
     deleteref!(cmap(m).greater_than, row, ref)
     deleteref!(cmap(m).equal_to, row, ref)
     deleteref!(cmap(m).interval, row, ref)
 end
-function MOI.delete!(m::LinQuadOptimizer, c::LCI{<: Union{LE, GE, EQ, IV}})
+function MOI.delete!(m::LinQuadOptimizer, c::LCI{<: LinSets})
     dict = constrdict(m, c)
     row = dict[c]
     lqs_delrows!(m, row, row)
@@ -380,7 +416,7 @@ function MOI.delete!(m::LinQuadOptimizer, c::LCI{<: Union{LE, GE, EQ, IV}})
     deleteat!(m.constraint_constant, row)
     deleteref!(m, row, c)
 end
-MOI.candelete(m::LinQuadOptimizer, c::LCI{<: Union{LE, GE, EQ, IV}}) = true
+MOI.candelete(m::LinQuadOptimizer, c::LCI{<: LinSets}) = true
 
 #=
     MIP related constraints
@@ -593,8 +629,7 @@ end
     Vector valued constraints
 =#
 
-
-function MOI.addconstraint!(m::LinQuadOptimizer, func::VecLin, set::S) where S <: Union{MOI.Nonnegatives, MOI.Nonpositives, MOI.Zeros}
+function MOI.addconstraint!(m::LinQuadOptimizer, func::VecLin, set::S) where S <: VecLinSets
     @assert MOI.dimension(set) == length(func.constant)
 
     nrows = lqs_getnumrows(m)
@@ -636,18 +671,54 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::VecLin, sense::Cchar)
     lqs_addrows!(m, rowbegins, cols, vals, fill(sense, length(rows)), -func.constant)
 end
 
-function MOI.modifyconstraint!(m::LinQuadOptimizer, ref::VLCI{<: Union{MOI.Nonnegatives, MOI.Nonpositives, MOI.Zeros}}, chg::MOI.VectorConstantChange{Float64})
+function MOI.modifyconstraint!(m::LinQuadOptimizer, ref::VLCI{<: VecLinSets}, chg::MOI.VectorConstantChange{Float64})
     @assert length(chg.new_constant) == length(m[ref])
     for (r, v) in zip(m[ref], chg.new_constant)
         lqs_chgcoef!(m, r, 0, -v)
         m.constraint_constant[r] = v
     end
 end
-MOI.canmodifyconstraint(m::LinQuadOptimizer, ::VLCI{<: Union{MOI.Nonnegatives, MOI.Nonpositives, MOI.Zeros}}, ::Type{MOI.VectorConstantChange{Float64}}) = true
+MOI.canmodifyconstraint(m::LinQuadOptimizer, ::VLCI{<: VecLinSets}, ::Type{MOI.VectorConstantChange{Float64}}) = true
+
+#=
+    Constraint set of Linear function
+=#
+
+function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::VLCI{S}) where S <: VecLinSets
+    ctrs = m[c]
+    n = length(ctrs)
+    S(n)
+end
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::VLCI{<: VecLinSets}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{<:VLCI{<: VecLinSets}}) = true
+
+#=
+    Constraint function of Linear function
+=#
+
+function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VLCI{<: VecLinSets})
+    ctrs = m[c]
+    n = length(ctrs)
+    out = MOI.VectorAffineFunction(Int[],VarInd[],Float64[],Float64[])
+    for i in 1:n
+        rhs = lqs_getrhs(m, ctrs[i])
+        push!(out.constant, -rhs)
+
+        # TODO more efficiently
+        colidx, coefs = lqs_getrows(m, ctrs[i])
+        append!(out.variables, m.variable_references[colidx+1])
+        append!(out.coefficients, coefs)
+        append!(out.outputindex, i*ones(Int,length(coefs)))
+    end
+    return out
+end
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VLCI{<: VecLinSets}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:VLCI{<: VecLinSets}}) = true
 
 #=
     Transform scalar constraint
 =#
+
 function MOI.transformconstraint!(m::LinQuadOptimizer, ref::LCI{S}, newset::S) where S
     error("Cannot transform constraint of same set. use `modifyconstraint!` instead.")
 end
