@@ -156,12 +156,11 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::SVCI{<: LinSets}) = tru
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{<:SVCI{<: LinSets}}) = true
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::VVCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}})
-    vrefs = m[c]
+    rowrefs = m[c]
     out = Float64[]
-    sizehint!(out, length(vrefs))
-    for ref in vrefs
-        col = m.variable_mapping[ref]
-        push!(out, m.variable_dual_solution[col])
+    sizehint!(out, length(rowrefs))
+    for ref in rowrefs
+        push!(out, m.constraint_dual_solution[ref])
     end
     return out
 end
@@ -181,12 +180,11 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::SVCI{<: LinSets}) = t
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{<:SVCI{<: LinSets}}) = true
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::VVCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}})
-    vrefs = m[c]
+    rowrefs = m[c]
     out = Float64[]
-    sizehint!(out, length(vrefs))
-    for ref in vrefs
-        col = m.variable_mapping[ref]
-        push!(out, m.variable_primal_solution[col])
+    sizehint!(out, length(rowrefs))
+    for ref in rowrefs
+        push!(out, m.constraint_primal_solution[ref])
     end
     return out
 end

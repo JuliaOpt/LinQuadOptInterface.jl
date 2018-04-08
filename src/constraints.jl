@@ -159,7 +159,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{IV})
     return Interval{Float64}(lb, ub)
 end
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{S}) where S <: LinSets = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::SVCI{S}) where S <: LinSets = true
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{<:SVCI{S}}) where S <: LinSets = true
 
 #=
@@ -196,23 +196,34 @@ MOI.candelete(m::LinQuadOptimizer, c::SVCI{S}) where S <: LinSets = true
 #=
     Vector valued bounds
 =#
-function setvariablebounds!(m::LinQuadOptimizer, func::VecVar, set::S)  where S <: Union{MOI.Nonnegatives, MOI.Nonpositives}
-    n = MOI.dimension(set)
-    lqs_chgbds!(m, getcol.(m, func.variables), fill(0.0, n), fill(_getboundsense(m,set), n))
-end
-function setvariablebounds!(m::LinQuadOptimizer, func::VecVar, set::MOI.Zeros)
-    n = MOI.dimension(set)
-    lqs_chgbds!(m, getcol.(m, func.variables), fill(0.0, n), fill(_variablelb(m), n))
-    lqs_chgbds!(m, getcol.(m, func.variables), fill(0.0, n), fill(_variableub(m), n))
-end
+# function setvariablebounds!(m::LinQuadOptimizer, func::VecVar, set::S)  where S <: Union{MOI.Nonnegatives, MOI.Nonpositives}
+#     n = MOI.dimension(set)
+#     lqs_chgbds!(m, getcol.(m, func.variables), fill(0.0, n), fill(_getboundsense(m,set), n))
+# end
+# function setvariablebounds!(m::LinQuadOptimizer, func::VecVar, set::MOI.Zeros)
+#     n = MOI.dimension(set)
+#     lqs_chgbds!(m, getcol.(m, func.variables), fill(0.0, n), fill(_variablelb(m), n))
+#     lqs_chgbds!(m, getcol.(m, func.variables), fill(0.0, n), fill(_variableub(m), n))
+# end
 
 function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <: VecLinSets
     @assert length(func.variables) == MOI.dimension(set)
-    setvariablebounds!(m, func, set)
+    # setvariablebounds!(m, func, set)
     m.last_constraint_reference += 1
     ref = VVCI{S}(m.last_constraint_reference)
+
+    rows = lqs_getnumrows(m)
+
+    n = MOI.dimension(set)
+    lqs_addrows!(m, collect(1:n), getcol.(m, func.variables), ones(n), fill(_getsense(m,set),n), zeros(n))
+    
     dict = constrdict(m, ref)
-    dict[ref] = func.variables
+
+    dict[ref] = collect(rows+1:rows+n)
+
+    append!(m.constraint_primal_solution, fill(NaN,n))
+    append!(m.constraint_dual_solution, fill(NaN,n))
+    append!(m.constraint_constant, fill(0.0,n)) 
     return ref
 end
 
@@ -229,11 +240,21 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::VVCI{S}) where S <: VecL
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{<:VVCI{S}}) where S <: VecLinSets = true
 
 #=
-    Get constraint function of vector variable bound
+    Get constraint function of vector variable bound (linear ctr)
 =#
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VVCI{<: VecLinSets})
-    return VecVar(m[c])
+    refs = m[c]
+    out = VarInd[]
+    sizehint!(out, length(refs))
+    for ref in refs
+        colidx, coefs = lqs_getrows(m, ref)
+        if length(colidx) != 1
+            error("Unexpected constraint")
+        end
+        push!(out,m.variable_references[colidx[1]+1])
+    end
+    return VecVar(out)
 end
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VVCI{<: VecLinSets}) = true
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:VVCI{<: VecLinSets}}) = true

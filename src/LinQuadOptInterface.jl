@@ -57,9 +57,9 @@ struct ConstraintMapping
     interval_bound::Dict{SVCI{IV}, VarInd}
 
     # vectors of rows in constraint matrix
-    vv_nonnegatives::Dict{VVCI{MOI.Nonnegatives}, Vector{VarInd}}
-    vv_nonpositives::Dict{VVCI{MOI.Nonpositives}, Vector{VarInd}}
-    vv_zeros::Dict{VVCI{MOI.Zeros}, Vector{VarInd}}
+    vv_nonnegatives::Dict{VVCI{MOI.Nonnegatives}, Vector{Int}}
+    vv_nonpositives::Dict{VVCI{MOI.Nonpositives}, Vector{Int}}
+    vv_zeros::Dict{VVCI{MOI.Zeros}, Vector{Int}}
 
     integer::Dict{SVCI{MOI.Integer}, VarInd}
     #=
@@ -86,9 +86,9 @@ ConstraintMapping() = ConstraintMapping(
     Dict{SVCI{GE}, VarInd}(),
     Dict{SVCI{EQ}, VarInd}(),
     Dict{SVCI{IV}, VarInd}(),
-    Dict{VVCI{MOI.Nonnegatives}, Vector{VarInd}}(),
-    Dict{VVCI{MOI.Nonpositives}, Vector{VarInd}}(),
-    Dict{VVCI{MOI.Zeros}, Vector{VarInd}}(),
+    Dict{VVCI{MOI.Nonnegatives}, Vector{Int}}(),
+    Dict{VVCI{MOI.Nonpositives}, Vector{Int}}(),
+    Dict{VVCI{MOI.Zeros}, Vector{Int}}(),
     Dict{SVCI{MOI.Integer}, VarInd}(),
     Dict{SVCI{MOI.ZeroOne}, Tuple{VarInd, Float64, Float64}}(),
     Dict{VVCI{SOS1}, Int}(),
@@ -231,6 +231,14 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.solvetime = 0.0
 
     nothing
+end
+
+
+function MOI.supportsconstraint(m::LinQuadOptimizer, ft::Type{F}, st::Type{S}) where F <: MOI.AbstractFunction where S <: MOI.AbstractSet
+    (ft,st) in lqs_supported_constraints(m)
+end
+function MOI.supports(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}) where F <: MOI.AbstractFunction
+    F in lqs_supported_objectives(m)
 end
 
 # a useful helper function
