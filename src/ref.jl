@@ -62,8 +62,10 @@ function lqs_getstat(m::LinQuadOptimizer) end
 function lqs_solninfo(m::LinQuadOptimizer) end # complex
 function lqs_getx!(m::LinQuadOptimizer, place) end
 function lqs_getax!(m::LinQuadOptimizer, place) end
+function lqs_getqcax!(m::LinQuadOptimizer, place) end
 function lqs_getdj!(m::LinQuadOptimizer, place) end
 function lqs_getpi!(m::LinQuadOptimizer, place) end
+function lqs_getqcpi!(m::LinQuadOptimizer, place) end
 
 function lqs_getobjval(m::LinQuadOptimizer) end
 function lqs_getbestobjval(m::LinQuadOptimizer) end

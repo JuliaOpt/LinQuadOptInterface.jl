@@ -216,14 +216,14 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <
 
     n = MOI.dimension(set)
     lqs_addrows!(m, collect(1:n), getcol.(m, func.variables), ones(n), fill(_getsense(m,set),n), zeros(n))
-    
+
     dict = constrdict(m, ref)
 
     dict[ref] = collect(rows+1:rows+n)
 
     append!(m.constraint_primal_solution, fill(NaN,n))
     append!(m.constraint_dual_solution, fill(NaN,n))
-    append!(m.constraint_constant, fill(0.0,n)) 
+    append!(m.constraint_constant, fill(0.0,n))
     return ref
 end
 
@@ -282,7 +282,7 @@ function unsafe_addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where 
     dict[ref] = lqs_getnumrows(m)
     push!(m.constraint_primal_solution, NaN)
     push!(m.constraint_dual_solution, NaN)
-    push!(m.constraint_constant, func.constant)    
+    push!(m.constraint_constant, func.constant)
     return ref
 end
 
@@ -597,9 +597,10 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::Quad, set::S) where S <: 
     m.last_constraint_reference += 1
     ref = QCI{S}(m.last_constraint_reference)
     dict = constrdict(m, ref)
-    dict[ref] = lqs_getnumqconstrs(m)
     push!(m.qconstraint_primal_solution, NaN)
     push!(m.qconstraint_dual_solution, NaN)
+    # dict[ref] = lqs_getnumqconstrs(m)
+    dict[ref] = length(m.qconstraint_primal_solution)
     return ref
 end
 
