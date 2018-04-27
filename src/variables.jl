@@ -5,7 +5,11 @@
 MOI.canaddvariable(::LinQuadOptimizer) = true
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.VariableName, ref::VarInd)
-    m.variable_names[ref]
+    if haskey(m.variable_names, ref)
+        m.variable_names[ref]
+    else
+        ""
+    end
 end
 MOI.canget(m::LinQuadOptimizer, ::MOI.VariableName, ::Type{VarInd}) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.VariableName, ref::VarInd, name::String)

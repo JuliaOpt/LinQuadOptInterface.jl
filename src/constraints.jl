@@ -87,7 +87,7 @@ end
 =#
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.ListOfConstraintIndices{F, S}) where F where S
-    collect(keys(constrdict(m, CI{F,S}(UInt(0)))))
+    sort(collect(keys(constrdict(m, CI{F,S}(UInt(0))))), by=x->x.value)
 end
 function MOI.canget(m::LinQuadOptimizer, ::MOI.ListOfConstraintIndices{F, S}) where F where S
     return (F,S) in lqs_supported_constraints(m)
@@ -132,7 +132,11 @@ function setvariablebound!(m::LinQuadOptimizer, v::SinVar, set::IV)
 end
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintName, c::MOI.ConstraintIndex)
-    m.constraint_names[c]
+    if haskey(m.constraint_names, c)
+        m.constraint_names[c]
+    else
+        ""
+    end
 end
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex}) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintName, ref::MOI.ConstraintIndex, name::String)
