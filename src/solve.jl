@@ -146,12 +146,25 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.VariablePrimal, ::Type{<:Vector{VarInd}}) 
 #=
     Variable Dual solution
 =#
-
+isbinding(set::LE, value::Float64) = isapprox(set.upper, value)
+isbinding(set::GE, value::Float64) = isapprox(set.lower, value)
+isbinding(set::EQ, value::Float64) = isapprox(set.value, value)
+isbinding(set::IV, value::Float64) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::SVCI{<: LinSets})
     vref = m[c]
     col = m.variable_mapping[vref]
-    return m.variable_dual_solution[col]
+
+    # the variable reduced cost is only the constriant dual if the bound is active.
+    set = MOI.get(m, MOI.ConstraintSet(), c)
+    solval = m.variable_primal_solution[col]
+    if isbinding(set, solval)
+        return m.variable_dual_solution[col]
+    else
+        return 0.0
+    end
 end
+
+
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::SVCI{<: LinSets}) = true
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{<:SVCI{<: LinSets}}) = true
 
