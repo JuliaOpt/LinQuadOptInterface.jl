@@ -133,6 +133,8 @@ end
 # Abstract + macro
 abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
 @def LinQuadOptimizerBase begin
+    name::String
+
     inner#::LinQuadOptInterface.LinQuadOptimizer
 
     obj_is_quad::Bool
@@ -140,6 +142,7 @@ abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
 
     last_variable_reference::UInt64
     variable_mapping::Dict{MathOptInterface.VariableIndex, Int}
+    variable_names::Dict{MathOptInterface.VariableIndex, String}
     variable_references::Vector{MathOptInterface.VariableIndex}
 
     variable_primal_solution::Vector{Float64}
@@ -175,6 +178,7 @@ function MOI.isempty(m::LinQuadOptimizer)
     ret = ret && m.obj_sense == MOI.FeasibilitySense
     ret = ret && m.last_variable_reference == 0
     ret = ret && isempty(m.variable_mapping)
+    ret = ret && isempty(m.variable_names)
     ret = ret && isempty(m.variable_references)
     ret = ret && isempty(m.variable_primal_solution)
     ret = ret && isempty(m.variable_dual_solution)
@@ -204,6 +208,7 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
 
     m.last_variable_reference = 0
     m.variable_mapping = Dict{MathOptInterface.VariableIndex, Int}()
+    m.variable_names = Dict{MathOptInterface.VariableIndex, String}()
     m.variable_references = MathOptInterface.VariableIndex[]
 
     m.variable_primal_solution = Float64[]
@@ -233,6 +238,14 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     nothing
 end
 
+function MOI.get(m::LinQuadOptimizer, ::MOI.Name)
+    m.name
+end
+MOI.canget(m::LinQuadOptimizer, ::MOI.Name) = true
+function MOI.set!(m::LinQuadOptimizer, ::MOI.Name, name::String)
+    m.name = name
+end
+MOI.canset(m::LinQuadOptimizer, ::MOI.Name, name::String) = true
 
 function MOI.supportsconstraint(m::LinQuadOptimizer, ft::Type{F}, st::Type{S}) where F <: MOI.AbstractFunction where S <: MOI.AbstractSet
     (ft,st) in lqs_supported_constraints(m)
