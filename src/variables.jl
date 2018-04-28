@@ -71,7 +71,6 @@ function MOI.addvariable!(m::LinQuadOptimizer)
     m.last_variable_reference += 1
     ref = VarInd(m.last_variable_reference)
     m.variable_mapping[ref] = MOI.get(m, MOI.NumberOfVariables())
-    m.variable_names[ref] = ""
     push!(m.variable_references, ref)
     push!(m.variable_primal_solution, NaN)
     push!(m.variable_dual_solution, NaN)
@@ -89,7 +88,6 @@ function MOI.addvariables!(m::LinQuadOptimizer, n::Int)
         ref = VarInd(m.last_variable_reference)
         push!(variable_references, ref)
         m.variable_mapping[ref] = previous_vars + i
-        m.variable_names[ref] = ""
         push!(m.variable_references, ref)
         push!(m.variable_primal_solution, NaN)
         push!(m.variable_dual_solution, NaN)
@@ -123,9 +121,11 @@ function MOI.delete!(m::LinQuadOptimizer, ref::VarInd)
     deleteat!(m.variable_dual_solution, col)
 
     deleteref!(m.variable_mapping, col, ref)
-    name = m.variable_names[ref]
-    delete!(m.variable_names_rev, name)
-    delete!(m.variable_names, ref)
+    if haskey(m.variable_names, ref)
+        name = m.variable_names[ref]
+        delete!(m.variable_names_rev, name)
+        delete!(m.variable_names, ref)
+    end
     # deleting from a dict without the key does nothing
     deletebyval!(cmap(m).upper_bound, ref)
     deletebyval!(cmap(m).lower_bound, ref)
