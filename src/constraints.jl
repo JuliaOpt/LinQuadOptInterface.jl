@@ -148,7 +148,7 @@ function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintName, ref::MOI.Constraint
         if haskey(m.constraint_names, ref)
             # we're renaming an existing constraint
             old_name = m.constraint_names[ref]
-            delete!(m.constraint_names_ref, old_name)
+            delete!(m.constraint_names_rev, old_name)
         end
         m.constraint_names[ref] = name
         m.constraint_names_rev[name] = ref
