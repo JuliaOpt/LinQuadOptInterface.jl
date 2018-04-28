@@ -18,6 +18,11 @@ function MOI.set!(m::LinQuadOptimizer, ::MOI.VariableName, ref::VarInd, name::St
             error("Duplicate variable name: $(name)")
         end
     elseif name != ""
+        if haskey(m.variable_names, ref)
+            # we're renaming an existing variable
+            old_name = m.variable_names[ref]
+            delete!(m.variable_names_rev, old_name)
+        end
         m.variable_names[ref] = name
         m.variable_names_rev[name] = ref
     end
