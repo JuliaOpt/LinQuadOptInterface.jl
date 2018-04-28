@@ -1,4 +1,7 @@
 #=
+    This file contains all of the functions that a solver needs to implement
+    in order to use LQOI.
+
        min/max: c'x + x'Qx
     subject to:
                 # Variable bounds

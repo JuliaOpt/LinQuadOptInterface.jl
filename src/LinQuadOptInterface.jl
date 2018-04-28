@@ -281,6 +281,6 @@ include("objective.jl")
 include("solve.jl")
 include("copy.jl")
 
-include("ref.jl")
+include("solver_interface.jl")
 
 end
