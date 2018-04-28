@@ -154,7 +154,11 @@ MOI.canset(m::LinQuadOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintInd
 function MOI.get(m::LinQuadOptimizer, ::Type{<:MOI.ConstraintIndex}, name::String)
     m.constraint_names_rev[name]
 end
-MOI.canget(m::LinQuadOptimizer, ::Type{<:MOI.ConstraintIndex}, name::String) = haskey(m.constraint_names_rev, name)
+MOI.canget(m::LinQuadOptimizer, ::Type{MOI.ConstraintIndex}, name::String) = haskey(m.constraint_names_rev, name)
+
+function MOI.canget(m::LinQuadOptimizer, ::Type{FS}, name::String) where FS <: MOI.ConstraintIndex
+    haskey(m.constraint_names_rev, name) && typeof(m.constraint_names_rev[name]) == FS
+end
 
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: LinSets
     setvariablebound!(m, v, set)

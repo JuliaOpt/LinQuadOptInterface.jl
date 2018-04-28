@@ -128,7 +128,7 @@ function MOI.delete!(m::LinQuadOptimizer, ref::VarInd)
     deletebyval!(cmap(m).interval_bound, ref)
 
 end
-MOI.candelete(m::LinQuadOptimizer, ref::VarInd) = true
+MOI.candelete(m::LinQuadOptimizer, ref::VarInd) = MOI.isvalid(m, ref)
 
 # temp fix - change storage for bounds TODO
 function deletebyval!(dict::Dict{S,T}, in::T) where {S,T}
