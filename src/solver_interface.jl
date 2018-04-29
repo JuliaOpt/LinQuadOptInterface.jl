@@ -57,7 +57,20 @@ Get the number of linear constraints in the model `m`.
 """
 function lqs_getnumrows(m::LinQuadOptimizer) end
 
-function lqs_addrows!(m::LinQuadOptimizer, rowvec, colvec, coefvec, sensevec, rhsvec) end
+"""
+    lqs_addrows(m, rows::Vector{Int}, cols::Vector{Int}, coefs::Vector{Float64},
+        sense::Vector{CChar}, rhs::Vector{Float64})::Void
+
+Adds linear constraints of the form `Ax (sense) rhs` to the model `m`.
+
+The A matrix is given in triplet form `A[rows[i], cols[i]] = coef[i]` for all
+`i`, and `length(rows) == length(cols) == length(coefs)`.
+
+The `sense` is either `E` (==), `G` (>=), `L` (<=), or `R` (l <= Ax <= b).
+
+Ranged constraints (sense='R') require a call to `lqs_chgrngval!`.
+"""
+function lqs_addrows!(m::LinQuadOptimizer, rows, cols, coefs, sense, rhs) end
 
 """
     lqs_getrhs(m, row::Int)::Float64
@@ -67,7 +80,14 @@ the model `m`.
 """
 function lqs_getrhs(m::LinQuadOptimizer, row) end
 
-function lqs_getrows(m::LinQuadOptimizer, rowvec) end
+# TODO(@joaquim): I think this is really lqs_getrow? (singluar)
+"""
+    lqs_getrows(m, row::Int)::Tuple{Vector{Int}, Vector{Float64}}
+
+Get the linear component of the constraint in the 1-indexed row `row` in
+the model `m`. Returns a tuple of `(cols, vals)`.
+"""
+function lqs_getrows(m::LinQuadOptimizer, row) end
 
 """
     lqs_getcoef(m, row::Int, col::Int)::Float64
@@ -92,14 +112,46 @@ the model `m`.
 """
 function lqs_delrows!(m::LinQuadOptimizer, start_row, end_row) end
 
-function lqs_chgctype!(m::LinQuadOptimizer, colvec, typevec) end
+"""
+    lqs_chgctype(m, cols::Vector{Int}, types::Vector{Symbol})::Void
 
-function lqs_chgsense!(m::LinQuadOptimizer, rowvec, sensevec) end
+Change the variable types. Variable type must be `:CONTINUOUS`, `:INTEGER`, or
+`:BINARY`.
+"""
+function lqs_chgctype!(m::LinQuadOptimizer, cols, types) end
 
+"""
+    lqs_chgsense(m, rows::Vector{Int}, sense::Vector{CChar})::Void
+
+Change the sense of the linear constraints in `rows` to `sense`.
+
+The `sense` is either `E` (==), `G` (>=), `L` (<=), or `R` (l <= Ax <= b).
+
+Ranged constraints (sense='R') require a call to `lqs_chgrngval!`.
+"""
+function lqs_chgsense!(m::LinQuadOptimizer, rows, sense) end
+
+# TODO(@joaquim): again, why not a function?
+"""
+    lqs_vartype_map(m)::Dict
+
+Returns a dictionary that maps the variable type to an appropriate backend type.
+Variable type must be `:CONTINUOUS`, `:INTEGER`, or `:BINARY`.
+"""
 function lqs_vartype_map(m::LinQuadOptimizer) end
 
+"""
+    lqs_make_problem_type_integer(m)::Void
+
+If an explicit call is needed to change the problem type integer (e.g., CPLEX).
+"""
 function lqs_make_problem_type_integer(m::LinQuadOptimizer) end
 
+"""
+    lqs_make_problem_type_continuous(m)::Void
+
+If an explicit call is needed to change the problem type continuous (e.g., CPLEX).
+"""
 function lqs_make_problem_type_continuous(m::LinQuadOptimizer) end
 
 """
