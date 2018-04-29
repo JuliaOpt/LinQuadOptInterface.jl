@@ -18,19 +18,49 @@
 =#
 
 """
-    LinQuadModel(M,env)
+    LinQuadModel(M::Type{<:LinQuadOptimizer}, env)
 
-Initializes a model given a model type M and a env, that might be a nothing for some solvers.
+Initializes a model given a model type `M` and an `env` that might be a `nothing`
+for some solvers.
 """
 function LinQuadModel end
 
-# LinQuadSolver # Abstract type
-function lqs_setparam!(env, name, val) end
-function lqs_setlogfile!(env, path) end
+"""
+    lqs_setparam!(m, name, val)::Void
+
+Set the parameter `name` to `val` for the model `m`.
+"""
+function lqs_setparam!(m::LinQuadOptimizer, name, val) end
+
+"""
+    lqs_setlogfile!(m, path::String)::Void
+
+Set the log file to `path` for the model `m`.
+"""
+function lqs_setlogfile!(m::LinQuadOptimizer, path) end
+
+# TODO(@joaquimg): what is this?
 function lqs_getprobtype(m::LinQuadOptimizer) end
 
-lqs_supported_constraints(s) = []
-lqs_supported_objectives(s) = []
+"""
+    lqs_supported_constraints(m)::Vector{
+        Tuple{MOI.AbstractFunction, MOI.AbstractSet}
+    }
+
+Get a list of supported constraint types in the model `m`.
+
+For example, `[(LQOI.Linear, LQOI.EQ)]`
+"""
+lqs_supported_constraints(m::LinQuadOptimizer) = []
+
+"""
+    lqs_supported_objectives(m)::Vector{MOI.AbstractScalarFunction}
+
+Get a list of supported objective types in the model `m`.
+
+For example, `[LQOI.Linear, LQOI.Quad]`
+"""
+lqs_supported_objectives(m::LinQuadOptimizer) = []
 
 # Constraints
 
@@ -59,16 +89,16 @@ function lqs_getnumrows(m::LinQuadOptimizer) end
 
 """
     lqs_addrows(m, rows::Vector{Int}, cols::Vector{Int}, coefs::Vector{Float64},
-        sense::Vector{CChar}, rhs::Vector{Float64})::Void
+        sense::Vector{Symbol}, rhs::Vector{Float64})::Void
 
 Adds linear constraints of the form `Ax (sense) rhs` to the model `m`.
 
 The A matrix is given in triplet form `A[rows[i], cols[i]] = coef[i]` for all
 `i`, and `length(rows) == length(cols) == length(coefs)`.
 
-The `sense` is either `E` (==), `G` (>=), `L` (<=), or `R` (l <= Ax <= b).
+The `sense` is one of `:RANGE`, `:LOWER`, `:UPPER`, `:EQUALITY`.
 
-Ranged constraints (sense='R') require a call to `lqs_chgrngval!`.
+Ranged constraints (sense=`:RANGE`) require a call to `lqs_chgrngval!`.
 """
 function lqs_addrows!(m::LinQuadOptimizer, rows, cols, coefs, sense, rhs) end
 
@@ -121,13 +151,13 @@ Change the variable types. Variable type must be `:CONTINUOUS`, `:INTEGER`, or
 function lqs_chgctype!(m::LinQuadOptimizer, cols, types) end
 
 """
-    lqs_chgsense(m, rows::Vector{Int}, sense::Vector{CChar})::Void
+    lqs_chgsense(m, rows::Vector{Int}, sense::Vector{Symbol})::Void
 
 Change the sense of the linear constraints in `rows` to `sense`.
 
-The `sense` is either `E` (==), `G` (>=), `L` (<=), or `R` (l <= Ax <= b).
+The `sense` is one of `:RANGE`, `:LOWER`, `:UPPER`, `:EQUALITY`.
 
-Ranged constraints (sense='R') require a call to `lqs_chgrngval!`.
+Ranged constraints (sense=`:RANGE`) require a call to `lqs_chgrngval!`.
 """
 function lqs_chgsense!(m::LinQuadOptimizer, rows, sense) end
 
@@ -193,17 +223,53 @@ Get the number of quadratic constraints in the model `m`.
 """
 function lqs_getnumqconstrs(m::LinQuadOptimizer) end
 
-function lqs_addqconstr!(m::LinQuadOptimizer, cols,coefs,rhs,sense, I,J,V) end
+"""
+    lqs_addqconstr!(m, cols::Vector{Int}, coefs::Vector{Float64}, rhs::Float64,
+        sense::Symbol, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Void
 
+Add a quadratic constraint `a'x + 0.5 x' Q x`.
+See `lqs_addrows!` for information of linear component.
+Arguments `(I,J,V)` given in triplet form for the Q matrix in `0.5 x' Q x`.
+"""
+function lqs_addqconstr!(m::LinQuadOptimizer, cols, coefs, rhs, sense, I, J, V) end
+
+
+"""
+    lqs_chgrngval!(m, rows::Vector{Int}, vals::Vector{Float64})::Void
+
+A range constraint `l <= a'x <= u` is added as the linear constraint
+`a'x :RANGED l`, then this function is called to set `u - l`, the range value.
+
+See `lqs_addrows!` for more.
+"""
 function lqs_chgrngval!(m::LinQuadOptimizer, rows, vals) end# later
 
+# TODO(@joaquim): Why not a function?
+"""
+    lqs_ctrtype_map(m)::Dict
+
+Returns a dictionary that maps the constraint type to an appropriate type for
+the backend.
+
+The constraint type is one of `:RANGE`, `:LOWER`, `:UPPER`, `:EQUALITY`.
+"""
 function lqs_ctrtype_map(m::LinQuadOptimizer) end
 
 #Objective
+"""
+    lqs_chgobj!(m, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Void
 
-function lqs_copyquad!(m::LinQuadOptimizer, intvec,intvec2, floatvec) end#?
+Set the quadratic component of the objective. Arguments given in triplet form
+for the Q matrix in `0.5 x' Q x`.
+"""
+function lqs_copyquad!(m::LinQuadOptimizer, I, J, V) end
 
-function lqs_chgobj!(m::LinQuadOptimizer, colvec,coefvec) end
+"""
+    lqs_chgobj!(m, cols::Vector{Int}, coefs::Vector{Float64})::Void
+
+Set the linear component of the objective.
+"""
+function lqs_chgobj!(m::LinQuadOptimizer, cols, coefs) end
 
 """
     lqs_chgobjsen(m, sense::Symbol)::Void
@@ -230,14 +296,31 @@ function lqs_getobjsen(m::LinQuadOptimizer) end
 
 #Solve
 
+"""
+    lqs_mipopt!(m)::Void
+
+Solve a mixed-integer model `m`.
+"""
 function lqs_mipopt!(m::LinQuadOptimizer) end
 
+"""
+    lqs_qpopt!(m)::Void
+
+Solve a model `m` with quadratic components.
+"""
 function lqs_qpopt!(m::LinQuadOptimizer) end
 
+"""
+    lqs_lpopt!(m)::Void
+
+Solve a linear program `m`.
+"""
 function lqs_lpopt!(m::LinQuadOptimizer) end
 
+# TODO(@joaquim): what is this?
 function lqs_getstat(m::LinQuadOptimizer) end
 
+# TODO(@joaquim): what is this?
 function lqs_solninfo(m::LinQuadOptimizer) end # complex
 
 """
