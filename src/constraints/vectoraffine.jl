@@ -8,9 +8,9 @@ constrdict(m::LinQuadOptimizer, ::VLCI{MOI.Zeros})        = cmap(m).zeros
 function MOI.addconstraint!(m::LinQuadOptimizer, func::VecLin, set::S) where S <: VecLinSets
     @assert MOI.dimension(set) == length(func.constant)
 
-    nrows = lqs_getnumrows(m)
+    nrows = get_number_linear_constraints(m)
     addlinearconstraint!(m, func, lqs_char(m,set))
-    nrows2 = lqs_getnumrows(m)
+    nrows2 = get_number_linear_constraints(m)
 
     m.last_constraint_reference += 1
     ref = VLCI{S}(m.last_constraint_reference)
@@ -44,7 +44,7 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::VecLin, sense::Cchar)
             rowbegins[cnt] = i
         end
     end
-    lqs_addrows!(m, rowbegins, cols, vals, fill(sense, length(rows)), -func.constant)
+    add_linear_constraints!(m, rowbegins, cols, vals, fill(sense, length(rows)), -func.constant)
 end
 
 MOI.canmodifyconstraint(m::LinQuadOptimizer, ::VLCI{<: VecLinSets}, ::Type{MOI.VectorConstantChange{Float64}}) = true
@@ -76,11 +76,11 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VLCI{<: VecLi
     n = length(ctrs)
     out = MOI.VectorAffineFunction(Int[],VarInd[],Float64[],Float64[])
     for i in 1:n
-        rhs = lqs_getrhs(m, ctrs[i])
+        rhs = get_rhs(m, ctrs[i])
         push!(out.constant, -rhs)
 
         # TODO more efficiently
-        colidx, coefs = lqs_getrows(m, ctrs[i])
+        colidx, coefs = get_linear_constraint(m, ctrs[i])
         append!(out.variables, m.variable_references[colidx+1])
         append!(out.coefficients, coefs)
         append!(out.outputindex, i*ones(Int,length(coefs)))

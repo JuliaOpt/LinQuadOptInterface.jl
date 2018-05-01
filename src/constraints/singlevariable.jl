@@ -61,17 +61,23 @@ end
 # constraint set
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S <: LinSets = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{LE})
-    MOI.LessThan{Float64}(lqs_getub(m, getcol(m, m[c])))
+    MOI.LessThan{Float64}(
+        get_variable_upperbound(m, getcol(m, m[c]))
+    )
 end
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{GE})
-    MOI.GreaterThan{Float64}(lqs_getlb(m, getcol(m, m[c])))
+    MOI.GreaterThan{Float64}(
+        get_variable_lowerbound(m, getcol(m, m[c]))
+    )
 end
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{EQ})
-    MOI.EqualTo{Float64}(lqs_getlb(m, getcol(m, m[c])))
+    MOI.EqualTo{Float64}(
+        get_variable_lowerbound(m, getcol(m, m[c]))
+    )
 end
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{IV})
-    lb = lqs_getlb(m, getcol(m, m[c]))
-    ub = lqs_getub(m, getcol(m, m[c]))
+    lb = get_variable_lowerbound(m, getcol(m, m[c]))
+    ub = get_variable_upperbound(m, getcol(m, m[c]))
     return MOI.Interval{Float64}(lb, ub)
 end
 
@@ -100,8 +106,8 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.ZeroOne)
     m.last_constraint_reference += 1
     ref = SVCI{MOI.ZeroOne}(m.last_constraint_reference)
     dict = constrdict(m, ref)
-    ub = lqs_getub(m, getcol(m, v))
-    lb = lqs_getlb(m, getcol(m, v))
+    ub = get_variable_upperbound(m, getcol(m, v))
+    lb = get_variable_lowerbound(m, getcol(m, v))
     dict[ref] = (v.variable, lb, ub)
     lqs_chgctype!(m, [getcol(m, v)], [lqs_char(m, set)])
     setvariablebound!(m, getcol(m, v), 1.0, lqs_char(m, Val{:Upperbound}()))

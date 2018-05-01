@@ -15,7 +15,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <
     m.last_constraint_reference += 1
     ref = LCI{T}(m.last_constraint_reference)
     dict = constrdict(m, ref)
-    dict[ref] = lqs_getnumrows(m)
+    dict[ref] = get_number_linear_constraints(m)
     push!(m.constraint_primal_solution, NaN)
     push!(m.constraint_dual_solution, NaN)
     push!(m.constraint_constant, func.constant)
@@ -28,14 +28,14 @@ end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::IV)
     addlinearconstraint!(m, func, lqs_char(m,set), set.lower)
-    lqs_chgrngval!(m, [lqs_getnumrows(m)], [set.upper - set.lower])
+    lqs_chgrngval!(m, [get_number_linear_constraints(m)], [set.upper - set.lower])
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, sense::Cchar, rhs)
     if abs(func.constant) > eps(Float64)
         warn("Constant in scalar function moved into set.")
     end
-    lqs_addrows!(m, [1], getcol.(m, func.variables), func.coefficients, [sense], [rhs - func.constant])
+    add_linear_constraints!(m, [1], getcol.(m, func.variables), func.coefficients, [sense], [rhs - func.constant])
 end
 
 #=
@@ -47,7 +47,7 @@ function MOI.addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vec
     cfunc = MOIU.canonical.(func)
 
     @assert length(cfunc) == length(set)
-    numrows = lqs_getnumrows(m)
+    numrows = get_number_linear_constraints(m)
     addlinearconstraints!(m, cfunc, set)
     crefs = Vector{LCI{S}}(length(cfunc))
     for i in 1:length(cfunc)
@@ -68,9 +68,9 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::V
 end
 
 function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{IV})
-    numrows = lqs_getnumrows(m)
+    numrows = get_number_linear_constraints(m)
     addlinearconstraints!(m, func, lqs_char.(m,set), [s.lower for s in set])
-    numrows2 = lqs_getnumrows(m)
+    numrows2 = get_number_linear_constraints(m)
     lqs_chgrngval!(m, collect(numrows+1:numrows2), [s.upper - s.lower for s in set])
 end
 
@@ -96,7 +96,7 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, sense:
             cnt += 1
         end
     end
-    lqs_addrows!(m, rowbegins, column_indices, nnz_vals, sense, rhs)
+    add_linear_constraints!(m, rowbegins, column_indices, nnz_vals, sense, rhs)
 end
 
 #=
@@ -105,7 +105,7 @@ end
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{S}}) where S <: Union{LE, GE, EQ} = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{S}) where S <: Union{LE, GE, EQ}
-    rhs = lqs_getrhs(m, m[c])
+    rhs = get_rhs(m, m[c])
     S(rhs+m.constraint_constant[m[c]])
 end
 
@@ -116,7 +116,7 @@ end
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:LCI{<: LinSets}}) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::LCI{<: LinSets})
     # TODO more efficiently
-    colidx, coefs = lqs_getrows(m, m[c])
+    colidx, coefs = get_linear_constraint(m, m[c])
     Linear(m.variable_references[colidx+1], coefs, -m.constraint_constant[m[c]])
 end
 

@@ -19,9 +19,9 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <
     @assert length(func.variables) == MOI.dimension(set)
     m.last_constraint_reference += 1
     ref = VVCI{S}(m.last_constraint_reference)
-    rows = lqs_getnumrows(m)
+    rows = get_number_linear_constraints(m)
     n = MOI.dimension(set)
-    lqs_addrows!(m, collect(1:n), getcol.(m, func.variables), ones(n), fill(lqs_char(m, set),n), zeros(n))
+    add_linear_constraints!(m, collect(1:n), getcol.(m, func.variables), ones(n), fill(lqs_char(m, set),n), zeros(n))
     dict = constrdict(m, ref)
     dict[ref] = collect(rows+1:rows+n)
     append!(m.constraint_primal_solution, fill(NaN,n))
@@ -50,7 +50,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VVCI{<: VecLi
     out = VarInd[]
     sizehint!(out, length(refs))
     for ref in refs
-        colidx, coefs = lqs_getrows(m, ref)
+        colidx, coefs = get_linear_constraint(m, ref)
         if length(colidx) != 1
             error("Unexpected constraint")
         end

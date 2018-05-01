@@ -78,23 +78,23 @@ Initializes a model given a model type `M` and an `env` that might be a `nothing
 for some solvers.
 """
 function LinQuadModel end
-
-"""
-    lqs_setparam!(m, name, val)::Void
-
-Set the parameter `name` to `val` for the model `m`.
-"""
-function lqs_setparam!(m::LinQuadOptimizer, name, val) end
-
-"""
-    lqs_setlogfile!(m, path::String)::Void
-
-Set the log file to `path` for the model `m`.
-"""
-function lqs_setlogfile!(m::LinQuadOptimizer, path) end
-
-# TODO(@joaquimg): what is this?
-function lqs_getprobtype(m::LinQuadOptimizer) end
+#
+# """
+#     lqs_setparam!(m, name, val)::Void
+#
+# Set the parameter `name` to `val` for the model `m`.
+# """
+# function lqs_setparam!(m::LinQuadOptimizer, name, val) end
+#
+# """
+#     lqs_setlogfile!(m, path::String)::Void
+#
+# Set the log file to `path` for the model `m`.
+# """
+# function lqs_setlogfile!(m::LinQuadOptimizer, path) end
+#
+# # TODO(@joaquimg): what is this?
+# function lqs_getprobtype(m::LinQuadOptimizer) end
 
 """
     lqs_supported_constraints(m)::Vector{
@@ -121,57 +121,63 @@ lqs_supported_objectives(m::LinQuadOptimizer) = []
 function lqs_chgbds!(m::LinQuadOptimizer, colvec, valvec, sensevec) end
 
 """
-    lqs_getlb(m, col::Int)::Float64
+    get_variable_lowerbound(m, col::Int)::Float64
 
 Get the lower bound of the variable in 1-indexed column `col` of the model `m`.
 """
-function lqs_getlb(m::LinQuadOptimizer, col) end
+function get_variable_lowerbound end
+@deprecate lqs_getlb get_variable_lowerbound
 
 """
-    lqs_getub(m, col::Int)::Float64
+    get_variable_upperbound(m, col::Int)::Float64
 
 Get the upper bound of the variable in 1-indexed column `col` of the model `m`.
 """
-function lqs_getub(m::LinQuadOptimizer, col) end
+function get_variable_upperbound end
+@deprecate lqs_getub get_variable_upperbound
 
 """
-    lqs_getnumrows(m)::Int
+    get_number_linear_constraints(m)::Int
 
 Get the number of linear constraints in the model `m`.
 """
-function lqs_getnumrows(m::LinQuadOptimizer) end
+function get_number_linear_constraints(m::LinQuadOptimizer) end
+@deprecate lqs_getnumrows get_number_linear_constraints
 
 """
-    lqs_addrows(m, rows::Vector{Int}, cols::Vector{Int}, coefs::Vector{Float64},
-        sense::Vector{Symbol}, rhs::Vector{Float64})::Void
+    add_linear_constraints!(m, rows::Vector{Int}, cols::Vector{Int},
+        coefs::Vector{Float64},
+        sense::Vector{Cchar}, rhs::Vector{Float64})::Void
 
 Adds linear constraints of the form `Ax (sense) rhs` to the model `m`.
 
 The A matrix is given in triplet form `A[rows[i], cols[i]] = coef[i]` for all
 `i`, and `length(rows) == length(cols) == length(coefs)`.
 
-The `sense` is one of `:RANGE`, `:LOWER`, `:UPPER`, `:EQUALITY`.
+The `sense` is given by `lqs_char(m, set)`.
 
-Ranged constraints (sense=`:RANGE`) require a call to `lqs_chgrngval!`.
+Ranged constraints (`set=MOI.Interval`) require a call to `lqs_chgrngval!`.
 """
-function lqs_addrows!(m::LinQuadOptimizer, rows, cols, coefs, sense, rhs) end
+function add_linear_constraints!(m::LinQuadOptimizer, rows, cols, coefs, sense, rhs) end
+@deprecate lqs_addrows! add_linear_constraints!
 
 """
-    lqs_getrhs(m, row::Int)::Float64
+    get_rhs(m, row::Int)::Float64
 
 Get the right-hand side of the linear constraint in the 1-indexed row `row` in
 the model `m`.
 """
-function lqs_getrhs(m::LinQuadOptimizer, row) end
+function get_rhs(m::LinQuadOptimizer, row) end
+@deprecate lqs_getrhs get_rhs
 
-# TODO(@joaquim): I think this is really lqs_getrow? (singluar)
 """
-    lqs_getrows(m, row::Int)::Tuple{Vector{Int}, Vector{Float64}}
+    get_linear_constraint(m, row::Int)::Tuple{Vector{Int}, Vector{Float64}}
 
 Get the linear component of the constraint in the 1-indexed row `row` in
 the model `m`. Returns a tuple of `(cols, vals)`.
 """
-function lqs_getrows(m::LinQuadOptimizer, row) end
+function get_linear_constraint(m::LinQuadOptimizer, row) end
+@deprecate lqs_getrows get_linear_constraint
 
 """
     lqs_getcoef(m, row::Int, col::Int)::Float64
@@ -264,7 +270,7 @@ function lqs_getnumqconstrs(m::LinQuadOptimizer) end
         sense::Symbol, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Void
 
 Add a quadratic constraint `a'x + 0.5 x' Q x`.
-See `lqs_addrows!` for information of linear component.
+See `add_linear_constraints!` for information of linear component.
 Arguments `(I,J,V)` given in triplet form for the Q matrix in `0.5 x' Q x`.
 """
 function lqs_addqconstr!(m::LinQuadOptimizer, cols, coefs, rhs, sense, I, J, V) end
@@ -276,7 +282,7 @@ function lqs_addqconstr!(m::LinQuadOptimizer, cols, coefs, rhs, sense, I, J, V) 
 A range constraint `l <= a'x <= u` is added as the linear constraint
 `a'x :RANGED l`, then this function is called to set `u - l`, the range value.
 
-See `lqs_addrows!` for more.
+See `add_linear_constraints!` for more.
 """
 function lqs_chgrngval!(m::LinQuadOptimizer, rows, vals) end# later
 
