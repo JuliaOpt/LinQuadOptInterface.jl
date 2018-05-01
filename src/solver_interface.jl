@@ -18,6 +18,60 @@
 =#
 
 """
+    lqs_char(m, ::MOI.AbstractSet)::CChar
+
+Return a Cchar specifiying the constraint set sense.
+
+Interval constraints are sometimes called range constraints and have the form
+`l <= a'x <= u`
+
+Three are special cases:
+ - `Val{:Continuous}`: Cchar for a continuous variable
+ - `Val{:Upperbound}`: Cchar for the upper bound of a variable
+ - `Val{:Lowerbound}`: Cchar for the lower bound of a variable
+
+### Defaults
+
+    MOI.GreaterThan  - 'G'
+    MOI.LessThan     - 'L'
+    MOI.EqualTo      - 'E'
+    MOI.Interval     - 'R'
+
+    MOI.Zeros        - 'E'
+    MOI.Nonpositives - 'L'
+    MOI.Nonnegatives - 'G'
+
+    MOI.ZeroOne - 'B'
+    MOI.Integer - 'I'
+
+    MOI.SOS1 - :SOS1  # '1'
+    MOI.SOS2 - :SOS2  # '2'
+
+    Val{:Continuous} - 'C'
+    Val{:Upperbound} - 'U'
+    Val{:Lowerbound} - 'L'
+"""
+lqs_char(m::LinQuadOptimizer, ::MOI.GreaterThan{T}) where T = Cchar('G')
+lqs_char(m::LinQuadOptimizer, ::MOI.LessThan{T}) where T    = Cchar('L')
+lqs_char(m::LinQuadOptimizer, ::MOI.EqualTo{T}) where T     = Cchar('E')
+lqs_char(m::LinQuadOptimizer, ::MOI.Interval{T}) where T    = Cchar('R')
+
+lqs_char(m::LinQuadOptimizer, ::MOI.Zeros)        = Cchar('E')
+lqs_char(m::LinQuadOptimizer, ::MOI.Nonpositives) = Cchar('L')
+lqs_char(m::LinQuadOptimizer, ::MOI.Nonnegatives) = Cchar('G')
+
+lqs_char(m::LinQuadOptimizer, ::MOI.ZeroOne) = Cchar('B')
+lqs_char(m::LinQuadOptimizer, ::MOI.Integer) = Cchar('I')
+
+lqs_char(m::LinQuadOptimizer, ::MOI.SOS1{T}) where T = :SOS1  # Cchar('1')
+lqs_char(m::LinQuadOptimizer, ::MOI.SOS2{T}) where T = :SOS2  # Cchar('2')
+
+
+lqs_char(m::LinQuadOptimizer, ::Val{:Continuous}) = Cchar('C')
+lqs_char(m::LinQuadOptimizer, ::Val{:Upperbound}) = Cchar('U')
+lqs_char(m::LinQuadOptimizer, ::Val{:Lowerbound}) = Cchar('L')
+
+"""
     LinQuadModel(M::Type{<:LinQuadOptimizer}, env)
 
 Initializes a model given a model type `M` and an `env` that might be a `nothing`
@@ -161,15 +215,6 @@ Ranged constraints (sense=`:RANGE`) require a call to `lqs_chgrngval!`.
 """
 function lqs_chgsense!(m::LinQuadOptimizer, rows, sense) end
 
-# TODO(@joaquim): again, why not a function?
-"""
-    lqs_vartype_map(m)::Dict
-
-Returns a dictionary that maps the variable type to an appropriate backend type.
-Variable type must be `:CONTINUOUS`, `:INTEGER`, or `:BINARY`.
-"""
-function lqs_vartype_map(m::LinQuadOptimizer) end
-
 """
     lqs_make_problem_type_integer(m)::Void
 
@@ -198,15 +243,6 @@ Delete the SOS constraints `start_idx`, `start_idx+1`, ..., `end_idx` from
 the model `m`.
 """
 function lqs_delsos!(m::LinQuadOptimizer, start_idx, end_idx) end
-
-# TODO(@joaquim): what is sertype. Why not a function?
-"""
-    lqs_sertype_map(m)::Dict
-
-Returns a dictionary that maps  `:SOS1` and `:SOS2` to an appropriate type for
-the backend.
-"""
-function lqs_sertype_map(m::LinQuadOptimizer) end
 
 """
     lqs_getsos(m, idx::Int)::Tuple{Vector{Int}, Vector{Float64}, Symbol}
@@ -243,17 +279,6 @@ A range constraint `l <= a'x <= u` is added as the linear constraint
 See `lqs_addrows!` for more.
 """
 function lqs_chgrngval!(m::LinQuadOptimizer, rows, vals) end# later
-
-# TODO(@joaquim): Why not a function?
-"""
-    lqs_ctrtype_map(m)::Dict
-
-Returns a dictionary that maps the constraint type to an appropriate type for
-the backend.
-
-The constraint type is one of `:RANGE`, `:LOWER`, `:UPPER`, `:EQUALITY`.
-"""
-function lqs_ctrtype_map(m::LinQuadOptimizer) end
 
 #Objective
 """

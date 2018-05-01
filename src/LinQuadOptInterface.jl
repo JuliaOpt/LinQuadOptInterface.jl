@@ -1,3 +1,10 @@
+#=
+ TODOs:
+
+    - get quadratic objective functions
+
+=#
+
 __precompile__()
 module LinQuadOptInterface
 
@@ -180,7 +187,7 @@ function MOI.isempty(m::LinQuadOptimizer)
     ret = true
     ret = ret && m.name == ""
     ret = ret && m.obj_is_quad == false
-    ret = ret && m.obj_sense == MOI.FeasibilitySense
+    ret = ret && m.obj_sense == MOI.MinSense
     ret = ret && m.last_variable_reference == 0
     ret = ret && isempty(m.variable_mapping)
     ret = ret && isempty(m.variable_names)
@@ -212,7 +219,8 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.inner = LinQuadModel(M,env)
 
     m.obj_is_quad = false
-    m.obj_sense = MOI.FeasibilitySense
+    # we assume the default is minimization
+    m.obj_sense = MOI.MinSense
 
     m.last_variable_reference = 0
     m.variable_mapping = Dict{MathOptInterface.VariableIndex, Int}()

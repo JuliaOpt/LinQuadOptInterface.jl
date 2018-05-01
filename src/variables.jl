@@ -1,9 +1,21 @@
 #=
-    Can do
+    Helper functions
+=#
+getcol(m::LinQuadOptimizer, ref::VarInd) = m.variable_mapping[ref]
+getcol(m::LinQuadOptimizer, v::SinVar) = getcol(m, v.variable)
+
+
+#=
+    Can add variable
 =#
 
 MOI.canaddvariable(::LinQuadOptimizer) = true
 
+#=
+    Get variable names
+=#
+
+MOI.canget(m::LinQuadOptimizer, ::MOI.VariableName, ::Type{VarInd}) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.VariableName, ref::VarInd)
     if haskey(m.variable_names, ref)
         m.variable_names[ref]
@@ -11,7 +23,12 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.VariableName, ref::VarInd)
         ""
     end
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.VariableName, ::Type{VarInd}) = true
+
+#=
+    Set variable names
+=#
+
+MOI.canset(m::LinQuadOptimizer, ::MOI.VariableName, ::Type{VarInd}) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.VariableName, ref::VarInd, name::String)
     if haskey(m.variable_names_rev, name)
         if m.variable_names_rev[name] != ref
@@ -27,42 +44,38 @@ function MOI.set!(m::LinQuadOptimizer, ::MOI.VariableName, ref::VarInd, name::St
         m.variable_names_rev[name] = ref
     end
 end
-MOI.canset(m::LinQuadOptimizer, ::MOI.VariableName, ::Type{VarInd}) = true
 
+#=
+    Get variable by name
+=#
+
+function MOI.canget(m::LinQuadOptimizer, ::Type{MOI.VariableIndex}, name::String)
+    haskey(m.variable_names_rev, name)
+end
 function MOI.get(m::LinQuadOptimizer, ::Type{MOI.VariableIndex}, name::String)
     m.variable_names_rev[name]
 end
-MOI.canget(m::LinQuadOptimizer, ::Type{MOI.VariableIndex}, name::String) = haskey(m.variable_names_rev, name)
-
-#=
-    Helper functions
-=#
-getcol(m::LinQuadOptimizer, ref::VarInd) = m.variable_mapping[ref]
-getcol(m::LinQuadOptimizer, v::SinVar) = getcol(m, v.variable)
 
 #=
     Get number of variables
 =#
 
+MOI.canget(m::LinQuadOptimizer, ::MOI.NumberOfVariables) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.NumberOfVariables)
     return lqs_getnumcols(m)
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.NumberOfVariables) = true
 
 #=
-    Get variable references
+    List of Variable References
 =#
 
+MOI.canget(m::LinQuadOptimizer, ::MOI.ListOfVariableIndices) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ListOfVariableIndices)
     return m.variable_references
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ListOfVariableIndices) = true
 
 #=
-    Add a variable to the LinQuadOptimizer
-Returns a MathOptInterface VariableIndex. So we need to increment the
-variable reference counter in the m.variablemapping, and store the column number
-in the dictionary
+    Add a single variable
 =#
 
 function MOI.addvariable!(m::LinQuadOptimizer)
@@ -77,6 +90,10 @@ function MOI.addvariable!(m::LinQuadOptimizer)
     return ref
 end
 
+#=
+    Add multiple variables
+=#
+
 function MOI.addvariables!(m::LinQuadOptimizer, n::Int)
     previous_vars = MOI.get(m, MOI.NumberOfVariables())
     lqs_newcols!(m, n)
@@ -87,6 +104,8 @@ function MOI.addvariables!(m::LinQuadOptimizer, n::Int)
         m.last_variable_reference += 1
         ref = VarInd(m.last_variable_reference)
         push!(variable_references, ref)
+        # m.last_variable_reference might not be the column if we have
+        # deleted variables.
         m.variable_mapping[ref] = previous_vars + i
         push!(m.variable_references, ref)
         push!(m.variable_primal_solution, NaN)
@@ -113,19 +132,25 @@ end
     Delete a variable
 =#
 
+MOI.candelete(m::LinQuadOptimizer, ref::VarInd) = MOI.isvalid(m, ref)
 function MOI.delete!(m::LinQuadOptimizer, ref::VarInd)
     col = m.variable_mapping[ref]
     lqs_delcols!(m, col, col)
+
+    # delete from problem
     deleteat!(m.variable_references, col)
     deleteat!(m.variable_primal_solution, col)
     deleteat!(m.variable_dual_solution, col)
-
     deleteref!(m.variable_mapping, col, ref)
+
+    # delete name if not ""
     if haskey(m.variable_names, ref)
         name = m.variable_names[ref]
         delete!(m.variable_names_rev, name)
         delete!(m.variable_names, ref)
     end
+
+    # delete any bounds
     # deleting from a dict without the key does nothing
     deletebyval!(cmap(m).upper_bound, ref)
     deletebyval!(cmap(m).lower_bound, ref)
@@ -133,25 +158,27 @@ function MOI.delete!(m::LinQuadOptimizer, ref::VarInd)
     deletebyval!(cmap(m).interval_bound, ref)
 
 end
-MOI.candelete(m::LinQuadOptimizer, ref::VarInd) = MOI.isvalid(m, ref)
 
-# temp fix - change storage for bounds TODO
-function deletebyval!(dict::Dict{S,T}, in::T) where {S,T}
+# temp fix - change storage for bounds
+# TODO(@joaquimg): what did you mean by this?
+function deletebyval!(dict::Dict{S,T}, index::T) where {S,T}
     for (key, val) in dict
-        if val == in
+        if val == index
             delete!(dict, key)
         end
     end
 end
+
 #=
     MIP starts
 =#
+
+MOI.canset(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::VarInd) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ref::VarInd, val::Float64)
     lqs_addmipstarts!(m, [getcol(m, ref)], [val])
 end
-MOI.canset(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::VarInd) = true
 
+MOI.canset(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::Vector{VarInd}) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, refs::Vector{VarInd}, vals::Vector{Float64})
     lqs_addmipstarts!(m, getcol.(m, refs), vals)
 end
-MOI.canset(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::Vector{VarInd}) = true

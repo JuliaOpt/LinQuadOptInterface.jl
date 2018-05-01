@@ -140,14 +140,12 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.VariablePrimal, v::VarInd)
     col = m.variable_mapping[v]
     return m.variable_primal_solution[col]
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.VariablePrimal, v::VarInd) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.VariablePrimal, ::Type{<:VarInd}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.VariablePrimal, ::Type{VarInd}) = true
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.VariablePrimal, v::Vector{VarInd})
     MOI.get.(m, MOI.VariablePrimal(), v)
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.VariablePrimal, v::Vector{VarInd}) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.VariablePrimal, ::Type{<:Vector{VarInd}}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.VariablePrimal, ::Type{Vector{VarInd}}) = true
 
 #=
     Variable Dual solution
@@ -155,11 +153,10 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.VariablePrimal, ::Type{<:Vector{VarInd}}) 
 isbinding(set::LE, value::Float64) = isapprox(set.upper, value)
 isbinding(set::GE, value::Float64) = isapprox(set.lower, value)
 isbinding(set::EQ, value::Float64) = isapprox(set.value, value)
-isbinding(set::IV, value::Float64) = true
+isbinding(set::IV, value::Float64) = isapprox(set.lower, value) || isapprox(set.upper, value)
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::SVCI{<: LinSets})
     vref = m[c]
     col = m.variable_mapping[vref]
-
     # the variable reduced cost is only the constriant dual if the bound is active.
     set = MOI.get(m, MOI.ConstraintSet(), c)
     solval = m.variable_primal_solution[col]
@@ -169,10 +166,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::SVCI{<: LinSets})
         return 0.0
     end
 end
-
-
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::SVCI{<: LinSets}) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{<:SVCI{<: LinSets}}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{SVCI{S}}) where S <: LinSets = true
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::VVCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}})
     rowrefs = m[c]
@@ -183,8 +177,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::VVCI{<: Union{MOI
     end
     return out
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::VVCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{<:VVCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{VVCI{S}}) where S <: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives} = true
 
 #=
     Variable Bound Primal solution
@@ -195,8 +188,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::SVCI{<: LinSets
     col = m.variable_mapping[vref]
     return m.variable_primal_solution[col]
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::SVCI{<: LinSets}) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{<:SVCI{<: LinSets}}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{SVCI{S}}) where S <: LinSets = true
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::VVCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}})
     rowrefs = m[c]
@@ -207,8 +199,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::VVCI{<: Union{M
     end
     return out
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::VVCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{<:VVCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{VVCI{S}}) where S <: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives} = true
 
 #=
     Constraint Primal solution
@@ -218,23 +209,20 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::LCI{<: LinSets}
     row = m[c]
     return m.constraint_primal_solution[row]+m.constraint_constant[row]
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::LCI{<: LinSets}) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{<:LCI{<: LinSets}}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{LCI{S}}) where S <: LinSets = true
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::QCI{<: LinSets})
     row = m[c]
     return m.qconstraint_primal_solution[row]#+m.qconstraint_constant[row]
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::QCI{<: LinSets}) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{<:QCI{<: LinSets}}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{QCI{S}}) where S <: LinSets = true
 
 # vector valued constraint duals
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}})
     row = m[c]
     return m.constraint_primal_solution[row]+m.constraint_constant[row]
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{<:VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{VLCI{S}}) where S <: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives} = true
 
 #=
     Constraint Dual solution
@@ -251,21 +239,18 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::LCI{<: LinSets})
     @assert _checkdualsense(c, dual)
     return dual
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::LCI{<: LinSets}) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{<:LCI{<: LinSets}}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{LCI{S}}) where S <: LinSets = true
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::QCI{<: LinSets})
     row = m[c]
     return m.qconstraint_dual_solution[row]#+m.qconstraint_constant[row]
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::QCI{<: LinSets}) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{<:QCI{<: LinSets}}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{QCI{S}}) where S <: LinSets = true
 
 
 # vector valued constraint duals
 MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = m.constraint_dual_solution[m[c]]
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = true
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{<:VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}}) = true
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{VLCI{S}}) where S <: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives} = true
 
 #=
     Solution Attributes
