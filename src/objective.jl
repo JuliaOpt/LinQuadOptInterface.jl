@@ -13,7 +13,7 @@ MOI.canset(m::LinQuadOptimizer, ::Type{MOI.ObjectiveFunction{F}}) where F<:MOI.A
 function MOI.canset(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}) where F<:MOI.AbstractFunction
     return F in lqs_supported_objectives(m)
 end
-MOI.set!(m::LinQuadOptimizer, ::Type{MOI.ObjectiveFunction{F}}, objf::Linear) where F = MOI.set!(m, MOI.ObjectiveFunction{F}(), objf::Linear) 
+MOI.set!(m::LinQuadOptimizer, ::Type{MOI.ObjectiveFunction{F}}, objf::Linear) where F = MOI.set!(m, MOI.ObjectiveFunction{F}(), objf::Linear)
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, objf::Linear) where F
     cobjf = MOIU.canonical(objf)
     unsafe_set!(m, MOI.ObjectiveFunction{Linear}(), cobjf)
@@ -36,13 +36,13 @@ end
 
 function _setsense!(m::LinQuadOptimizer, sense::MOI.OptimizationSense)
     if sense == MOI.MinSense
-        lqs_chgobjsen!(m, :Min)
+        lqs_chgobjsen!(m, :min)
         m.obj_sense = MOI.MinSense
     elseif sense == MOI.MaxSense
-        lqs_chgobjsen!(m, :Max)
+        lqs_chgobjsen!(m, :max)
         m.obj_sense = MOI.MaxSense
     elseif sense == MOI.FeasibilitySense
-        lqs_chgobjsen!(m, :Min)
+        lqs_chgobjsen!(m, :min)
         unsafe_set!(m, MOI.ObjectiveFunction{Linear}(), MOI.ScalarAffineFunction(VarInd[],Float64[],0.0))
         m.obj_is_quad = false
         m.obj_sense = MOI.FeasibilitySense

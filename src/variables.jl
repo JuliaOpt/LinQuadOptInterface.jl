@@ -4,6 +4,36 @@
 
 MOI.canaddvariable(::LinQuadOptimizer) = true
 
+function MOI.get(m::LinQuadOptimizer, ::MOI.VariableName, ref::VarInd)
+    if haskey(m.variable_names, ref)
+        m.variable_names[ref]
+    else
+        ""
+    end
+end
+MOI.canget(m::LinQuadOptimizer, ::MOI.VariableName, ::Type{VarInd}) = true
+function MOI.set!(m::LinQuadOptimizer, ::MOI.VariableName, ref::VarInd, name::String)
+    if haskey(m.variable_names_rev, name)
+        if m.variable_names_rev[name] != ref
+            error("Duplicate variable name: $(name)")
+        end
+    elseif name != ""
+        if haskey(m.variable_names, ref)
+            # we're renaming an existing variable
+            old_name = m.variable_names[ref]
+            delete!(m.variable_names_rev, old_name)
+        end
+        m.variable_names[ref] = name
+        m.variable_names_rev[name] = ref
+    end
+end
+MOI.canset(m::LinQuadOptimizer, ::MOI.VariableName, ::Type{VarInd}) = true
+
+function MOI.get(m::LinQuadOptimizer, ::Type{MOI.VariableIndex}, name::String)
+    m.variable_names_rev[name]
+end
+MOI.canget(m::LinQuadOptimizer, ::Type{MOI.VariableIndex}, name::String) = haskey(m.variable_names_rev, name)
+
 #=
     Helper functions
 =#
@@ -91,6 +121,11 @@ function MOI.delete!(m::LinQuadOptimizer, ref::VarInd)
     deleteat!(m.variable_dual_solution, col)
 
     deleteref!(m.variable_mapping, col, ref)
+    if haskey(m.variable_names, ref)
+        name = m.variable_names[ref]
+        delete!(m.variable_names_rev, name)
+        delete!(m.variable_names, ref)
+    end
     # deleting from a dict without the key does nothing
     deletebyval!(cmap(m).upper_bound, ref)
     deletebyval!(cmap(m).lower_bound, ref)
@@ -98,7 +133,7 @@ function MOI.delete!(m::LinQuadOptimizer, ref::VarInd)
     deletebyval!(cmap(m).interval_bound, ref)
 
 end
-MOI.candelete(m::LinQuadOptimizer, ref::VarInd) = true
+MOI.candelete(m::LinQuadOptimizer, ref::VarInd) = MOI.isvalid(m, ref)
 
 # temp fix - change storage for bounds TODO
 function deletebyval!(dict::Dict{S,T}, in::T) where {S,T}

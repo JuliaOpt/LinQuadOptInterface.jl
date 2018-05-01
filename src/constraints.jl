@@ -87,7 +87,7 @@ end
 =#
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.ListOfConstraintIndices{F, S}) where F where S
-    collect(keys(constrdict(m, CI{F,S}(UInt(0)))))
+    sort(collect(keys(constrdict(m, CI{F,S}(UInt(0))))), by=x->x.value)
 end
 function MOI.canget(m::LinQuadOptimizer, ::MOI.ListOfConstraintIndices{F, S}) where F where S
     return (F,S) in lqs_supported_constraints(m)
@@ -129,6 +129,48 @@ end
 function setvariablebound!(m::LinQuadOptimizer, v::SinVar, set::IV)
     setvariablebound!(m, getcol(m, v), set.upper, _variableub(m))
     setvariablebound!(m, getcol(m, v), set.lower, _variablelb(m))
+end
+
+function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintName, c::MOI.ConstraintIndex)
+    if haskey(m.constraint_names, c)
+        m.constraint_names[c]
+    else
+        ""
+    end
+end
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex}) = true
+function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintName, ref::MOI.ConstraintIndex, name::String)
+    if haskey(m.constraint_names_rev, name)
+        if m.constraint_names_rev[name] != ref
+            error("Duplicate constraint name: $(name)")
+        end
+    elseif name != ""
+        if haskey(m.constraint_names, ref)
+            # we're renaming an existing constraint
+            old_name = m.constraint_names[ref]
+            delete!(m.constraint_names_rev, old_name)
+        end
+        m.constraint_names[ref] = name
+        m.constraint_names_rev[name] = ref
+    end
+end
+MOI.canset(m::LinQuadOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex}) = true
+
+function deleteconstraintname!(m::LinQuadOptimizer, ref)
+    if haskey(m.constraint_names, ref)
+        name = m.constraint_names[ref]
+        delete!(m.constraint_names_rev, name)
+        delete!(m.constraint_names, ref)
+    end
+end
+
+function MOI.get(m::LinQuadOptimizer, ::Type{<:MOI.ConstraintIndex}, name::String)
+    m.constraint_names_rev[name]
+end
+MOI.canget(m::LinQuadOptimizer, ::Type{MOI.ConstraintIndex}, name::String) = haskey(m.constraint_names_rev, name)
+
+function MOI.canget(m::LinQuadOptimizer, ::Type{FS}, name::String) where FS <: MOI.ConstraintIndex
+    haskey(m.constraint_names_rev, name) && typeof(m.constraint_names_rev[name]) == FS
 end
 
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: LinSets
@@ -186,6 +228,7 @@ MOI.canmodifyconstraint(::LinQuadOptimizer, ::SVCI{S}, ::Type{S}) where S <: Lin
 =#
 
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{S}) where S <: LinSets
+    deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     vref = dict[c]
     setvariablebound!(m, SinVar(vref), IV(-Inf, Inf))
@@ -216,14 +259,14 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <
 
     n = MOI.dimension(set)
     lqs_addrows!(m, collect(1:n), getcol.(m, func.variables), ones(n), fill(_getsense(m,set),n), zeros(n))
-    
+
     dict = constrdict(m, ref)
 
     dict[ref] = collect(rows+1:rows+n)
 
     append!(m.constraint_primal_solution, fill(NaN,n))
     append!(m.constraint_dual_solution, fill(NaN,n))
-    append!(m.constraint_constant, fill(0.0,n)) 
+    append!(m.constraint_constant, fill(0.0,n))
     return ref
 end
 
@@ -278,11 +321,12 @@ function unsafe_addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where 
     addlinearconstraint!(m, func, set)
     m.last_constraint_reference += 1
     ref = LCI{T}(m.last_constraint_reference)
+
     dict = constrdict(m, ref)
     dict[ref] = lqs_getnumrows(m)
     push!(m.constraint_primal_solution, NaN)
     push!(m.constraint_dual_solution, NaN)
-    push!(m.constraint_constant, func.constant)    
+    push!(m.constraint_constant, func.constant)
     return ref
 end
 
@@ -429,6 +473,7 @@ function deleteref!(m::LinQuadOptimizer, row::Int, ref::LCI{<: LinSets})
     deleteref!(cmap(m).interval, row, ref)
 end
 function MOI.delete!(m::LinQuadOptimizer, c::LCI{<: LinSets})
+    deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     row = dict[c]
     lqs_delrows!(m, row, row)
@@ -473,6 +518,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, ::MOI.ZeroOne)
     ref
 end
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.ZeroOne})
+    deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     (v, lb, ub) = dict[c]
     lqs_chgctype!(m, [getcol(m, v)], [lqs_vartype_map(m)[:CONTINUOUS]])
@@ -509,6 +555,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, ::MOI.Integer)
 end
 
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.Integer})
+    deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     v = dict[c]
     lqs_chgctype!(m, [getcol(m, v)], [lqs_vartype_map(m)[:CONTINUOUS]])
@@ -553,6 +600,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::VecVar, sos::SOS2)
 end
 
 function MOI.delete!(m::LinQuadOptimizer, c::VVCI{<:Union{SOS1, SOS2}})
+    deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     idx = dict[c]
     lqs_delsos!(m, idx, idx)
@@ -597,9 +645,10 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::Quad, set::S) where S <: 
     m.last_constraint_reference += 1
     ref = QCI{S}(m.last_constraint_reference)
     dict = constrdict(m, ref)
-    dict[ref] = lqs_getnumqconstrs(m)
     push!(m.qconstraint_primal_solution, NaN)
     push!(m.qconstraint_dual_solution, NaN)
+    # dict[ref] = lqs_getnumqconstrs(m)
+    dict[ref] = length(m.qconstraint_primal_solution)
     return ref
 end
 
@@ -752,6 +801,7 @@ function MOI.transformconstraint!(m::LinQuadOptimizer, ref::LCI{S1}, newset::S2)
     dict2 = constrdict(m, ref2)
     dict2[ref2] = row
     delete!(dict, ref)
+    deleteconstraintname!(m, ref)
     return ref2
 end
 function MOI.cantransformconstraint(m::LinQuadOptimizer, ref::LCI{S}, newset::S) where S
