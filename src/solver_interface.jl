@@ -35,7 +35,6 @@ Three are special cases:
     MOI.GreaterThan  - 'G'
     MOI.LessThan     - 'L'
     MOI.EqualTo      - 'E'
-    MOI.Interval     - 'R'
 
     MOI.Zeros        - 'E'
     MOI.Nonpositives - 'L'
@@ -54,7 +53,8 @@ Three are special cases:
 lqs_char(m::LinQuadOptimizer, ::MOI.GreaterThan{T}) where T = Cchar('G')
 lqs_char(m::LinQuadOptimizer, ::MOI.LessThan{T}) where T    = Cchar('L')
 lqs_char(m::LinQuadOptimizer, ::MOI.EqualTo{T}) where T     = Cchar('E')
-lqs_char(m::LinQuadOptimizer, ::MOI.Interval{T}) where T    = Cchar('R')
+# Implemented separately
+# lqs_char(m::LinQuadOptimizer, ::MOI.Interval{T}) where T    = Cchar('R')
 
 lqs_char(m::LinQuadOptimizer, ::MOI.Zeros)        = Cchar('E')
 lqs_char(m::LinQuadOptimizer, ::MOI.Nonpositives) = Cchar('L')
@@ -150,10 +150,37 @@ The A matrix is given in triplet form `A[rows[i], cols[i]] = coef[i]` for all
 
 The `sense` is given by `lqs_char(m, set)`.
 
-Ranged constraints (`set=MOI.Interval`) require a call to `change_range_value!`.
+Ranged constraints (`set=MOI.Interval`) should be added via `add_ranged_constraint!`
+instead.
 """
 function add_linear_constraints! end
 @deprecate lqs_addrows! add_linear_constraints!
+
+"""
+    add_ranged_constraint!(m, rows::Vector{Int}, cols::Vector{Int},
+        coefs::Vector{Float64}, lowerbound::Vector{Float64}, upperbound::Vector{Float64})
+
+Adds linear constraints of the form `lowerbound <= Ax <= upperbound` to the
+model `m`.
+
+The A matrix is given in triplet form `A[rows[i], cols[i]] = coef[i]` for all
+`i`,
+
+This is a special case compared to standard `add_linear_constraints!` since it
+is often implemented via multiple API calls.
+"""
+function add_ranged_constraints! end
+
+"""
+    modify_ranged_constraint!(m, rows::Vector{Int}, lowerbound::Vector{Float64}, upperbound::Vector{Float64})
+
+Modify the lower and upperbounds of a ranged constraint in the model `m`.
+
+This is a special case compared to standard the `change_coefficient!` since it
+is often implemented via multiple API calls.
+"""
+function modify_ranged_constraints! end
+
 
 """
     get_rhs(m, row::Int)::Float64
@@ -277,19 +304,6 @@ See `add_linear_constraints!` for information of linear component.
 Arguments `(I,J,V)` given in triplet form for the Q matrix in `0.5 x' Q x`.
 """
 function add_quadratic_constraint! end
-
-
-"""
-    change_range_value!(m, rows::Vector{Int}, vals::Vector{Float64})::Void
-
-A range constraint `l <= a'x <= u` is added as the linear constraint
-`a'x [sym] l`, where `sym= lqs_char(m, Interval(l,u))`, then this function is
-called to set `u - l`, the range value.
-
-See `add_linear_constraints!` for more.
-"""
-function change_range_value! end
-@deprecate lqs_chgrngval! change_range_value!
 
 """
     set_quadratic_objective!(m, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Void

@@ -27,8 +27,7 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::S) where S
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::IV)
-    addlinearconstraint!(m, func, lqs_char(m,set), set.lower)
-    change_range_value!(m, [get_number_linear_constraints(m)], [set.upper - set.lower])
+    add_ranged_constraints!(m, [1], getcol.(m, func.variables), func.coefficients, [set.lower], [set.upper])
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, sense::Cchar, rhs)
@@ -68,10 +67,31 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::V
 end
 
 function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{IV})
-    numrows = get_number_linear_constraints(m)
-    addlinearconstraints!(m, func, lqs_char.(m,set), [s.lower for s in set])
-    numrows2 = get_number_linear_constraints(m)
-    change_range_value!(m, collect(numrows+1:numrows2), [s.upper - s.lower for s in set])
+    # loop through once to get number of non-zeros and to move rhs across
+    lowerbounds = [s.lower for s in set]
+    upperbounds = [s.upper for s in set]
+    nnz = 0
+    for (i, f) in enumerate(func)
+        if abs(f.constant) > eps(Float64)
+            warn("Constant in scalar function moved into set.")
+            lowerbounds[i] -= f.constant
+            upperbounds[i] -= f.constant
+        end
+        nnz += length(f.coefficients)
+    end
+    row_starts     = Vector{Int}(length(func))  # index of start of each row
+    column_indices = Vector{Int}(nnz)           # flattened columns for each function
+    coefficients   = Vector{Float64}(nnz)       # corresponding non-zeros
+    i = 1
+    for (fi, f) in enumerate(func)
+        row_starts[fi] = cnt
+        for (var, coef) in zip(f.variables, f.coefficients)
+            column_indices[i] = getcol(m, var)
+            coefficients[i]   = coef
+            i += 1
+        end
+    end
+    add_ranged_constraints!(m, row_starts, column_indices, coefficients, lowerbounds, upperbounds)
 end
 
 function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, sense::Vector{Cchar}, rhs::Vector{Float64})
@@ -142,12 +162,7 @@ end
 
 MOI.canmodifyconstraint(m::LinQuadOptimizer, c::LCI{IV}, ::Type{IV}) = true
 function MOI.modifyconstraint!(m::LinQuadOptimizer, c::LCI{IV}, set::IV)
-    # the column 0 (or -1 in 0-index) is the rhs.
-    # a range constraint has the RHS value of the lower limit of the range, and
-    # a rngval equal to upper-lower.
-    row = m[c]
-    change_coefficient!(m, row, 0, set.lower)
-    change_range_value!(m, [row], [set.upper - set.lower])
+    modify_ranged_constraints!(m, [m[c]], [set.lower], [set.upper])
 end
 
 #=
