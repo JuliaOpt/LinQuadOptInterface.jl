@@ -20,7 +20,7 @@ constrdict(m::LinQuadOptimizer, ::SVCI{MOI.ZeroOne}) = cmap(m).binary
 constrdict(m::LinQuadOptimizer, ::SVCI{MOI.Integer}) = cmap(m).integer
 
 function setvariablebound!(m::LinQuadOptimizer, col::Int, bound::Float64, sense::Cchar)
-    lqs_chgbds!(m, [col], [bound], [sense])
+    change_variable_bounds!(m, [col], [bound], [sense])
 end
 
 function setvariablebound!(m::LinQuadOptimizer, v::SinVar, set::LE)

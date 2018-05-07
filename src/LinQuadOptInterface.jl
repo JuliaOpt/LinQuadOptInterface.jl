@@ -216,7 +216,7 @@ function MOI.isempty(m::LinQuadOptimizer)
 end
 function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.name = ""
-    m.inner = LinQuadModel(M,env)
+    m.inner = LinearQuadraticModel(M,env)
 
     m.obj_is_quad = false
     # we assume the default is minimization

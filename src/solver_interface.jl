@@ -72,12 +72,13 @@ lqs_char(m::LinQuadOptimizer, ::Val{:Upperbound}) = Cchar('U')
 lqs_char(m::LinQuadOptimizer, ::Val{:Lowerbound}) = Cchar('L')
 
 """
-    LinQuadModel(M::Type{<:LinQuadOptimizer}, env)
+    LinearQuadraticModel(M::Type{<:LinQuadOptimizer}, env)
 
 Initializes a model given a model type `M` and an `env` that might be a `nothing`
 for some solvers.
 """
-function LinQuadModel end
+function LinearQuadraticModel end
+@deprecate LinQuadModel LinearQuadraticModel
 
 """
     supported_constraints(m)::Vector{
@@ -103,7 +104,15 @@ function supported_objectives end
 
 # Constraints
 
-function lqs_chgbds!(m::LinQuadOptimizer, colvec, valvec, sensevec) end
+"""
+    change_variable_bounds!(m, cols::Vector{Int}, values::Vector{Float64}, senses::Vector)
+
+Change the bounds of the variable. The sense of the upperbound
+is given by `lqs_char(m, Val{:Upperbound}())`. The sense
+of the lowerbound is given by `lqs_char(m, Val{:Lowerbound}())`
+"""
+function change_variable_bounds! end
+@deprecate lqs_chgbds! change_variable_bounds!
 
 """
     get_variable_lowerbound(m, col::Int)::Float64
@@ -188,7 +197,7 @@ function delete_linear_constraints! end
 Change the variable types. Type is the output of one of:
  - `lqs_char(m, ::ZeroOne)`, for binary variables;
  - `lqs_char(m, ::Integer)`, for integer variables; and
- - `lqs_char(m, Val{:Continuous})`, for continuous variables.
+ - `lqs_char(m, Val{:Continuous}())`, for continuous variables.
 """
 function change_variable_types! end
 @deprecate lqs_chgctype! change_variable_types!
@@ -214,6 +223,7 @@ If an explicit call is needed to change the problem type integer (e.g., CPLEX).
 function make_problem_type_integer(m::LinQuadOptimizer)
     nothing  # default
 end
+@deprecate lqs_make_problem_type_integer make_problem_type_integer
 
 """
     make_problem_type_continuous(m)::Void
@@ -223,6 +233,7 @@ If an explicit call is needed to change the problem type continuous (e.g., CPLEX
 function make_problem_type_continuous(m::LinQuadOptimizer)
     nothing  # default
 end
+@deprecate lqs_make_problem_type_continuous make_problem_type_continuous
 
 """
     add_sos_constraint!(m, cols::Vector{Int}, vals::Vector{Float64}, typ::Symbol)::Void
