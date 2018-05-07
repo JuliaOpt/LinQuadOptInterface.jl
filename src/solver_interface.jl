@@ -283,7 +283,8 @@ function add_quadratic_constraint! end
     change_range_value!(m, rows::Vector{Int}, vals::Vector{Float64})::Void
 
 A range constraint `l <= a'x <= u` is added as the linear constraint
-`a'x [sym] l`, where `sym= lqs_char(m, Interval(l,u))`, then this function is called to set `u - l`, the range value.
+`a'x [sym] l`, where `sym= lqs_char(m, Interval(l,u))`, then this function is
+called to set `u - l`, the range value.
 
 See `add_linear_constraints!` for more.
 """
@@ -387,13 +388,13 @@ function get_quadratic_primal_solution! end
 @deprecate lqs_getqcax! get_quadratic_primal_solution!
 
 """
-    get_reducedcosts!(m, x::Vector{Float64})
+    get_variable_dual_solution!(m, x::Vector{Float64})
 
 Get the dual solution (reduced-costs) for the variables in the model `m`, and
 store in `x`. `x`must have one element for each variable.
 """
-function get_reducedcosts! end
-@deprecate lqs_getdj! get_reducedcosts!
+function get_variable_dual_solution! end
+@deprecate lqs_getdj! get_variable_dual_solution!
 
 """
     get_linear_dual_solution!(m, x::Vector{Float64})
@@ -465,47 +466,48 @@ function get_node_count end
 @deprecate lqs_getnodecnt get_node_count
 
 """
-    get_farkasdual!(m, x::Vector{Float64})
+    get_farkas_dual!(m, x::Vector{Float64})
 
-Get the farkas dual (certificate of primal infeasiblility) for the linear constraints
-in the model `m`, and store in `x`. `x`must have one element for each linear
-constraint.
+Get the farkas dual (certificate of primal infeasiblility) for the linear
+constraints in the model `m`, and store in `x`. `x`must have one element for
+each linear constraint.
 """
-function get_farkasdual! end
-@deprecate lqs_dualfarkas! get_farkasdual!
-
-"""
-    get_unboundedray!(m, x::Vector{Float64})
-
-Get the unbounded ray (certificate of dual infeasiblility) for the linear constraints
-in the model `m`, and store in `x`. `x`must have one element for each variable.
-"""
-function get_unboundedray! end
-@deprecate lqs_getray! get_unboundedray!
+function get_farkas_dual! end
+@deprecate lqs_dualfarkas! get_farkas_dual!
 
 """
-    get_terminationstatus(m)
+    get_unbounded_ray!(m, x::Vector{Float64})
+
+Get the unbounded ray (certificate of dual infeasiblility) for the linear
+constraints in the model `m`, and store in `x`. `x`must have one element for
+each variable.
+"""
+function get_unbounded_ray! end
+@deprecate lqs_getray! get_unbounded_ray!
+
+"""
+    get_termination_status(m)
 
 Get the termination status of the model `m`.
 """
-function get_terminationstatus end
-@deprecate lqs_terminationstatus get_terminationstatus
+function get_termination_status end
+@deprecate lqs_terminationstatus get_termination_status
 
 """
-    get_primalstatus(m)
+    get_primal_status(m)
 
 Get the primal status of the model `m`.
 """
-function get_primalstatus end
-@deprecate lqs_primalstatus get_primalstatus
+function get_primal_status end
+@deprecate lqs_primalstatus get_primal_status
 
 """
-    get_dualstatus(m)
+    get_dual_status(m)
 
 Get the dual status of the model `m`.
 """
-function get_dualstatus end
-@deprecate lqs_dualstatus get_dualstatus
+function get_dual_status end
+@deprecate lqs_dualstatus get_dual_status
 
 """
     get_number_variables(m)::Int

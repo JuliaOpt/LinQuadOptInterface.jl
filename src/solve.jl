@@ -28,9 +28,9 @@ function MOI.optimize!(m::LinQuadOptimizer)
     m.solvetime = time() - t
 
     # termination_status
-    m.termination_status = get_terminationstatus(m)
-    m.primal_status = get_primalstatus(m)
-    m.dual_status = get_dualstatus(m)
+    m.termination_status = get_termination_status(m)
+    m.primal_status = get_primal_status(m)
+    m.dual_status = get_dual_status(m)
 
     if m.primal_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
         # primal solution exists
@@ -42,12 +42,12 @@ function MOI.optimize!(m::LinQuadOptimizer)
         m.primal_result_count = 1
         # CPLEX can return infeasible points
     elseif m.primal_status == MOI.InfeasibilityCertificate
-        get_unboundedray!(m, m.variable_primal_solution)
+        get_unbounded_ray!(m, m.variable_primal_solution)
         m.primal_result_count = 1
     end
     if m.dual_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
         # dual solution exists
-        get_reducedcosts!(m, m.variable_dual_solution)
+        get_variable_dual_solution!(m, m.variable_dual_solution)
         get_linear_dual_solution!(m, m.constraint_dual_solution)
         if hasquadratic(m)
             get_quadratic_dual_solution!(m, m.qconstraint_dual_solution)
@@ -55,7 +55,7 @@ function MOI.optimize!(m::LinQuadOptimizer)
         m.dual_result_count = 1
         # dual solution may not be feasible
     elseif m.dual_status == MOI.InfeasibilityCertificate
-        get_farkasdual!(m, m.constraint_dual_solution)
+        get_farkas_dual!(m, m.constraint_dual_solution)
         m.dual_result_count = 1
     end
 
