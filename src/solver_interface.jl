@@ -141,7 +141,7 @@ The A matrix is given in triplet form `A[rows[i], cols[i]] = coef[i]` for all
 
 The `sense` is given by `lqs_char(m, set)`.
 
-Ranged constraints (`set=MOI.Interval`) require a call to `lqs_chgrngval!`.
+Ranged constraints (`set=MOI.Interval`) require a call to `change_range_value!`.
 """
 function add_linear_constraints! end
 @deprecate lqs_addrows! add_linear_constraints!
@@ -164,14 +164,6 @@ the model `m`. Returns a tuple of `(cols, vals)`.
 function get_linear_constraint end
 @deprecate lqs_getrows get_linear_constraint
 
-# """
-#     get_coefficient(m, row::Int, col::Int)
-#
-# Get the linear coefficient of the variable in column `col`, constraint `row`.
-# """
-# function get_coefficient end
-# @deprecate lqs_getcoef get_coefficient
-
 """
     change_coefficient!(m, row, col, coef)
 
@@ -193,35 +185,44 @@ function delete_linear_constraints! end
 """
     lqs_chgctype(m, cols::Vector{Int}, types):Void
 
-Change the variable types. Variable type must be `:CONTINUOUS`, `:INTEGER`, or
-`:BINARY`.
+Change the variable types. Type is the output of one of:
+ - `lqs_char(m, ::ZeroOne)`, for binary variables;
+ - `lqs_char(m, ::Integer)`, for integer variables; and
+ - `lqs_char(m, Val{:Continuous})`, for continuous variables.
 """
-function lqs_chgctype!(m::LinQuadOptimizer, cols, types) end
+function change_variable_types! end
+@deprecate lqs_chgctype! change_variable_types!
 
 """
-    lqs_chgsense(m, rows::Vector{Int}, sense::Vector{Symbol})::Void
+    change_linear_constraint_sense!(m, rows::Vector{Int}, sense::Vector{Symbol})::Void
 
 Change the sense of the linear constraints in `rows` to `sense`.
 
-The `sense` is one of `:RANGE`, `:LOWER`, `:UPPER`, `:EQUALITY`.
+`sense` is the output of `lqs_char(m, set)`, where `set`
+is the corresponding set for the row `rows[i]`.
 
-Ranged constraints (sense=`:RANGE`) require a call to `lqs_chgrngval!`.
+`Interval` constraints require a call to `change_range_value!`.
 """
-function lqs_chgsense!(m::LinQuadOptimizer, rows, sense) end
+function change_linear_constraint_sense! end
+@deprecate lqs_chgsense! change_linear_constraint_sense!
 
 """
-    lqs_make_problem_type_integer(m)::Void
+    make_problem_type_integer(m)::Void
 
 If an explicit call is needed to change the problem type integer (e.g., CPLEX).
 """
-function lqs_make_problem_type_integer(m::LinQuadOptimizer) end
+function make_problem_type_integer(m::LinQuadOptimizer)
+    nothing  # default
+end
 
 """
-    lqs_make_problem_type_continuous(m)::Void
+    make_problem_type_continuous(m)::Void
 
 If an explicit call is needed to change the problem type continuous (e.g., CPLEX).
 """
-function lqs_make_problem_type_continuous(m::LinQuadOptimizer) end
+function make_problem_type_continuous(m::LinQuadOptimizer)
+    nothing  # default
+end
 
 """
     add_sos_constraint!(m, cols::Vector{Int}, vals::Vector{Float64}, typ::Symbol)::Void
@@ -268,14 +269,15 @@ function add_quadratic_constraint! end
 
 
 """
-    lqs_chgrngval!(m, rows::Vector{Int}, vals::Vector{Float64})::Void
+    change_range_value!(m, rows::Vector{Int}, vals::Vector{Float64})::Void
 
 A range constraint `l <= a'x <= u` is added as the linear constraint
-`a'x :RANGED l`, then this function is called to set `u - l`, the range value.
+`a'x [sym] l`, where `sym= lqs_char(m, Interval(l,u))`, then this function is called to set `u - l`, the range value.
 
 See `add_linear_constraints!` for more.
 """
-function lqs_chgrngval!(m::LinQuadOptimizer, rows, vals) end# later
+function change_range_value! end
+@deprecate lqs_chgrngval! change_range_value!
 
 """
     set_quadratic_objective!(m, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Void
@@ -321,25 +323,28 @@ function get_objectivesense end
 @deprecate lqs_getobjsen get_objectivesense
 
 """
-    lqs_mipopt!(m)::Void
+    solve_mip_problem!(m)::Void
 
 Solve a mixed-integer model `m`.
 """
-function lqs_mipopt!(m::LinQuadOptimizer) end
+function solve_mip_problem! end
+@deprecate lqs_mipopt! solve_mip_problem!
 
 """
-    lqs_qpopt!(m)::Void
+    solve_quadratic_problem!(m)::Void
 
 Solve a model `m` with quadratic components.
 """
-function lqs_qpopt!(m::LinQuadOptimizer) end
+function solve_quadratic_problem! end
+@deprecate lqs_qpopt! solve_quadratic_problem!
 
 """
-    lqs_lpopt!(m)::Void
+    solve_linear_problem!(m)::Void
 
 Solve a linear program `m`.
 """
-function lqs_lpopt!(m::LinQuadOptimizer) end
+function solve_linear_problem! end
+@deprecate lqs_lpopt! solve_linear_problem!
 
 """
     get_variable_primal_solution!(m, x::Vector{Float64})
@@ -405,8 +410,13 @@ Get the objective value of the solved model `m`.
 function get_objective_value end
 @deprecate lqs_getobjval get_objective_value
 
-# TODO(@joaquimg): what is this?
-function lqs_getbestobjval(m::LinQuadOptimizer) end
+"""
+    get_objective_bound(m)
+
+Get the objective bound of the model `m`.
+"""
+function get_objective_bound end
+@deprecate lqs_getbestobjval get_objective_bound
 
 """
     get_relative_mip_gap(m)

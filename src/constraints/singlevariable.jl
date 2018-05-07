@@ -109,10 +109,10 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.ZeroOne)
     ub = get_variable_upperbound(m, getcol(m, v))
     lb = get_variable_lowerbound(m, getcol(m, v))
     dict[ref] = (v.variable, lb, ub)
-    lqs_chgctype!(m, [getcol(m, v)], [lqs_char(m, set)])
+    change_variable_types!(m, [getcol(m, v)], [lqs_char(m, set)])
     setvariablebound!(m, getcol(m, v), 1.0, lqs_char(m, Val{:Upperbound}()))
     setvariablebound!(m, getcol(m, v), 0.0, lqs_char(m, Val{:Lowerbound}()))
-    lqs_make_problem_type_integer(m)
+    make_problem_type_integer(m)
     ref
 end
 
@@ -121,12 +121,12 @@ function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.ZeroOne})
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     (v, lb, ub) = dict[c]
-    lqs_chgctype!(m, [getcol(m, v)], [lqs_char(m, Val{:Continuous}())])
+    change_variable_types!(m, [getcol(m, v)], [lqs_char(m, Val{:Continuous}())])
     setvariablebound!(m, getcol(m, v), ub, lqs_char(m, Val{:Upperbound}()))
     setvariablebound!(m, getcol(m, v), lb, lqs_char(m, Val{:Lowerbound}()))
     delete!(dict, c)
     if !hasinteger(m)
-        lqs_make_problem_type_continuous(m)
+        make_problem_type_continuous(m)
     end
 end
 
@@ -141,12 +141,12 @@ MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.ZeroOne}) = m
 =#
 
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.Integer)
-    lqs_chgctype!(m, [getcol(m, v)], [lqs_char(m, set)])
+    change_variable_types!(m, [getcol(m, v)], [lqs_char(m, set)])
     m.last_constraint_reference += 1
     ref = SVCI{MOI.Integer}(m.last_constraint_reference)
     dict = constrdict(m, ref)
     dict[ref] = v.variable
-    lqs_make_problem_type_integer(m)
+    make_problem_type_integer(m)
     ref
 end
 
@@ -154,10 +154,10 @@ function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.Integer})
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     v = dict[c]
-    lqs_chgctype!(m, [getcol(m, v)], [lqs_char(m, Val{:Continuous}())])
+    change_variable_types!(m, [getcol(m, v)], [lqs_char(m, Val{:Continuous}())])
     delete!(dict, c)
     if !hasinteger(m)
-        lqs_make_problem_type_continuous(m)
+        make_problem_type_continuous(m)
     end
 end
 MOI.candelete(m::LinQuadOptimizer, c::SVCI{MOI.Integer}) = true

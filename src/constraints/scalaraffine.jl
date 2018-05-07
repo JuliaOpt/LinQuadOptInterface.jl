@@ -28,7 +28,7 @@ end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::IV)
     addlinearconstraint!(m, func, lqs_char(m,set), set.lower)
-    lqs_chgrngval!(m, [get_number_linear_constraints(m)], [set.upper - set.lower])
+    change_range_value!(m, [get_number_linear_constraints(m)], [set.upper - set.lower])
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, sense::Cchar, rhs)
@@ -71,7 +71,7 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::V
     numrows = get_number_linear_constraints(m)
     addlinearconstraints!(m, func, lqs_char.(m,set), [s.lower for s in set])
     numrows2 = get_number_linear_constraints(m)
-    lqs_chgrngval!(m, collect(numrows+1:numrows2), [s.upper - s.lower for s in set])
+    change_range_value!(m, collect(numrows+1:numrows2), [s.upper - s.lower for s in set])
 end
 
 function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, sense::Vector{Cchar}, rhs::Vector{Float64})
@@ -147,7 +147,7 @@ function MOI.modifyconstraint!(m::LinQuadOptimizer, c::LCI{IV}, set::IV)
     # a rngval equal to upper-lower.
     row = m[c]
     change_coefficient!(m, row, 0, set.lower)
-    lqs_chgrngval!(m, [row], [set.upper - set.lower])
+    change_range_value!(m, [row], [set.upper - set.lower])
 end
 
 #=
@@ -189,7 +189,7 @@ end
 function MOI.transformconstraint!(m::LinQuadOptimizer, ref::LCI{S1}, newset::S2) where S1 where S2 <: Union{LE, GE, EQ}
     dict = constrdict(m, ref)
     row = dict[ref]
-    lqs_chgsense!(m, [row], [lqs_char(m,newset)])
+    change_linear_constraint_sense!(m, [row], [lqs_char(m,newset)])
     m.last_constraint_reference += 1
     ref2 = LCI{S2}(m.last_constraint_reference)
     dict2 = constrdict(m, ref2)

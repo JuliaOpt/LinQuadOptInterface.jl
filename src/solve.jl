@@ -19,11 +19,11 @@ function MOI.optimize!(m::LinQuadOptimizer)
 
     t = time()
     if hasinteger(m)
-        lqs_mipopt!(m)
+        solve_mip_problem!(m)
     elseif hasquadratic(m)
-        lqs_qpopt!(m)
+        solve_quadratic_problem!(m)
     else
-        lqs_lpopt!(m)
+        solve_linear_problem!(m)
     end
     m.solvetime = time() - t
 
@@ -257,7 +257,7 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{VLCI{S}}) where S <
 =#
 
 # struct ObjectiveBound <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveBound) = lqs_getbestobjval(m)
+MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveBound) = get_objective_bound(m)
 MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveBound) = true
 
 # struct RelativeGap <: MOI.AbstractOptimizerAttribute  end

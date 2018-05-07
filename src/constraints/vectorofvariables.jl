@@ -64,7 +64,7 @@ end
 =#
 
 function MOI.addconstraint!(m::LinQuadOptimizer, v::VecVar, sos::S) where S <: Union{MOI.SOS1, MOI.SOS2}
-    lqs_make_problem_type_integer(m)
+    make_problem_type_integer(m)
     add_sos_constraint!(m, getcol.(m, v.variables), sos.weights, lqs_char(m, sos))
     m.last_constraint_reference += 1
     ref = VVCI{S}(m.last_constraint_reference)
@@ -82,7 +82,7 @@ function MOI.delete!(m::LinQuadOptimizer, c::VVCI{<:Union{SOS1, SOS2}})
     deleteref!(cmap(m).sos1, idx, c)
     deleteref!(cmap(m).sos2, idx, c)
     if !hasinteger(m)
-        lqs_make_problem_type_continuous(m)
+        make_problem_type_continuous(m)
     end
 end
 
