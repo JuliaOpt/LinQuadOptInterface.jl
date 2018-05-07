@@ -78,26 +78,9 @@ Initializes a model given a model type `M` and an `env` that might be a `nothing
 for some solvers.
 """
 function LinQuadModel end
-#
-# """
-#     lqs_setparam!(m, name, val)::Void
-#
-# Set the parameter `name` to `val` for the model `m`.
-# """
-# function lqs_setparam!(m::LinQuadOptimizer, name, val) end
-#
-# """
-#     lqs_setlogfile!(m, path::String)::Void
-#
-# Set the log file to `path` for the model `m`.
-# """
-# function lqs_setlogfile!(m::LinQuadOptimizer, path) end
-#
-# # TODO(@joaquimg): what is this?
-# function lqs_getprobtype(m::LinQuadOptimizer) end
 
 """
-    lqs_supported_constraints(m)::Vector{
+    supported_constraints(m)::Vector{
         Tuple{MOI.AbstractFunction, MOI.AbstractSet}
     }
 
@@ -105,16 +88,18 @@ Get a list of supported constraint types in the model `m`.
 
 For example, `[(LQOI.Linear, LQOI.EQ)]`
 """
-lqs_supported_constraints(m::LinQuadOptimizer) = []
+function supported_constraints end
+@deprecate lqs_supported_constraints supported_constraints
 
 """
-    lqs_supported_objectives(m)::Vector{MOI.AbstractScalarFunction}
+    supported_objectives(m)::Vector{MOI.AbstractScalarFunction}
 
 Get a list of supported objective types in the model `m`.
 
 For example, `[LQOI.Linear, LQOI.Quad]`
 """
-lqs_supported_objectives(m::LinQuadOptimizer) = []
+function supported_objectives end
+@deprecate lqs_supported_objectives supported_objectives
 
 # Constraints
 
@@ -239,44 +224,47 @@ If an explicit call is needed to change the problem type continuous (e.g., CPLEX
 function lqs_make_problem_type_continuous(m::LinQuadOptimizer) end
 
 """
-    lqs_addsos!(m, cols::Vector{Int}, vals::Vector{Float64}, typ::Symbol)::Void
+    add_sos_constraint!(m, cols::Vector{Int}, vals::Vector{Float64}, typ::Symbol)::Void
 
 Add the SOS constraint to the model `m`. `typ` is either `:SOS1` or `:SOS2`.
 """
-function lqs_addsos!(m::LinQuadOptimizer, cols, vals, typ) end
+function add_sos_constraint! end
+@deprecate lqs_addsos! add_sos_constraint!
 
 """
-    lqs_delrows!(m, start_idx::Int, end_idx::Int)::Void
+    delete_sos!(m, start_idx::Int, end_idx::Int)::Void
 
 Delete the SOS constraints `start_idx`, `start_idx+1`, ..., `end_idx` from
 the model `m`.
 """
-function lqs_delsos!(m::LinQuadOptimizer, start_idx, end_idx) end
+function delete_sos! end
+@deprecate lqs_delsos! delete_sos!
 
 """
-    lqs_getsos(m, idx::Int)::Tuple{Vector{Int}, Vector{Float64}, Symbol}
+    get_sos_constraint(m, idx::Int)::Tuple{Vector{Int}, Vector{Float64}, Symbol}
 
 Get the SOS constraint `idx` from the model `m`. Returns the triplet
     `(cols, vals, typ)`.
 """
-function lqs_getsos(m::LinQuadOptimizer, idx) end
+function get_sos_constraint end
 
 """
-    lqs_getnumqconstrs(m)::Int
+    get_number_quadratic_constraints(m)::Int
 
 Get the number of quadratic constraints in the model `m`.
 """
-function lqs_getnumqconstrs(m::LinQuadOptimizer) end
+function get_number_quadratic_constraints end
+@deprecate lqs_getnumqcosntrs get_number_quadratic_constraints
 
 """
-    lqs_addqconstr!(m, cols::Vector{Int}, coefs::Vector{Float64}, rhs::Float64,
-        sense::Symbol, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Void
+    add_quadratic_constraint!(m, cols::Vector{Int}, coefs::Vector{Float64}, rhs::Float64,
+        sense, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Void
 
 Add a quadratic constraint `a'x + 0.5 x' Q x`.
 See `add_linear_constraints!` for information of linear component.
 Arguments `(I,J,V)` given in triplet form for the Q matrix in `0.5 x' Q x`.
 """
-function lqs_addqconstr!(m::LinQuadOptimizer, cols, coefs, rhs, sense, I, J, V) end
+function add_quadratic_constraint! end
 
 
 """
@@ -307,22 +295,22 @@ function set_linear_objective! end
 @deprecate lqs_chgobj! set_linear_objective!
 
 """
-    change_objectivesense!(m, sense::Symbol)::Void
+    change_objective_sense!(m, sense::Symbol)::Void
 
 Change the optimization sense of the model `m` to `sense`. `sense` must be
 `:min` or `:max`.
 """
-function change_objectivesense! end
-@deprecate lqs_chgobjsen! change_objectivesense!
+function change_objective_sense! end
+@deprecate lqs_chgobjsen! change_objective_sense!
 
-#TODO(@joaquimg): why is this not in-place?
 """
-    get_linearobjective(m)::Vector{Float64}
+    get_linear_objective!(m, x::Vector{Float64})
 
-Change the linear coefficients of the objective.
+Change the linear coefficients of the objective and store
+in `x`.
 """
-function get_linearobjective end
-@deprecate lqs_getobj get_linearobjective
+function get_linear_objective! end
+@deprecate lqs_getobj get_linear_objective!
 
 """
     get_objectivesense(m)::MOI.OptimizationSense
@@ -352,12 +340,6 @@ function lqs_qpopt!(m::LinQuadOptimizer) end
 Solve a linear program `m`.
 """
 function lqs_lpopt!(m::LinQuadOptimizer) end
-
-# TODO(@joaquim): what is this?
-function lqs_getstat(m::LinQuadOptimizer) end
-
-# TODO(@joaquim): what is this?
-function lqs_solninfo(m::LinQuadOptimizer) end # complex
 
 """
     get_variable_primal_solution!(m, x::Vector{Float64})
@@ -416,46 +398,50 @@ function get_quadratic_dual_solution! end
 @deprecate lqs_getqcpi! get_quadratic_dual_solution!
 
 """
-    get_objectivevalue!(m)
+    get_objective_value(m)
 
 Get the objective value of the solved model `m`.
 """
-function get_objectivevalue(m::LinQuadOptimizer) end
-@deprecate lqs_getobjval get_objectivevalue
+function get_objective_value end
+@deprecate lqs_getobjval get_objective_value
 
 # TODO(@joaquimg): what is this?
 function lqs_getbestobjval(m::LinQuadOptimizer) end
 
 """
-    lqs_getmiprelgap!(m)
+    get_relative_mip_gap(m)
 
 Get the relative MIP gap of the solved model `m`.
 """
-function lqs_getmiprelgap(m::LinQuadOptimizer) end
+function get_relative_mip_gap end
+@deprecate lqs_getmiprelgap get_relative_mip_gap
 
 """
-    lqs_getitcnt!(m)
+    get_iteration_count(m)
 
 Get the number of simplex iterations performed during the most recent
 optimization of the model `m`.
 """
-function lqs_getitcnt(m::LinQuadOptimizer) end
+function get_iteration_count end
+@deprecate lqs_getitcnt get_iteration_count
 
 """
-    lqs_getbaritcnt!(m)
+    get_barrier_iterations(m)
 
 Get the number of barrier iterations performed during the most recent
 optimization of the model `m`.
 """
-function lqs_getbaritcnt(m::LinQuadOptimizer) end
+function get_barrier_iterations end
+@deprecate lqs_getbaritcnt get_barrier_iterations
 
 """
-    lqs_getnodecnt!(m)
+    get_node_count(m)
 
 Get the number of branch-and-cut nodes expolored during the most recent
 optimization of the model `m`.
 """
-function lqs_getnodecnt(m::LinQuadOptimizer) end
+function get_node_count end
+@deprecate lqs_getnodecnt get_node_count
 
 """
     get_farkasdual!(m, x::Vector{Float64})
@@ -500,7 +486,6 @@ Get the dual status of the model `m`.
 function get_dualstatus end
 @deprecate lqs_dualstatus get_dualstatus
 
-# Variables
 """
     get_number_variables(m)::Int
 
@@ -526,8 +511,9 @@ function delete_variables! end
 @deprecate lqs_delcols! delete_variables!
 
 """
-    lqs_addmipstarts!(m, cols::Vector{Int}, x::Vector{Float64})::Void
+    add_mip_starts!(m, cols::Vector{Int}, x::Vector{Float64})::Void
 
 Add the MIP start `x` for the variables in the columns `cols` of the model `m`.
 """
-function lqs_addmipstarts!(m::LinQuadOptimizer, cols, x) end
+function add_mip_starts! end
+@deprecate lqs_addmipstarts! add_mip_starts!

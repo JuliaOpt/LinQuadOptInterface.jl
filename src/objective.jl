@@ -8,14 +8,14 @@ MOI.get(m::LinQuadOptimizer,::MOI.ObjectiveSense) = m.obj_sense
 MOI.canset(::LinQuadOptimizer, ::MOI.ObjectiveSense) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveSense, sense::MOI.OptimizationSense)
     if sense == MOI.MinSense
-        change_objectivesense!(m, :min)
+        change_objective_sense!(m, :min)
         m.obj_sense = MOI.MinSense
     elseif sense == MOI.MaxSense
-        change_objectivesense!(m, :max)
+        change_objective_sense!(m, :max)
         m.obj_sense = MOI.MaxSense
     elseif sense == MOI.FeasibilitySense
         # we set the objective sense to :min, and the objective to 0.0
-        change_objectivesense!(m, :min)
+        change_objective_sense!(m, :min)
         unsafe_set!(m, MOI.ObjectiveFunction{Linear}(), MOI.ScalarAffineFunction(VarInd[],Float64[],0.0))
         m.obj_is_quad = false
         m.obj_sense = MOI.FeasibilitySense
@@ -33,7 +33,7 @@ function MOI.canset(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}) where F<:MO
         # it doesn't make sense to set an objective for a feasibility problem
         return false
     end
-    return F in lqs_supported_objectives(m)
+    return F in supported_objectives(m)
 end
 
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, objf::Linear) where F
@@ -84,7 +84,8 @@ end
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear}) = !m.obj_is_quad
 function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear})
-    variable_coefficients = get_linearobjective(m)
+    variable_coefficients = zeros(length(m.variable_references))
+    get_linear_objective!(m, variable_coefficients)
     Linear(m.variable_references, variable_coefficients, m.objective_constant)
 end
 

@@ -19,7 +19,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::Quad, set::S) where S <: 
     dict = constrdict(m, ref)
     push!(m.qconstraint_primal_solution, NaN)
     push!(m.qconstraint_dual_solution, NaN)
-    # dict[ref] = lqs_getnumqconstrs(m)
+    # dict[ref] = get_number_quadratic_constraints(m)
     dict[ref] = length(m.qconstraint_primal_solution)
     return ref
 end
@@ -37,7 +37,7 @@ function addquadraticconstraint!(m::LinQuadOptimizer, f::Quad, sense::Cchar, rhs
         getcol.(m, f.quadratic_colvariables),
         f.quadratic_coefficients
     )
-    lqs_addqconstr!(m,
+    add_quadratic_constraint!(m,
         getcol.(m, f.affine_variables),
         f.affine_coefficients,
         rhs - f.constant,

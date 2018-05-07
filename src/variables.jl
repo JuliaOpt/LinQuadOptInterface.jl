@@ -175,10 +175,10 @@ end
 
 MOI.canset(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::VarInd) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ref::VarInd, val::Float64)
-    lqs_addmipstarts!(m, [getcol(m, ref)], [val])
+    add_mip_starts!(m, [getcol(m, ref)], [val])
 end
 
 MOI.canset(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::Vector{VarInd}) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, refs::Vector{VarInd}, vals::Vector{Float64})
-    lqs_addmipstarts!(m, getcol.(m, refs), vals)
+    add_mip_starts!(m, getcol.(m, refs), vals)
 end

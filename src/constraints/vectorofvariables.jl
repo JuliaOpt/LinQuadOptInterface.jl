@@ -65,7 +65,7 @@ end
 
 function MOI.addconstraint!(m::LinQuadOptimizer, v::VecVar, sos::S) where S <: Union{MOI.SOS1, MOI.SOS2}
     lqs_make_problem_type_integer(m)
-    lqs_addsos!(m, getcol.(m, v.variables), sos.weights, lqs_char(m, sos))
+    add_sos_constraint!(m, getcol.(m, v.variables), sos.weights, lqs_char(m, sos))
     m.last_constraint_reference += 1
     ref = VVCI{S}(m.last_constraint_reference)
     dict = constrdict(m, ref)
@@ -78,7 +78,7 @@ function MOI.delete!(m::LinQuadOptimizer, c::VVCI{<:Union{SOS1, SOS2}})
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     idx = dict[c]
-    lqs_delsos!(m, idx, idx)
+    delete_sos!(m, idx, idx)
     deleteref!(cmap(m).sos1, idx, c)
     deleteref!(cmap(m).sos2, idx, c)
     if !hasinteger(m)
@@ -88,7 +88,7 @@ end
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{VVCI{S}}) where S <: Union{MOI.SOS1, MOI.SOS2} = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::VVCI{S}) where S <: Union{MOI.SOS1, MOI.SOS2}
-    indices, weights, types = lqs_getsos(m, m[c])
+    indices, weights, types = get_sos_constraint(m, m[c])
     set = S(weights)
     @assert types == lqs_char(m, set)
     return set
@@ -96,6 +96,6 @@ end
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{VVCI{S}}) where S <: Union{MOI.SOS1, MOI.SOS2} = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VVCI{<:Union{SOS1, SOS2}})
-    indices, weights, types = lqs_getsos(m, m[c])
+    indices, weights, types = get_sos_constraint(m, m[c])
     return VecVar(m.variable_references[indices])
 end

@@ -118,7 +118,7 @@ end
 
 function MOI.get(m::LinQuadOptimizer, attr::MOI.ObjectiveValue)
     if attr.resultindex == 1
-        get_objectivevalue(m) + m.objective_constant
+        get_objective_value(m) + m.objective_constant
     else
         error("Unable to access multiple objective values")
     end
@@ -261,7 +261,7 @@ MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveBound) = lqs_getbestobjval(m)
 MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveBound) = true
 
 # struct RelativeGap <: MOI.AbstractOptimizerAttribute  end
-MOI.get(m::LinQuadOptimizer, ::MOI.RelativeGap) = lqs_getmiprelgap(m)
+MOI.get(m::LinQuadOptimizer, ::MOI.RelativeGap) = get_relative_mip_gap(m)
 MOI.canget(m::LinQuadOptimizer, ::MOI.RelativeGap) = true
 
 # struct SolveTime <: MOI.AbstractOptimizerAttribute end
@@ -269,15 +269,15 @@ MOI.get(m::LinQuadOptimizer, ::MOI.SolveTime) = m.solvetime
 MOI.canget(m::LinQuadOptimizer, ::MOI.SolveTime) = true
 
 # struct SimplexIterations <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.SimplexIterations) = lqs_getitcnt(m)
+MOI.get(m::LinQuadOptimizer, ::MOI.SimplexIterations) = get_iteration_count(m)
 MOI.canget(m::LinQuadOptimizer, ::MOI.SimplexIterations) = true
 
 # struct BarrierIterations <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.BarrierIterations) = lqs_getbaritcnt(m)
+MOI.get(m::LinQuadOptimizer, ::MOI.BarrierIterations) = get_barrier_iterations(m)
 MOI.canget(m::LinQuadOptimizer, ::MOI.BarrierIterations) = true
 
 # struct NodeCount <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.NodeCount) = lqs_getnodecnt(m)
+MOI.get(m::LinQuadOptimizer, ::MOI.NodeCount) = get_node_count(m)
 MOI.canget(m::LinQuadOptimizer, ::MOI.NodeCount) = true
 
 # struct RawSolver <: MOI.AbstractOptimizerAttribute end

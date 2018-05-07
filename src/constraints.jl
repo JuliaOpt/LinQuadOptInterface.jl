@@ -52,7 +52,7 @@ end
 =#
 
 function MOI.canaddconstraint(m::LinQuadOptimizer, f::Type{F}, s::Type{S}) where {F<:MOI.AbstractFunction, S<:MOI.AbstractSet}
-    return (f,s) in lqs_supported_constraints(m)
+    return (f,s) in supported_constraints(m)
 end
 
 #=
@@ -60,7 +60,7 @@ end
 =#
 
 function MOI.canget(m::LinQuadOptimizer, ::MOI.NumberOfConstraints{F, S}) where F where S
-    return (F,S) in lqs_supported_constraints(m)
+    return (F,S) in supported_constraints(m)
 end
 function MOI.get(m::LinQuadOptimizer, ::MOI.NumberOfConstraints{F, S}) where F where S
     length(constrdict(m, CI{F,S}(UInt(0))))
@@ -71,7 +71,7 @@ end
 =#
 
 function MOI.canget(m::LinQuadOptimizer, ::MOI.ListOfConstraintIndices{F, S}) where F where S
-    return (F,S) in lqs_supported_constraints(m)
+    return (F,S) in supported_constraints(m)
 end
 function MOI.get(m::LinQuadOptimizer, ::MOI.ListOfConstraintIndices{F, S}) where F where S
     sort(collect(keys(constrdict(m, CI{F,S}(UInt(0))))), by=x->x.value)
@@ -84,7 +84,7 @@ end
 MOI.canget(m::LinQuadOptimizer, ::MOI.ListOfConstraints) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ListOfConstraints)
     ret = []
-    for (F,S) in lqs_supported_constraints(m)
+    for (F,S) in supported_constraints(m)
         if MOI.get(m, MOI.NumberOfConstraints{F,S}()) > 0
             push!(ret, (F,S))
         end

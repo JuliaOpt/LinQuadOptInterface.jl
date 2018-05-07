@@ -267,10 +267,10 @@ end
 MOI.canset(m::LinQuadOptimizer, ::MOI.Name) = true
 
 function MOI.supportsconstraint(m::LinQuadOptimizer, ft::Type{F}, st::Type{S}) where F <: MOI.AbstractFunction where S <: MOI.AbstractSet
-    (ft,st) in lqs_supported_constraints(m)
+    (ft,st) in supported_constraints(m)
 end
 function MOI.supports(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}) where F <: MOI.AbstractFunction
-    F in lqs_supported_objectives(m)
+    F in supported_objectives(m)
 end
 
 # a useful helper function
