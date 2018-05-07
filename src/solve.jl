@@ -28,34 +28,34 @@ function MOI.optimize!(m::LinQuadOptimizer)
     m.solvetime = time() - t
 
     # termination_status
-    m.termination_status = lqs_terminationstatus(m)
-    m.primal_status = lqs_primalstatus(m)
-    m.dual_status = lqs_dualstatus(m)
+    m.termination_status = get_terminationstatus(m)
+    m.primal_status = get_primalstatus(m)
+    m.dual_status = get_dualstatus(m)
 
     if m.primal_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
         # primal solution exists
-        lqs_getx!(m, m.variable_primal_solution)
-        lqs_getax!(m, m.constraint_primal_solution)
+        get_variable_primal_solution!(m, m.variable_primal_solution)
+        get_linear_primal_solution!(m, m.constraint_primal_solution)
         if hasquadratic(m)
-            lqs_getqcax!(m, m.qconstraint_primal_solution)
+            get_quadratic_primal_solution!(m, m.qconstraint_primal_solution)
         end
         m.primal_result_count = 1
         # CPLEX can return infeasible points
     elseif m.primal_status == MOI.InfeasibilityCertificate
-        lqs_getray!(m, m.variable_primal_solution)
+        get_unboundedray!(m, m.variable_primal_solution)
         m.primal_result_count = 1
     end
     if m.dual_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
         # dual solution exists
-        lqs_getdj!(m, m.variable_dual_solution)
-        lqs_getpi!(m, m.constraint_dual_solution)
+        get_reducedcosts!(m, m.variable_dual_solution)
+        get_linear_dual_solution!(m, m.constraint_dual_solution)
         if hasquadratic(m)
-            lqs_getqcpi!(m, m.qconstraint_dual_solution)
+            get_quadratic_dual_solution!(m, m.qconstraint_dual_solution)
         end
         m.dual_result_count = 1
         # dual solution may not be feasible
     elseif m.dual_status == MOI.InfeasibilityCertificate
-        lqs_dualfarkas!(m, m.constraint_dual_solution)
+        get_farkasdual!(m, m.constraint_dual_solution)
         m.dual_result_count = 1
     end
 
@@ -118,7 +118,7 @@ end
 
 function MOI.get(m::LinQuadOptimizer, attr::MOI.ObjectiveValue)
     if attr.resultindex == 1
-        lqs_getobjval(m) + m.objective_constant
+        get_objectivevalue(m) + m.objective_constant
     else
         error("Unable to access multiple objective values")
     end

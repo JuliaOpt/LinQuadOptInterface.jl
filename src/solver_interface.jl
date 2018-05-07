@@ -141,7 +141,7 @@ function get_variable_upperbound end
 
 Get the number of linear constraints in the model `m`.
 """
-function get_number_linear_constraints(m::LinQuadOptimizer) end
+function get_number_linear_constraints end
 @deprecate lqs_getnumrows get_number_linear_constraints
 
 """
@@ -158,7 +158,7 @@ The `sense` is given by `lqs_char(m, set)`.
 
 Ranged constraints (`set=MOI.Interval`) require a call to `lqs_chgrngval!`.
 """
-function add_linear_constraints!(m::LinQuadOptimizer, rows, cols, coefs, sense, rhs) end
+function add_linear_constraints! end
 @deprecate lqs_addrows! add_linear_constraints!
 
 """
@@ -167,7 +167,7 @@ function add_linear_constraints!(m::LinQuadOptimizer, rows, cols, coefs, sense, 
 Get the right-hand side of the linear constraint in the 1-indexed row `row` in
 the model `m`.
 """
-function get_rhs(m::LinQuadOptimizer, row) end
+function get_rhs end
 @deprecate lqs_getrhs get_rhs
 
 """
@@ -176,34 +176,37 @@ function get_rhs(m::LinQuadOptimizer, row) end
 Get the linear component of the constraint in the 1-indexed row `row` in
 the model `m`. Returns a tuple of `(cols, vals)`.
 """
-function get_linear_constraint(m::LinQuadOptimizer, row) end
+function get_linear_constraint end
 @deprecate lqs_getrows get_linear_constraint
 
-"""
-    lqs_getcoef(m, row::Int, col::Int)::Float64
+# """
+#     get_coefficient(m, row::Int, col::Int)
+#
+# Get the linear coefficient of the variable in column `col`, constraint `row`.
+# """
+# function get_coefficient end
+# @deprecate lqs_getcoef get_coefficient
 
-Get the linear coefficient of the variable in column `col`, constraint `row`.
 """
-function lqs_getcoef(m::LinQuadOptimizer, row, col) end
-
-"""
-    lqs_chgcoef(m, row::Int, col::Int, coef::Float64)::Void
+    change_coefficient!(m, row, col, coef)
 
 Set the linear coefficient of the variable in column `col`, constraint `row` to
 `coef`.
 """
-function lqs_chgcoef!(m::LinQuadOptimizer, row, col, coef) end
+function change_coefficient! end
+@deprecate lqs_chgcoef! change_coefficient!
 
 """
-    lqs_delrows!(m, start_row::Int, end_row::Int)::Void
+    delete_linear_constraints!(m, start_row::Int, end_row::Int)::Void
 
 Delete the linear constraints `start_row`, `start_row+1`, ..., `end_row` from
 the model `m`.
 """
-function lqs_delrows!(m::LinQuadOptimizer, start_row, end_row) end
+function delete_linear_constraints! end
+@deprecate lqs_delrows! delete_linear_constraints!
 
 """
-    lqs_chgctype(m, cols::Vector{Int}, types::Vector{Symbol})::Void
+    lqs_chgctype(m, cols::Vector{Int}, types):Void
 
 Change the variable types. Variable type must be `:CONTINUOUS`, `:INTEGER`, or
 `:BINARY`.
@@ -286,46 +289,48 @@ See `add_linear_constraints!` for more.
 """
 function lqs_chgrngval!(m::LinQuadOptimizer, rows, vals) end# later
 
-#Objective
 """
-    lqs_chgobj!(m, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Void
+    set_quadratic_objective!(m, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Void
 
 Set the quadratic component of the objective. Arguments given in triplet form
 for the Q matrix in `0.5 x' Q x`.
 """
-function lqs_copyquad!(m::LinQuadOptimizer, I, J, V) end
+function set_quadratic_objective! end
+@deprecate lqs_copyquad! set_quadratic_objective!
 
 """
-    lqs_chgobj!(m, cols::Vector{Int}, coefs::Vector{Float64})::Void
+    set_linear_objective!(m, cols::Vector{Int}, coefs::Vector{Float64})::Void
 
 Set the linear component of the objective.
 """
-function lqs_chgobj!(m::LinQuadOptimizer, cols, coefs) end
+function set_linear_objective! end
+@deprecate lqs_chgobj! set_linear_objective!
 
 """
-    lqs_chgobjsen(m, sense::Symbol)::Void
+    change_objectivesense!(m, sense::Symbol)::Void
 
 Change the optimization sense of the model `m` to `sense`. `sense` must be
 `:min` or `:max`.
 """
-function lqs_chgobjsen!(m::LinQuadOptimizer, sense) end
+function change_objectivesense! end
+@deprecate lqs_chgobjsen! change_objectivesense!
 
 #TODO(@joaquimg): why is this not in-place?
 """
-    lqs_getobj(m)::Vector{Float64}
+    get_linearobjective(m)::Vector{Float64}
 
 Change the linear coefficients of the objective.
 """
-function lqs_getobj(m::LinQuadOptimizer) end
+function get_linearobjective end
+@deprecate lqs_getobj get_linearobjective
 
 """
-    lqs_getobjsen(m)::MOI.OptimizationSense
+    get_objectivesense(m)::MOI.OptimizationSense
 
 Get the optimization sense of the model `m`.
 """
-function lqs_getobjsen(m::LinQuadOptimizer) end
-
-#Solve
+function get_objectivesense end
+@deprecate lqs_getobjsen get_objectivesense
 
 """
     lqs_mipopt!(m)::Void
@@ -355,61 +360,68 @@ function lqs_getstat(m::LinQuadOptimizer) end
 function lqs_solninfo(m::LinQuadOptimizer) end # complex
 
 """
-    lqs_getx!(m, x::Vector{Float64})
+    get_variable_primal_solution!(m, x::Vector{Float64})
 
 Get the primal solution for the variables in the model `m`, and
 store in `x`. `x`must have one element for each variable.
 """
-function lqs_getx!(m::LinQuadOptimizer, x) end
+function get_variable_primal_solution! end
+@deprecate lqs_getx! get_variable_primal_solution!
 
 """
-    lqs_getax!(m, x::Vector{Float64})
+    get_linear_primal_solution!(m, x::Vector{Float64})
 
 Given a set of linear constraints `l <= a'x <= b` in the model `m`, get the
 constraint primal `a'x` for each constraint, and store in `x`.
 `x` must have one element for each linear constraint.
 """
-function lqs_getax!(m::LinQuadOptimizer, x) end
+function get_linear_primal_solution! end
+@deprecate lqs_getax! get_linear_primal_solution!
 
 """
-    lqs_getqcax!(m, x::Vector{Float64})
+    get_quadratic_primal_solution!(m, x::Vector{Float64})
 
 Given a set of quadratic constraints `l <= a'x + x'Qx <= b` in the model `m`,
 get the constraint primal `a'x + x'Qx` for each constraint, and store in `x`.
 `x` must have one element for each quadratic constraint.
 """
-function lqs_getqcax!(m::LinQuadOptimizer, x) end
+function get_quadratic_primal_solution! end
+@deprecate lqs_getqcax! get_quadratic_primal_solution!
 
 """
-    lqs_getdj!(m, x::Vector{Float64})
+    get_reducedcosts!(m, x::Vector{Float64})
 
 Get the dual solution (reduced-costs) for the variables in the model `m`, and
 store in `x`. `x`must have one element for each variable.
 """
-function lqs_getdj!(m::LinQuadOptimizer, x) end
+function get_reducedcosts! end
+@deprecate lqs_getdj! get_reducedcosts!
 
 """
-    lqs_getpi!(m, x::Vector{Float64})
+    get_linear_dual_solution!(m, x::Vector{Float64})
 
 Get the dual solution for the linear constraints in the model `m`, and
 store in `x`. `x`must have one element for each linear constraint.
 """
-function lqs_getpi!(m::LinQuadOptimizer, x) end
+function get_linear_dual_solution! end
+@deprecate lqs_getpi! get_linear_dual_solution!
 
 """
-    lqs_getqcpi!(m, x::Vector{Float64})
+    get_quadratic_dual_solution!(m, x::Vector{Float64})
 
 Get the dual solution for the quadratic constraints in the model `m`, and
 store in `x`. `x`must have one element for each quadratic constraint.
 """
-function lqs_getqcpi!(m::LinQuadOptimizer, x) end
+function get_quadratic_dual_solution! end
+@deprecate lqs_getqcpi! get_quadratic_dual_solution!
 
 """
-    lqs_getobjval!(m)
+    get_objectivevalue!(m)
 
 Get the objective value of the solved model `m`.
 """
-function lqs_getobjval(m::LinQuadOptimizer) end
+function get_objectivevalue(m::LinQuadOptimizer) end
+@deprecate lqs_getobjval get_objectivevalue
 
 # TODO(@joaquimg): what is this?
 function lqs_getbestobjval(m::LinQuadOptimizer) end
@@ -446,64 +458,72 @@ optimization of the model `m`.
 function lqs_getnodecnt(m::LinQuadOptimizer) end
 
 """
-    lqs_dualfarkas!(m, x::Vector{Float64})
+    get_farkasdual!(m, x::Vector{Float64})
 
 Get the farkas dual (certificate of primal infeasiblility) for the linear constraints
 in the model `m`, and store in `x`. `x`must have one element for each linear
 constraint.
 """
-function lqs_dualfarkas!(m::LinQuadOptimizer, x) end
+function get_farkasdual! end
+@deprecate lqs_dualfarkas! get_farkasdual!
 
 """
-    lqs_getray!(m, x::Vector{Float64})
+    get_unboundedray!(m, x::Vector{Float64})
 
 Get the unbounded ray (certificate of dual infeasiblility) for the linear constraints
 in the model `m`, and store in `x`. `x`must have one element for each variable.
 """
-function lqs_getray!(m::LinQuadOptimizer, x) end
+function get_unboundedray! end
+@deprecate lqs_getray! get_unboundedray!
 
 """
-    lqs_terminationstatus(m)
+    get_terminationstatus(m)
 
 Get the termination status of the model `m`.
 """
-function lqs_terminationstatus(m::LinQuadOptimizer) end
+function get_terminationstatus end
+@deprecate lqs_terminationstatus get_terminationstatus
 
 """
-    lqs_primalstatus(m)
+    get_primalstatus(m)
 
 Get the primal status of the model `m`.
 """
-function lqs_primalstatus(m::LinQuadOptimizer) end
+function get_primalstatus end
+@deprecate lqs_primalstatus get_primalstatus
 
 """
-    lqs_dualstatus(m)
+    get_dualstatus(m)
 
 Get the dual status of the model `m`.
 """
-function lqs_dualstatus(m::LinQuadOptimizer) end
+function get_dualstatus end
+@deprecate lqs_dualstatus get_dualstatus
 
 # Variables
 """
-    lqs_getnumcols(m)::Int
+    get_number_variables(m)::Int
 
 Get the number of variables in the model `m`.
 """
-function lqs_getnumcols(m::LinQuadOptimizer) end
+function get_number_variables end
+@deprecate lqs_getnumcols get_number_variables
 
 """
-    lqs_newcols!(m, n::Int)::Void
+    add_variables!(m, n::Int)::Void
 
 Add `n` new variables to the model `m`.
 """
-function lqs_newcols!(m::LinQuadOptimizer, n) end
+function add_variables! end
+@deprecate lqs_newcols! add_variables!
 
 """
-    lqs_delcols!(m, start_col::Int, end_col::Int)::Void
+    delete_variables!(m, start_col::Int, end_col::Int)::Void
 
 Delete the columns `start_col`, `start_col+1`, ..., `end_col` from the model `m`.
 """
-function lqs_delcols!(m::LinQuadOptimizer, start_col, end_col) end
+function delete_variables! end
+@deprecate lqs_delcols! delete_variables!
 
 """
     lqs_addmipstarts!(m, cols::Vector{Int}, x::Vector{Float64})::Void

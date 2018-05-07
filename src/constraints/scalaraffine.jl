@@ -127,7 +127,7 @@ end
 MOI.canmodifyconstraint(m::LinQuadOptimizer, c::LCI{<: LinSets}, ::Type{MOI.ScalarCoefficientChange{Float64}}) = true
 function MOI.modifyconstraint!(m::LinQuadOptimizer, c::LCI{<: LinSets}, chg::MOI.ScalarCoefficientChange{Float64})
     col = m.variable_mapping[chg.variable]
-    lqs_chgcoef!(m, m[c], col, chg.new_coefficient)
+    change_coefficient!(m, m[c], col, chg.new_coefficient)
 end
 
 #=
@@ -137,7 +137,7 @@ end
 MOI.canmodifyconstraint(m::LinQuadOptimizer, c::LCI{S}, ::Type{S}) where S <: Union{LE, GE, EQ} = true
 function MOI.modifyconstraint!(m::LinQuadOptimizer, c::LCI{S}, newset::S) where S <: Union{LE, GE, EQ}
     # the column 0 (or -1 in 0-index) is the rhs.
-    lqs_chgcoef!(m, m[c], 0, _getrhs(newset))
+    change_coefficient!(m, m[c], 0, _getrhs(newset))
 end
 
 MOI.canmodifyconstraint(m::LinQuadOptimizer, c::LCI{IV}, ::Type{IV}) = true
@@ -146,7 +146,7 @@ function MOI.modifyconstraint!(m::LinQuadOptimizer, c::LCI{IV}, set::IV)
     # a range constraint has the RHS value of the lower limit of the range, and
     # a rngval equal to upper-lower.
     row = m[c]
-    lqs_chgcoef!(m, row, 0, set.lower)
+    change_coefficient!(m, row, 0, set.lower)
     lqs_chgrngval!(m, [row], [set.upper - set.lower])
 end
 
@@ -159,7 +159,7 @@ function MOI.delete!(m::LinQuadOptimizer, c::LCI{<: LinSets})
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     row = dict[c]
-    lqs_delrows!(m, row, row)
+    delete_linear_constraints!(m, row, row)
     deleteat!(m.constraint_primal_solution, row)
     deleteat!(m.constraint_dual_solution, row)
     deleteat!(m.constraint_constant, row)

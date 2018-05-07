@@ -8,14 +8,14 @@ MOI.get(m::LinQuadOptimizer,::MOI.ObjectiveSense) = m.obj_sense
 MOI.canset(::LinQuadOptimizer, ::MOI.ObjectiveSense) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveSense, sense::MOI.OptimizationSense)
     if sense == MOI.MinSense
-        lqs_chgobjsen!(m, :min)
+        change_objectivesense!(m, :min)
         m.obj_sense = MOI.MinSense
     elseif sense == MOI.MaxSense
-        lqs_chgobjsen!(m, :max)
+        change_objectivesense!(m, :max)
         m.obj_sense = MOI.MaxSense
     elseif sense == MOI.FeasibilitySense
         # we set the objective sense to :min, and the objective to 0.0
-        lqs_chgobjsen!(m, :min)
+        change_objectivesense!(m, :min)
         unsafe_set!(m, MOI.ObjectiveFunction{Linear}(), MOI.ScalarAffineFunction(VarInd[],Float64[],0.0))
         m.obj_is_quad = false
         m.obj_sense = MOI.FeasibilitySense
@@ -51,16 +51,16 @@ function unsafe_set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, objf::Line
         # previous objective was quadratic...
         m.obj_is_quad = false
         # zero quadratic part
-        lqs_copyquad!(m, Int[], Int[], Float64[])
+        set_quadratic_objective!(m, Int[], Int[], Float64[])
     end
-    lqs_chgobj!(m, getcol.(m, objf.variables), objf.coefficients)
+    set_linear_objective!(m, getcol.(m, objf.variables), objf.coefficients)
     m.objective_constant = objf.constant
     nothing
 end
 
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction, objf::Quad)
     m.obj_is_quad = true
-    lqs_chgobj!(m,
+    set_linear_objective!(m,
         getcol.(m, objf.affine_variables),
         objf.affine_coefficients
     )
@@ -69,7 +69,7 @@ function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction, objf::Quad)
         getcol.(m, objf.quadratic_colvariables),
         objf.quadratic_coefficients
     )
-    lqs_copyquad!(m,
+    set_quadratic_objective!(m,
         ri,
         ci,
         vi
@@ -84,7 +84,7 @@ end
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear}) = !m.obj_is_quad
 function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear})
-    variable_coefficients = lqs_getobj(m)
+    variable_coefficients = get_linearobjective(m)
     Linear(m.variable_references, variable_coefficients, m.objective_constant)
 end
 
@@ -96,5 +96,5 @@ MOI.canmodifyobjective(m::LinQuadOptimizer, ::Type{MOI.ScalarCoefficientChange{F
 function MOI.modifyobjective!(m::LinQuadOptimizer, chg::MOI.ScalarCoefficientChange{Float64})
     col = m.variable_mapping[chg.variable]
     # 0 row is the objective
-    lqs_chgcoef!(m, 0, col, chg.new_coefficient)
+    change_coefficient!(m, 0, col, chg.new_coefficient)
 end

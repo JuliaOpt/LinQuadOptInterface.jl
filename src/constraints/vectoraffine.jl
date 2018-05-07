@@ -51,7 +51,7 @@ MOI.canmodifyconstraint(m::LinQuadOptimizer, ::VLCI{<: VecLinSets}, ::Type{MOI.V
 function MOI.modifyconstraint!(m::LinQuadOptimizer, ref::VLCI{<: VecLinSets}, chg::MOI.VectorConstantChange{Float64})
     @assert length(chg.new_constant) == length(m[ref])
     for (r, v) in zip(m[ref], chg.new_constant)
-        lqs_chgcoef!(m, r, 0, -v)
+        change_coefficient!(m, r, 0, -v)
         m.constraint_constant[r] = v
     end
 end
