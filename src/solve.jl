@@ -19,43 +19,43 @@ function MOI.optimize!(m::LinQuadOptimizer)
 
     t = time()
     if hasinteger(m)
-        lqs_mipopt!(m)
+        solve_mip_problem!(m)
     elseif hasquadratic(m)
-        lqs_qpopt!(m)
+        solve_quadratic_problem!(m)
     else
-        lqs_lpopt!(m)
+        solve_linear_problem!(m)
     end
     m.solvetime = time() - t
 
     # termination_status
-    m.termination_status = lqs_terminationstatus(m)
-    m.primal_status = lqs_primalstatus(m)
-    m.dual_status = lqs_dualstatus(m)
+    m.termination_status = get_termination_status(m)
+    m.primal_status = get_primal_status(m)
+    m.dual_status = get_dual_status(m)
 
     if m.primal_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
         # primal solution exists
-        lqs_getx!(m, m.variable_primal_solution)
-        lqs_getax!(m, m.constraint_primal_solution)
+        get_variable_primal_solution!(m, m.variable_primal_solution)
+        get_linear_primal_solution!(m, m.constraint_primal_solution)
         if hasquadratic(m)
-            lqs_getqcax!(m, m.qconstraint_primal_solution)
+            get_quadratic_primal_solution!(m, m.qconstraint_primal_solution)
         end
         m.primal_result_count = 1
         # CPLEX can return infeasible points
     elseif m.primal_status == MOI.InfeasibilityCertificate
-        lqs_getray!(m, m.variable_primal_solution)
+        get_unbounded_ray!(m, m.variable_primal_solution)
         m.primal_result_count = 1
     end
     if m.dual_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
         # dual solution exists
-        lqs_getdj!(m, m.variable_dual_solution)
-        lqs_getpi!(m, m.constraint_dual_solution)
+        get_variable_dual_solution!(m, m.variable_dual_solution)
+        get_linear_dual_solution!(m, m.constraint_dual_solution)
         if hasquadratic(m)
-            lqs_getqcpi!(m, m.qconstraint_dual_solution)
+            get_quadratic_dual_solution!(m, m.qconstraint_dual_solution)
         end
         m.dual_result_count = 1
         # dual solution may not be feasible
     elseif m.dual_status == MOI.InfeasibilityCertificate
-        lqs_dualfarkas!(m, m.constraint_dual_solution)
+        get_farkas_dual!(m, m.constraint_dual_solution)
         m.dual_result_count = 1
     end
 
@@ -118,7 +118,7 @@ end
 
 function MOI.get(m::LinQuadOptimizer, attr::MOI.ObjectiveValue)
     if attr.resultindex == 1
-        lqs_getobjval(m) + m.objective_constant
+        get_objective_value(m) + m.objective_constant
     else
         error("Unable to access multiple objective values")
     end
@@ -257,11 +257,11 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{VLCI{S}}) where S <
 =#
 
 # struct ObjectiveBound <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveBound) = lqs_getbestobjval(m)
+MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveBound) = get_objective_bound(m)
 MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveBound) = true
 
 # struct RelativeGap <: MOI.AbstractOptimizerAttribute  end
-MOI.get(m::LinQuadOptimizer, ::MOI.RelativeGap) = lqs_getmiprelgap(m)
+MOI.get(m::LinQuadOptimizer, ::MOI.RelativeGap) = get_relative_mip_gap(m)
 MOI.canget(m::LinQuadOptimizer, ::MOI.RelativeGap) = true
 
 # struct SolveTime <: MOI.AbstractOptimizerAttribute end
@@ -269,15 +269,15 @@ MOI.get(m::LinQuadOptimizer, ::MOI.SolveTime) = m.solvetime
 MOI.canget(m::LinQuadOptimizer, ::MOI.SolveTime) = true
 
 # struct SimplexIterations <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.SimplexIterations) = lqs_getitcnt(m)
+MOI.get(m::LinQuadOptimizer, ::MOI.SimplexIterations) = get_iteration_count(m)
 MOI.canget(m::LinQuadOptimizer, ::MOI.SimplexIterations) = true
 
 # struct BarrierIterations <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.BarrierIterations) = lqs_getbaritcnt(m)
+MOI.get(m::LinQuadOptimizer, ::MOI.BarrierIterations) = get_barrier_iterations(m)
 MOI.canget(m::LinQuadOptimizer, ::MOI.BarrierIterations) = true
 
 # struct NodeCount <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.NodeCount) = lqs_getnodecnt(m)
+MOI.get(m::LinQuadOptimizer, ::MOI.NodeCount) = get_node_count(m)
 MOI.canget(m::LinQuadOptimizer, ::MOI.NodeCount) = true
 
 # struct RawSolver <: MOI.AbstractOptimizerAttribute end

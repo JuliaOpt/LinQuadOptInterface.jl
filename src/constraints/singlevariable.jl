@@ -20,22 +20,22 @@ constrdict(m::LinQuadOptimizer, ::SVCI{MOI.ZeroOne}) = cmap(m).binary
 constrdict(m::LinQuadOptimizer, ::SVCI{MOI.Integer}) = cmap(m).integer
 
 function setvariablebound!(m::LinQuadOptimizer, col::Int, bound::Float64, sense::Cchar)
-    lqs_chgbds!(m, [col], [bound], [sense])
+    change_variable_bounds!(m, [col], [bound], [sense])
 end
 
 function setvariablebound!(m::LinQuadOptimizer, v::SinVar, set::LE)
-    setvariablebound!(m, getcol(m, v), set.upper, lqs_char(m, Val{:Upperbound}()))
+    setvariablebound!(m, getcol(m, v), set.upper, backend_type(m, Val{:Upperbound}()))
 end
 function setvariablebound!(m::LinQuadOptimizer, v::SinVar, set::GE)
-    setvariablebound!(m, getcol(m, v), set.lower, lqs_char(m, Val{:Lowerbound}()))
+    setvariablebound!(m, getcol(m, v), set.lower, backend_type(m, Val{:Lowerbound}()))
 end
 function setvariablebound!(m::LinQuadOptimizer, v::SinVar, set::EQ)
-    setvariablebound!(m, getcol(m, v), set.value, lqs_char(m, Val{:Upperbound}()))
-    setvariablebound!(m, getcol(m, v), set.value, lqs_char(m, Val{:Lowerbound}()))
+    setvariablebound!(m, getcol(m, v), set.value, backend_type(m, Val{:Upperbound}()))
+    setvariablebound!(m, getcol(m, v), set.value, backend_type(m, Val{:Lowerbound}()))
 end
 function setvariablebound!(m::LinQuadOptimizer, v::SinVar, set::IV)
-    setvariablebound!(m, getcol(m, v), set.upper, lqs_char(m, Val{:Upperbound}()))
-    setvariablebound!(m, getcol(m, v), set.lower, lqs_char(m, Val{:Lowerbound}()))
+    setvariablebound!(m, getcol(m, v), set.upper, backend_type(m, Val{:Upperbound}()))
+    setvariablebound!(m, getcol(m, v), set.lower, backend_type(m, Val{:Lowerbound}()))
 end
 
 # add constraint
@@ -61,17 +61,23 @@ end
 # constraint set
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S <: LinSets = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{LE})
-    MOI.LessThan{Float64}(lqs_getub(m, getcol(m, m[c])))
+    MOI.LessThan{Float64}(
+        get_variable_upperbound(m, getcol(m, m[c]))
+    )
 end
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{GE})
-    MOI.GreaterThan{Float64}(lqs_getlb(m, getcol(m, m[c])))
+    MOI.GreaterThan{Float64}(
+        get_variable_lowerbound(m, getcol(m, m[c]))
+    )
 end
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{EQ})
-    MOI.EqualTo{Float64}(lqs_getlb(m, getcol(m, m[c])))
+    MOI.EqualTo{Float64}(
+        get_variable_lowerbound(m, getcol(m, m[c]))
+    )
 end
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{IV})
-    lb = lqs_getlb(m, getcol(m, m[c]))
-    ub = lqs_getub(m, getcol(m, m[c]))
+    lb = get_variable_lowerbound(m, getcol(m, m[c]))
+    ub = get_variable_upperbound(m, getcol(m, m[c]))
     return MOI.Interval{Float64}(lb, ub)
 end
 
@@ -100,13 +106,13 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.ZeroOne)
     m.last_constraint_reference += 1
     ref = SVCI{MOI.ZeroOne}(m.last_constraint_reference)
     dict = constrdict(m, ref)
-    ub = lqs_getub(m, getcol(m, v))
-    lb = lqs_getlb(m, getcol(m, v))
+    ub = get_variable_upperbound(m, getcol(m, v))
+    lb = get_variable_lowerbound(m, getcol(m, v))
     dict[ref] = (v.variable, lb, ub)
-    lqs_chgctype!(m, [getcol(m, v)], [lqs_char(m, set)])
-    setvariablebound!(m, getcol(m, v), 1.0, lqs_char(m, Val{:Upperbound}()))
-    setvariablebound!(m, getcol(m, v), 0.0, lqs_char(m, Val{:Lowerbound}()))
-    lqs_make_problem_type_integer(m)
+    change_variable_types!(m, [getcol(m, v)], [backend_type(m, set)])
+    setvariablebound!(m, getcol(m, v), 1.0, backend_type(m, Val{:Upperbound}()))
+    setvariablebound!(m, getcol(m, v), 0.0, backend_type(m, Val{:Lowerbound}()))
+    make_problem_type_integer(m)
     ref
 end
 
@@ -115,12 +121,12 @@ function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.ZeroOne})
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     (v, lb, ub) = dict[c]
-    lqs_chgctype!(m, [getcol(m, v)], [lqs_char(m, Val{:Continuous}())])
-    setvariablebound!(m, getcol(m, v), ub, lqs_char(m, Val{:Upperbound}()))
-    setvariablebound!(m, getcol(m, v), lb, lqs_char(m, Val{:Lowerbound}()))
+    change_variable_types!(m, [getcol(m, v)], [backend_type(m, Val{:Continuous}())])
+    setvariablebound!(m, getcol(m, v), ub, backend_type(m, Val{:Upperbound}()))
+    setvariablebound!(m, getcol(m, v), lb, backend_type(m, Val{:Lowerbound}()))
     delete!(dict, c)
     if !hasinteger(m)
-        lqs_make_problem_type_continuous(m)
+        make_problem_type_continuous(m)
     end
 end
 
@@ -135,12 +141,12 @@ MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.ZeroOne}) = m
 =#
 
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.Integer)
-    lqs_chgctype!(m, [getcol(m, v)], [lqs_char(m, set)])
+    change_variable_types!(m, [getcol(m, v)], [backend_type(m, set)])
     m.last_constraint_reference += 1
     ref = SVCI{MOI.Integer}(m.last_constraint_reference)
     dict = constrdict(m, ref)
     dict[ref] = v.variable
-    lqs_make_problem_type_integer(m)
+    make_problem_type_integer(m)
     ref
 end
 
@@ -148,10 +154,10 @@ function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.Integer})
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     v = dict[c]
-    lqs_chgctype!(m, [getcol(m, v)], [lqs_char(m, Val{:Continuous}())])
+    change_variable_types!(m, [getcol(m, v)], [backend_type(m, Val{:Continuous}())])
     delete!(dict, c)
     if !hasinteger(m)
-        lqs_make_problem_type_continuous(m)
+        make_problem_type_continuous(m)
     end
 end
 MOI.candelete(m::LinQuadOptimizer, c::SVCI{MOI.Integer}) = true

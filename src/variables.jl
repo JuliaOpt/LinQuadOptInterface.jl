@@ -62,7 +62,7 @@ end
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.NumberOfVariables) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.NumberOfVariables)
-    return lqs_getnumcols(m)
+    return get_number_variables(m)
 end
 
 #=
@@ -79,7 +79,7 @@ end
 =#
 
 function MOI.addvariable!(m::LinQuadOptimizer)
-    lqs_newcols!(m, 1)
+    add_variables!(m, 1)
     # assumes we add columns linearly
     m.last_variable_reference += 1
     ref = VarInd(m.last_variable_reference)
@@ -96,7 +96,7 @@ end
 
 function MOI.addvariables!(m::LinQuadOptimizer, n::Int)
     previous_vars = MOI.get(m, MOI.NumberOfVariables())
-    lqs_newcols!(m, n)
+    add_variables!(m, n)
     variable_references = VarInd[]
     sizehint!(variable_references, n)
     for i in 1:n
@@ -135,7 +135,7 @@ end
 MOI.candelete(m::LinQuadOptimizer, ref::VarInd) = MOI.isvalid(m, ref)
 function MOI.delete!(m::LinQuadOptimizer, ref::VarInd)
     col = m.variable_mapping[ref]
-    lqs_delcols!(m, col, col)
+    delete_variables!(m, col, col)
 
     # delete from problem
     deleteat!(m.variable_references, col)
@@ -175,10 +175,10 @@ end
 
 MOI.canset(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::VarInd) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ref::VarInd, val::Float64)
-    lqs_addmipstarts!(m, [getcol(m, ref)], [val])
+    add_mip_starts!(m, [getcol(m, ref)], [val])
 end
 
 MOI.canset(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::Vector{VarInd}) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, refs::Vector{VarInd}, vals::Vector{Float64})
-    lqs_addmipstarts!(m, getcol.(m, refs), vals)
+    add_mip_starts!(m, getcol.(m, refs), vals)
 end

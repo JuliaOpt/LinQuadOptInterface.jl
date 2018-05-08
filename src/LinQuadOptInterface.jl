@@ -149,10 +149,10 @@ abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
     obj_sense::MOI.OptimizationSense
 
     last_variable_reference::UInt64
-    variable_mapping::Dict{MathOptInterface.VariableIndex, Int}
-    variable_names::Dict{MathOptInterface.VariableIndex, String}
-    variable_names_rev::Dict{String, MathOptInterface.VariableIndex}
-    variable_references::Vector{MathOptInterface.VariableIndex}
+    variable_mapping::Dict{MOI.VariableIndex, Int}
+    variable_names::Dict{MOI.VariableIndex, String}
+    variable_names_rev::Dict{String, MOI.VariableIndex}
+    variable_references::Vector{MOI.VariableIndex}
 
     variable_primal_solution::Vector{Float64}
     variable_dual_solution::Vector{Float64}
@@ -173,9 +173,9 @@ abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
 
     objective_constant::Float64
 
-    termination_status::MathOptInterface.TerminationStatusCode
-    primal_status::MathOptInterface.ResultStatusCode
-    dual_status::MathOptInterface.ResultStatusCode
+    termination_status::MOI.TerminationStatusCode
+    primal_status::MOI.ResultStatusCode
+    dual_status::MOI.ResultStatusCode
     primal_result_count::Int
     dual_result_count::Int
 
@@ -216,7 +216,7 @@ function MOI.isempty(m::LinQuadOptimizer)
 end
 function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.name = ""
-    m.inner = LinQuadModel(M,env)
+    m.inner = LinearQuadraticModel(M,env)
 
     m.obj_is_quad = false
     # we assume the default is minimization
@@ -267,10 +267,10 @@ end
 MOI.canset(m::LinQuadOptimizer, ::MOI.Name) = true
 
 function MOI.supportsconstraint(m::LinQuadOptimizer, ft::Type{F}, st::Type{S}) where F <: MOI.AbstractFunction where S <: MOI.AbstractSet
-    (ft,st) in lqs_supported_constraints(m)
+    (ft,st) in supported_constraints(m)
 end
 function MOI.supports(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}) where F <: MOI.AbstractFunction
-    F in lqs_supported_objectives(m)
+    F in supported_objectives(m)
 end
 
 # a useful helper function
