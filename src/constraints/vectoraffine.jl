@@ -9,7 +9,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecLin, set::S) where S <
     @assert MOI.dimension(set) == length(func.constant)
 
     nrows = get_number_linear_constraints(m)
-    addlinearconstraint!(m, func, lqs_char(m,set))
+    addlinearconstraint!(m, func, backend_type(m,set))
     nrows2 = get_number_linear_constraints(m)
 
     m.last_constraint_reference += 1

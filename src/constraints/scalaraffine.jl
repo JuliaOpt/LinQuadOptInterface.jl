@@ -23,7 +23,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::S) where S <: Union{LE, GE, EQ}
-    addlinearconstraint!(m, func, lqs_char(m,set), _getrhs(set))
+    addlinearconstraint!(m, func, backend_type(m,set), _getrhs(set))
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::IV)
@@ -63,7 +63,7 @@ function MOI.addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vec
 end
 
 function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: LinSets
-    addlinearconstraints!(m, func, lqs_char.(m,set), [_getrhs(s) for s in set])
+    addlinearconstraints!(m, func, backend_type.(m,set), [_getrhs(s) for s in set])
 end
 
 function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{IV})
@@ -204,7 +204,7 @@ end
 function MOI.transformconstraint!(m::LinQuadOptimizer, ref::LCI{S1}, newset::S2) where S1 where S2 <: Union{LE, GE, EQ}
     dict = constrdict(m, ref)
     row = dict[ref]
-    change_linear_constraint_sense!(m, [row], [lqs_char(m,newset)])
+    change_linear_constraint_sense!(m, [row], [backend_type(m,newset)])
     m.last_constraint_reference += 1
     ref2 = LCI{S2}(m.last_constraint_reference)
     dict2 = constrdict(m, ref2)

@@ -25,7 +25,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::Quad, set::S) where S <: 
 end
 
 function addquadraticconstraint!(m::LinQuadOptimizer, func::Quad, set::S) where S<: Union{LE, GE, EQ}
-    addquadraticconstraint!(m, func, lqs_char(m,set), _getrhs(set))
+    addquadraticconstraint!(m, func, backend_type(m,set), _getrhs(set))
 end
 
 function addquadraticconstraint!(m::LinQuadOptimizer, f::Quad, sense::Cchar, rhs::Float64)

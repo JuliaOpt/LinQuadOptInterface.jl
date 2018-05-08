@@ -21,7 +21,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <
     ref = VVCI{S}(m.last_constraint_reference)
     rows = get_number_linear_constraints(m)
     n = MOI.dimension(set)
-    add_linear_constraints!(m, collect(1:n), getcol.(m, func.variables), ones(n), fill(lqs_char(m, set),n), zeros(n))
+    add_linear_constraints!(m, collect(1:n), getcol.(m, func.variables), ones(n), fill(backend_type(m, set),n), zeros(n))
     dict = constrdict(m, ref)
     dict[ref] = collect(rows+1:rows+n)
     append!(m.constraint_primal_solution, fill(NaN,n))
@@ -65,7 +65,7 @@ end
 
 function MOI.addconstraint!(m::LinQuadOptimizer, v::VecVar, sos::S) where S <: Union{MOI.SOS1, MOI.SOS2}
     make_problem_type_integer(m)
-    add_sos_constraint!(m, getcol.(m, v.variables), sos.weights, lqs_char(m, sos))
+    add_sos_constraint!(m, getcol.(m, v.variables), sos.weights, backend_type(m, sos))
     m.last_constraint_reference += 1
     ref = VVCI{S}(m.last_constraint_reference)
     dict = constrdict(m, ref)
@@ -90,7 +90,7 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{VVCI{S}}) where S <:
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::VVCI{S}) where S <: Union{MOI.SOS1, MOI.SOS2}
     indices, weights, types = get_sos_constraint(m, m[c])
     set = S(weights)
-    @assert types == lqs_char(m, set)
+    @assert types == backend_type(m, set)
     return set
 end
 

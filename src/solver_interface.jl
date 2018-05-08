@@ -18,17 +18,17 @@
 =#
 
 """
-    lqs_char(m, ::MOI.AbstractSet)::CChar
+    backend_type(m, ::MOI.AbstractSet)::CChar
 
-Return a Cchar specifiying the constraint set sense.
+An overloadable type for dispatching the appropriate types to the backends.
 
-Interval constraints are sometimes called range constraints and have the form
-`l <= a'x <= u`
+For example, GLPK.jl uses `'E'` for `a'x=b` constraints, where as Gurobi.jl uses
+`==`.
 
 Three are special cases:
- - `Val{:Continuous}`: Cchar for a continuous variable
- - `Val{:Upperbound}`: Cchar for the upper bound of a variable
- - `Val{:Lowerbound}`: Cchar for the lower bound of a variable
+ - `Val{:Continuous}`: for the type of a continuous variable
+ - `Val{:Upperbound}`: for the upper bound of a variable
+ - `Val{:Lowerbound}`: for the lower bound of a variable
 
 ### Defaults
 
@@ -50,26 +50,26 @@ Three are special cases:
     Val{:Upperbound} - 'U'
     Val{:Lowerbound} - 'L'
 """
-lqs_char(m::LinQuadOptimizer, ::MOI.GreaterThan{T}) where T = Cchar('G')
-lqs_char(m::LinQuadOptimizer, ::MOI.LessThan{T}) where T    = Cchar('L')
-lqs_char(m::LinQuadOptimizer, ::MOI.EqualTo{T}) where T     = Cchar('E')
+backend_type(m::LinQuadOptimizer, ::MOI.GreaterThan{T}) where T = Cchar('G')
+backend_type(m::LinQuadOptimizer, ::MOI.LessThan{T}) where T    = Cchar('L')
+backend_type(m::LinQuadOptimizer, ::MOI.EqualTo{T}) where T     = Cchar('E')
 # Implemented separately
-# lqs_char(m::LinQuadOptimizer, ::MOI.Interval{T}) where T    = Cchar('R')
+# backend_type(m::LinQuadOptimizer, ::MOI.Interval{T}) where T    = Cchar('R')
 
-lqs_char(m::LinQuadOptimizer, ::MOI.Zeros)        = Cchar('E')
-lqs_char(m::LinQuadOptimizer, ::MOI.Nonpositives) = Cchar('L')
-lqs_char(m::LinQuadOptimizer, ::MOI.Nonnegatives) = Cchar('G')
+backend_type(m::LinQuadOptimizer, ::MOI.Zeros)        = Cchar('E')
+backend_type(m::LinQuadOptimizer, ::MOI.Nonpositives) = Cchar('L')
+backend_type(m::LinQuadOptimizer, ::MOI.Nonnegatives) = Cchar('G')
 
-lqs_char(m::LinQuadOptimizer, ::MOI.ZeroOne) = Cchar('B')
-lqs_char(m::LinQuadOptimizer, ::MOI.Integer) = Cchar('I')
+backend_type(m::LinQuadOptimizer, ::MOI.ZeroOne) = Cchar('B')
+backend_type(m::LinQuadOptimizer, ::MOI.Integer) = Cchar('I')
 
-lqs_char(m::LinQuadOptimizer, ::MOI.SOS1{T}) where T = :SOS1  # Cchar('1')
-lqs_char(m::LinQuadOptimizer, ::MOI.SOS2{T}) where T = :SOS2  # Cchar('2')
+backend_type(m::LinQuadOptimizer, ::MOI.SOS1{T}) where T = :SOS1  # Cchar('1')
+backend_type(m::LinQuadOptimizer, ::MOI.SOS2{T}) where T = :SOS2  # Cchar('2')
 
 
-lqs_char(m::LinQuadOptimizer, ::Val{:Continuous}) = Cchar('C')
-lqs_char(m::LinQuadOptimizer, ::Val{:Upperbound}) = Cchar('U')
-lqs_char(m::LinQuadOptimizer, ::Val{:Lowerbound}) = Cchar('L')
+backend_type(m::LinQuadOptimizer, ::Val{:Continuous}) = Cchar('C')
+backend_type(m::LinQuadOptimizer, ::Val{:Upperbound}) = Cchar('U')
+backend_type(m::LinQuadOptimizer, ::Val{:Lowerbound}) = Cchar('L')
 
 """
     LinearQuadraticModel(M::Type{<:LinQuadOptimizer}, env)
@@ -108,8 +108,8 @@ function supported_objectives end
     change_variable_bounds!(m, cols::Vector{Int}, values::Vector{Float64}, senses::Vector)
 
 Change the bounds of the variable. The sense of the upperbound
-is given by `lqs_char(m, Val{:Upperbound}())`. The sense
-of the lowerbound is given by `lqs_char(m, Val{:Lowerbound}())`
+is given by `backend_type(m, Val{:Upperbound}())`. The sense
+of the lowerbound is given by `backend_type(m, Val{:Lowerbound}())`
 """
 function change_variable_bounds! end
 @deprecate lqs_chgbds! change_variable_bounds!
@@ -148,7 +148,7 @@ Adds linear constraints of the form `Ax (sense) rhs` to the model `m`.
 The A matrix is given in triplet form `A[rows[i], cols[i]] = coef[i]` for all
 `i`, and `length(rows) == length(cols) == length(coefs)`.
 
-The `sense` is given by `lqs_char(m, set)`.
+The `sense` is given by `backend_type(m, set)`.
 
 Ranged constraints (`set=MOI.Interval`) should be added via `add_ranged_constraint!`
 instead.
@@ -222,9 +222,9 @@ function delete_linear_constraints! end
     lqs_chgctype(m, cols::Vector{Int}, types):Void
 
 Change the variable types. Type is the output of one of:
- - `lqs_char(m, ::ZeroOne)`, for binary variables;
- - `lqs_char(m, ::Integer)`, for integer variables; and
- - `lqs_char(m, Val{:Continuous}())`, for continuous variables.
+ - `backend_type(m, ::ZeroOne)`, for binary variables;
+ - `backend_type(m, ::Integer)`, for integer variables; and
+ - `backend_type(m, Val{:Continuous}())`, for continuous variables.
 """
 function change_variable_types! end
 @deprecate lqs_chgctype! change_variable_types!
@@ -234,7 +234,7 @@ function change_variable_types! end
 
 Change the sense of the linear constraints in `rows` to `sense`.
 
-`sense` is the output of `lqs_char(m, set)`, where `set`
+`sense` is the output of `backend_type(m, set)`, where `set`
 is the corresponding set for the row `rows[i]`.
 
 `Interval` constraints require a call to `change_range_value!`.
