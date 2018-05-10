@@ -36,6 +36,10 @@ function MOI.canset(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}) where F<:MO
     return F in supported_objectives(m)
 end
 
+function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{MOI.SingleVariable}, var::MOI.SingleVariable)
+    unsafe_set!(m, MOI.ObjectiveFunction{Linear}(), Linear(var))
+end
+
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, objf::Linear) where F
     cobjf = MOIU.canonical(objf)
     unsafe_set!(m, MOI.ObjectiveFunction{Linear}(), cobjf)
