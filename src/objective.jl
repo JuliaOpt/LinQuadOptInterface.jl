@@ -112,6 +112,10 @@ end
 
 MOI.canmodifyobjective(m::LinQuadOptimizer, ::Type{MOI.ScalarCoefficientChange{Float64}}) = true
 function MOI.modifyobjective!(m::LinQuadOptimizer, chg::MOI.ScalarCoefficientChange{Float64})
+    if m.obj_type == SingleVariableObjective
+        m.obj_type = AffineObjective
+        m.single_obj_var = nothing
+    end
     col = m.variable_mapping[chg.variable]
     # 0 row is the objective
     change_coefficient!(m, 0, col, chg.new_coefficient)

@@ -150,7 +150,7 @@ abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
 
     name::String
 
-    obj_type::ObjectiveType
+    obj_type::LinQuadOptInterface.ObjectiveType
     single_obj_var::Nullable{MOI.VariableIndex}
     obj_sense::MOI.OptimizationSense
 
@@ -192,8 +192,8 @@ function MOI.isempty(m::LinQuadOptimizer)
 
     ret = true
     ret = ret && m.name == ""
-    ret = ret && m.obj_is_quad == AffineObjective
-    ret = ret && m.single_obj_var === nothing
+    ret = ret && m.obj_type == AffineObjective
+    ret = ret && isnull(m.single_obj_var)
     ret = ret && m.obj_sense == MOI.MinSense
     ret = ret && m.last_variable_reference == 0
     ret = ret && isempty(m.variable_mapping)

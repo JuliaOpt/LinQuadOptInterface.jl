@@ -1,5 +1,5 @@
 function hasquadratic(m::LinQuadOptimizer)
-    m.obj_is_quad || (length(cmap(m).q_less_than) + length(cmap(m).q_greater_than) + length(cmap(m).q_equal_to) > 0)
+    (m.obj_type == QuadraticObjective) || (length(cmap(m).q_less_than) + length(cmap(m).q_greater_than) + length(cmap(m).q_equal_to) > 0)
 end
 
 #=
