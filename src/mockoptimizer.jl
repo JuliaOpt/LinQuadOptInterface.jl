@@ -205,13 +205,41 @@ function LQOI.delete_linear_constraints!(instance::MockLinQuadOptimizer, rowbeg,
         instance.inner.range = Vector{Float64}[]
     end
 end
+
+# TODO fix types
+function variabletype(::MockLinQuadOptimizer, typeval)
+    if typeval == "B"
+        return :Bin
+    elseif typeval == "I"
+        return :Int
+    else
+        return :Con
+    end
+end
+function LQOI.change_variable_types!(instance::MockLinQuadOptimizer, colvec, typevec)
+    for i in eachindex(colvec)
+        instance.inner.vartype[colvec[i]] = variabletype(instance, typevec[i])
+    end
+end
+
+function sensetype(::MockLinQuadOptimizer, typeval)
+    if typeval == "G"
+        return :GEQ
+    elseif typeval == "E"
+        return :EQ
+    elseif typeval == "L"
+        return :LEQ
+    else
+        return :RANGE
+    end
+end
+function LQOI.change_linear_constraint_sense!(instance::MockLinQuadOptimizer, rowvec, sensevec)
+    for i in eachindex(rowvec)
+        instance.inner.vartype[rowvec[i]] = sensetype(instance, sensevec[i])
+    end
+end
+
 #=
-# TODO fix types
-LQOI.change_variable_types!(instance::MockLinQuadOptimizer, colvec, typevec) = set_charattrlist!(instance.inner, "VType", ivec(colvec), cvec(typevec))
-
-# TODO fix types
-LQOI.change_linear_constraint_sense!(instance::MockLinQuadOptimizer, rowvec, sensevec) = set_charattrlist!(instance.inner, "Sense", ivec(rowvec), cvec(sensevec))
-
 LQOI.add_sos_constraint!(instance::MockLinQuadOptimizer, colvec, valvec, typ) = (add_sos!(instance.inner, typ, colvec, valvec);update_model!(instance.inner))
 
 LQOI.delete_sos!(instance::MockLinQuadOptimizer, idx1, idx2) = (del_sos!(instance.inner, cintvec(collect(idx1:idx2)));update_model!(instance.inner))
@@ -244,6 +272,7 @@ LQOI.add_quadratic_constraint!(instance::MockLinQuadOptimizer, cols,coefs,rhs,se
 #     add_qpterms!(instance.inner, I, J, V)
 #     return nothing
 # end
+=#
 
 function LQOI.set_linear_objective!(instance::MockLinQuadOptimizer, colvec, coefvec)
     nvars = num_vars(instance.inner)
@@ -266,7 +295,7 @@ function LQOI.change_objective_sense!(instance::MockLinQuadOptimizer, symbol)
 end
 
 function LQOI.get_linear_objective!(instance::MockLinQuadOptimizer, x)
-    instance.inner.c
+    copy(instance.inner.c)
 end
 
 function LQOI.get_objectivesense(instance::MockLinQuadOptimizer)
@@ -287,10 +316,31 @@ function LQOI.add_variables!(instance::MockLinQuadOptimizer, int)
     instance.inner.A = hcat(instance.inner.A,zeros(length(instance.inner.b)))
 end
 
-function LQOI.delete_variables!(instance::MockLinQuadOptimizer, col, col2)
-
-
-
+function LQOI.delete_variables!(instance::MockLinQuadOptimizer, colbeg, colend)
+    if colbeg > 1 && colend < length(instance.inner.lb)
+        instance.inner.A = hcat(instance.inner.A[:,1:colbeg-1],instance.inner.A[:,colend+1:end])
+        instance.inner.lb = vcat(instance.inner.lb[1:colbeg-1],instance.inner.lb[colend+1:end])
+        instance.inner.ub = vcat(instance.inner.lb[1:colbeg-1],instance.inner.lb[colend+1:end])
+        instance.inner.vartype = vcat(instance.inner.vartype[1:colbeg-1],instance.inner.vartype[colend+1:end])
+        instance.inner.range = vcat(instance.inner.range[1:colbeg-1],instance.inner.range[colend+1:end])
+    elseif colbeg > 1
+        instance.inner.A = instance.inner.A[:,1:colbeg-1]
+        instance.inner.lb = instance.inner.lb[1:colbeg-1]
+        instance.inner.ub = instance.inner.lb[1:colbeg-1]
+        instance.inner.vartype = instance.inner.vartype[1:colbeg-1]
+        instance.inner.range = instance.inner.range[1:colbeg-1]
+    elseif colend < length(instance.inner.lb)
+        instance.inner.A = instance.inner.A[:,colend+1:end]
+        instance.inner.lb = instance.inner.lb[colend+1:end]
+        instance.inner.ub = instance.inner.lb[colend+1:end]
+        instance.inner.vartype = instance.inner.vartype[colend+1:end]
+        instance.inner.range = instance.inner.range[colend+1:end]
+    else
+        instance.inner.A = zeros(length(instance.inner.b),0)
+        instance.inner.ub = Vector{Float64}[]
+        instance.inner.vartype = Symbol[]
+        instance.inner.range = Vector{Float64}[]
+    end
 end
 
 # function LQOI.add_mip_starts!(instance::MockLinQuadOptimizer, colvec::Vector{Int}, valvec::Vector)
@@ -319,8 +369,12 @@ function LQOI.get_dual_status(instance::MockLinQuadOptimizer)
     return MOI.FeasiblePoint
 end
 
-LQOI.get_variable_primal_solution!(instance::MockLinQuadOptimizer, place) = get_dblattrarray!(place, instance.inner, "X", 1)
-
+function LQOI.get_variable_primal_solution!(instance::MockLinQuadOptimizer, place)
+    for i in eachindex(place)
+        place[i] = instance.inner.variable_primal_solution[i]
+    end
+end
+#=
 function LQOI.get_linear_primal_solution!(instance::MockLinQuadOptimizer, place)
     get_dblattrarray!(place, instance.inner, "Slack", 1)
     rhs = get_dblattrarray(instance.inner, "RHS", 1, num_constrs(instance.inner))
