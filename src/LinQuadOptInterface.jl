@@ -137,6 +137,11 @@ macro def(name, definition)
     end
 end
 
+@enum(ObjectiveType,
+      SingleVariableObjective,
+      AffineObjective,
+      QuadraticObjective)
+
 # Abstract + macro
 abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
 @def LinQuadOptimizerBase begin
@@ -145,7 +150,8 @@ abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
 
     name::String
 
-    obj_is_quad::Bool
+    obj_type::ObjectiveType
+    single_obj_var::Nullable{MOI.VariableIndex}
     obj_sense::MOI.OptimizationSense
 
     last_variable_reference::UInt64
@@ -186,7 +192,8 @@ function MOI.isempty(m::LinQuadOptimizer)
 
     ret = true
     ret = ret && m.name == ""
-    ret = ret && m.obj_is_quad == false
+    ret = ret && m.obj_is_quad == AffineObjective
+    ret = ret && m.single_obj_var === nothing
     ret = ret && m.obj_sense == MOI.MinSense
     ret = ret && m.last_variable_reference == 0
     ret = ret && isempty(m.variable_mapping)
@@ -218,7 +225,8 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.name = ""
     m.inner = LinearQuadraticModel(M,env)
 
-    m.obj_is_quad = false
+    m.obj_type = AffineObjective
+    m.single_obj_var = nothing
     # we assume the default is minimization
     m.obj_sense = MOI.MinSense
 
