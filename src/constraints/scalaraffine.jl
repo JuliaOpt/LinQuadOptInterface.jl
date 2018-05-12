@@ -84,7 +84,7 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::V
     coefficients   = Vector{Float64}(nnz)       # corresponding non-zeros
     i = 1
     for (fi, f) in enumerate(func)
-        row_starts[fi] = cnt
+        row_starts[fi] = i
         for (var, coef) in zip(f.variables, f.coefficients)
             column_indices[i] = getcol(m, var)
             coefficients[i]   = coef
@@ -128,6 +128,13 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{S}) where S <:
     rhs = get_rhs(m, m[c])
     S(rhs+m.constraint_constant[m[c]])
 end
+
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{IV}}) = false
+# TODO(odow): get constraint sets for ranged constraints.
+# function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{IV})
+#     ???
+#     IV(lowerbound+m.constraint_constant[m[c]], upperbound + m.constraint_constant[m[c]])
+# end
 
 #=
     Constraint function of Linear function
