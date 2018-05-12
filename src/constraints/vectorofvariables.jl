@@ -30,7 +30,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <
     return ref
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::VVCI{S}) where S <: VecLinSets = true
+MOI.candelete(m::LinQuadOptimizer, c::VVCI{S}) where S <: VecLinSets = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::VVCI{S}) where S <: VecLinSets
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
@@ -87,7 +87,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::VecVar, sos::S) where S <: U
     ref
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::VVCI{<:Union{SOS1, SOS2}}) = true
+MOI.candelete(m::LinQuadOptimizer, c::VVCI{<:Union{SOS1, SOS2}}) = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::VVCI{<:Union{SOS1, SOS2}})
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)

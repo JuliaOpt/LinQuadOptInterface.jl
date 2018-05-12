@@ -66,3 +66,17 @@ function reduceduplicates(rowi::Vector{T}, coli::Vector{T}, vals::Vector{S}) whe
     end
     ri, ci, vi
 end
+
+
+MOI.candelete(m::LinQuadOptimizer, c::QCI{<: LinSets}) = MOI.isvalid(m, c)
+function MOI.delete!(m::LinQuadOptimizer, c::QCI{<: LinSets})
+    deleteconstraintname!(m, c)
+    dict = constrdict(m, c)
+    row = dict[c]
+    delete_quadratic_constraints!(m, row, row)
+    deleteat!(m.qconstraint_primal_solution, row)
+    deleteat!(m.qconstraint_dual_solution, row)
+    # shift all the other references
+    shift_references_after_delete_quadratic!(m, row)
+    delete!(dict, c)
+end

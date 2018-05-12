@@ -56,7 +56,7 @@ function MOI.modifyconstraint!(m::LinQuadOptimizer, ref::VLCI{<: VecLinSets}, ch
     end
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::VLCI{<:VecLinSets}) = true
+MOI.candelete(m::LinQuadOptimizer, c::VLCI{<:VecLinSets}) = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::VLCI{<:VecLinSets})
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)

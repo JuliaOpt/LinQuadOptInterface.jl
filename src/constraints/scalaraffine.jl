@@ -176,7 +176,7 @@ end
     Delete a linear constraint
 =#
 
-MOI.candelete(m::LinQuadOptimizer, c::LCI{<: LinSets}) = true
+MOI.candelete(m::LinQuadOptimizer, c::LCI{<: LinSets}) = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::LCI{<: LinSets})
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)

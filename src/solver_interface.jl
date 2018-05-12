@@ -219,6 +219,14 @@ function delete_linear_constraints! end
 @deprecate lqs_delrows! delete_linear_constraints!
 
 """
+    delete_quadratic_constraints!(m, start_row::Int, end_row::Int)::Void
+
+Delete the quadratic constraints `start_row`, `start_row+1`, ..., `end_row` from
+the model `m`.
+"""
+function delete_quadratic_constraints! end
+
+"""
     lqs_chgctype(m, cols::Vector{Int}, types):Void
 
 Change the variable types. Type is the output of one of:

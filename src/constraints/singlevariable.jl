@@ -49,7 +49,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: L
 end
 
 # delete constraint
-MOI.candelete(m::LinQuadOptimizer, c::SVCI{S}) where S <: LinSets = true
+MOI.candelete(m::LinQuadOptimizer, c::SVCI{S}) where S <: LinSets = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{S}) where S <: LinSets
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
@@ -116,7 +116,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.ZeroOne)
     ref
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::SVCI{MOI.ZeroOne}) = true
+MOI.candelete(m::LinQuadOptimizer, c::SVCI{MOI.ZeroOne}) = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.ZeroOne})
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
@@ -150,6 +150,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.Integer)
     ref
 end
 
+MOI.candelete(m::LinQuadOptimizer, c::SVCI{MOI.Integer}) = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.Integer})
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
@@ -160,7 +161,6 @@ function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.Integer})
         make_problem_type_continuous(m)
     end
 end
-MOI.candelete(m::LinQuadOptimizer, c::SVCI{MOI.Integer}) = true
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{MOI.Integer}}) = true
 MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{MOI.Integer}) = MOI.Integer()

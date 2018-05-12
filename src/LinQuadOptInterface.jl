@@ -137,6 +137,26 @@ function shift_references_after_delete_affine!(m, row)
     end
 end
 
+"""
+    shift_references_after_delete_quadratic!(m, row)
+
+This function updates all of the references in `m`
+after we have deleted row `row` in the quadratic constraint matrix.
+"""
+function shift_references_after_delete_quadratic!(m, row)
+    for scalar_quadratic in [
+            cmap(m).q_less_than,
+            cmap(m).q_greater_than,
+            cmap(m).q_equal_to
+        ]
+        for (key, val) in scalar_quadratic
+            if val > row
+                scalar_quadratic[key] -= 1
+            end
+        end
+    end
+end
+
 function Base.isempty(map::ConstraintMapping)
 
     ret = true
