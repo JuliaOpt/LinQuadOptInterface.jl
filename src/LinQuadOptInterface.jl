@@ -77,6 +77,9 @@ struct ConstraintMapping
     binary::Dict{SVCI{MOI.ZeroOne}, Tuple{VarInd, Float64, Float64}}
     sos1::Dict{VVCI{SOS1}, Int}
     sos2::Dict{VVCI{SOS2}, Int}
+    semicontinuous::Dict{SVCI{MOI.Semicontinuous{Float64}}, VarInd}
+    semiinteger::Dict{SVCI{MOI.Semiinteger{Float64}}, VarInd}
+
 end
 ConstraintMapping() = ConstraintMapping(
     Dict{LCI{LE}, Int}(),
@@ -99,7 +102,9 @@ ConstraintMapping() = ConstraintMapping(
     Dict{SVCI{MOI.Integer}, VarInd}(),
     Dict{SVCI{MOI.ZeroOne}, Tuple{VarInd, Float64, Float64}}(),
     Dict{VVCI{SOS1}, Int}(),
-    Dict{VVCI{SOS2}, Int}()
+    Dict{VVCI{SOS2}, Int}(),
+    Dict{SVCI{MOI.Semicontinuous{Float64}}, VarInd}(),
+    Dict{SVCI{MOI.Semiinteger{Float64}}, VarInd}()
 )
 
 """
@@ -181,6 +186,8 @@ function Base.isempty(map::ConstraintMapping)
     ret = ret && isempty(map.binary)
     ret = ret && isempty(map.sos1)
     ret = ret && isempty(map.sos2)
+    ret = ret && isempty(map.semiinteger)
+    ret = ret && isempty(map.semicontinuous)
 
     return ret
 end
