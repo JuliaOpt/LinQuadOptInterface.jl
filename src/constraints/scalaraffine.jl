@@ -185,13 +185,9 @@ function MOI.delete!(m::LinQuadOptimizer, c::LCI{<: LinSets})
     deleteat!(m.constraint_primal_solution, row)
     deleteat!(m.constraint_dual_solution, row)
     deleteat!(m.constraint_constant, row)
-    deleteref!(m, row, c)
-end
-function deleteref!(m::LinQuadOptimizer, row::Int, ref::LCI{<: LinSets})
-    deleteref!(cmap(m).less_than, row, ref)
-    deleteref!(cmap(m).greater_than, row, ref)
-    deleteref!(cmap(m).equal_to, row, ref)
-    deleteref!(cmap(m).interval, row, ref)
+    # shift all the other references
+    shift_references_after_delete_affine!(m, row)
+    delete!(dict, c)
 end
 
 #=

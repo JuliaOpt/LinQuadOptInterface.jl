@@ -101,6 +101,42 @@ ConstraintMapping() = ConstraintMapping(
     Dict{VVCI{SOS1}, Int}(),
     Dict{VVCI{SOS2}, Int}()
 )
+
+"""
+    shift_references_after_delete_affine!(m, row)
+
+This function updates all of the references in `m`
+after we have deleted row `row` in the affine constraint matrix.
+"""
+function shift_references_after_delete_affine!(m, row)
+    for scalar_affine in [
+            cmap(m).less_than,
+            cmap(m).greater_than,
+            cmap(m).equal_to,
+            cmap(m).interval
+        ]
+        for (key, val) in scalar_affine
+            if val > row
+                scalar_affine[key] -= 1
+            end
+        end
+    end
+
+    for vector_affine in [
+            cmap(m).vv_nonnegatives,
+            cmap(m).vv_nonpositives,
+            cmap(m).vv_zeros
+        ]
+        for (key, vals) in vector_affine
+            for (i, val) in enumerate(vals)
+                if val > row
+                    vector_affine[key][i] -= 1
+                end
+            end
+        end
+    end
+end
+
 function Base.isempty(map::ConstraintMapping)
 
     ret = true

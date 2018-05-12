@@ -56,6 +56,22 @@ function MOI.modifyconstraint!(m::LinQuadOptimizer, ref::VLCI{<: VecLinSets}, ch
     end
 end
 
+MOI.candelete(m::LinQuadOptimizer, c::VLCI{<:VecLinSets}) = true
+function MOI.delete!(m::LinQuadOptimizer, c::VLCI{<:VecLinSets})
+    deleteconstraintname!(m, c)
+    dict = constrdict(m, c)
+    for row in copy(dict[c])  # put a copy here because we modify in the loop
+        delete_linear_constraints!(m, row, row)
+        deleteat!(m.constraint_primal_solution, row)
+        deleteat!(m.constraint_dual_solution, row)
+        deleteat!(m.constraint_constant, row)
+        # shift all the other references
+        shift_references_after_delete_affine!(m, row)
+    end
+    delete!(dict, c)
+end
+
+
 #=
     Constraint set of Linear function
 =#
