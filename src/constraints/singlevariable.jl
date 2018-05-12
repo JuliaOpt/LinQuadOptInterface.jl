@@ -134,7 +134,7 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{MOI.ZeroOne}}) 
 MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{MOI.ZeroOne}) = MOI.ZeroOne()
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{MOI.ZeroOne}}) = true
-MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.ZeroOne}) = m[c]
+MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.ZeroOne}) = SinVar(m[c])
 
 #=
     Integer constraints
@@ -165,5 +165,5 @@ MOI.candelete(m::LinQuadOptimizer, c::SVCI{MOI.Integer}) = true
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{MOI.Integer}}) = true
 MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{MOI.Integer}) = MOI.Integer()
 
-MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.Integer}) = m[c]
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{MOI.Integer}}) = true
+MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.Integer}) = SinVar(m[c])
