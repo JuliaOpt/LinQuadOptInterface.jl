@@ -40,8 +40,10 @@ Three are special cases:
     MOI.Nonpositives - 'L'
     MOI.Nonnegatives - 'G'
 
-    MOI.ZeroOne - 'B'
-    MOI.Integer - 'I'
+    MOI.ZeroOne        - 'B'
+    MOI.Integer        - 'I'
+    MOI.Semicontinuous - 'S'
+    MOI.Semiinteger    - 'N'
 
     MOI.SOS1 - :SOS1  # '1'
     MOI.SOS2 - :SOS2  # '2'
@@ -66,6 +68,8 @@ backend_type(m::LinQuadOptimizer, ::MOI.Integer) = Cchar('I')
 backend_type(m::LinQuadOptimizer, ::MOI.SOS1{T}) where T = :SOS1  # Cchar('1')
 backend_type(m::LinQuadOptimizer, ::MOI.SOS2{T}) where T = :SOS2  # Cchar('2')
 
+backend_type(m::LinQuadOptimizer, ::MOI.Semicontinuous{T}) where T = Cchar('S')
+backend_type(m::LinQuadOptimizer, ::MOI.Semiinteger{T}) where T    = Cchar('N')
 
 backend_type(m::LinQuadOptimizer, ::Val{:Continuous}) = Cchar('C')
 backend_type(m::LinQuadOptimizer, ::Val{:Upperbound}) = Cchar('U')
@@ -217,6 +221,14 @@ the model `m`.
 """
 function delete_linear_constraints! end
 @deprecate lqs_delrows! delete_linear_constraints!
+
+"""
+    delete_quadratic_constraints!(m, start_row::Int, end_row::Int)::Void
+
+Delete the quadratic constraints `start_row`, `start_row+1`, ..., `end_row` from
+the model `m`.
+"""
+function delete_quadratic_constraints! end
 
 """
     lqs_chgctype(m, cols::Vector{Int}, types):Void

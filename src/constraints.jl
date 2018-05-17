@@ -26,10 +26,18 @@ end
     hasinteger(m::LinQuadOptimizer)::Bool
 
 A helper function to determine if the solver instance `m` has any integer
-components (i.e. binary, integer, special ordered sets, etc).
+components (i.e. binary, integer, special ordered sets, semicontinuous, or
+semi-integer variables).
 """
 function hasinteger(m::LinQuadOptimizer)
-    length(cmap(m).integer) + length(cmap(m).binary) + length(cmap(m).sos1) + length(cmap(m).sos2) > 0
+    (
+        length(cmap(m).integer) +
+        length(cmap(m).binary) +
+        length(cmap(m).sos1) +
+        length(cmap(m).sos2) +
+        length(cmap(m).semicontinuous) +
+        length(cmap(m).semiinteger)
+                ) > 0
 end
 
 #=

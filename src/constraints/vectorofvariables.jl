@@ -30,6 +30,23 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <
     return ref
 end
 
+MOI.candelete(m::LinQuadOptimizer, c::VVCI{S}) where S <: VecLinSets = MOI.isvalid(m, c)
+function MOI.delete!(m::LinQuadOptimizer, c::VVCI{S}) where S <: VecLinSets
+    deleteconstraintname!(m, c)
+    dict = constrdict(m, c)
+    # we delete rows from largest to smallest here so that we don't have
+    # to worry about updating references in a greater numbered row, only to
+    # modify it later.
+    for row in sort(dict[c], rev=true)
+        delete_linear_constraints!(m, row, row)
+        deleteat!(m.constraint_primal_solution, row)
+        deleteat!(m.constraint_dual_solution, row)
+        deleteat!(m.constraint_constant, row)
+        # shift all the other references
+        shift_references_after_delete_affine!(m, row)
+    end
+    delete!(dict, c)
+end
 
 #=
     Get constraint set of vector variable bound
@@ -73,7 +90,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::VecVar, sos::S) where S <: U
     ref
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::VVCI{<:Union{SOS1, SOS2}}) = true
+MOI.candelete(m::LinQuadOptimizer, c::VVCI{<:Union{SOS1, SOS2}}) = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::VVCI{<:Union{SOS1, SOS2}})
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)

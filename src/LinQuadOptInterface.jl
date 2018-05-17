@@ -77,6 +77,9 @@ struct ConstraintMapping
     binary::Dict{SVCI{MOI.ZeroOne}, Tuple{VarInd, Float64, Float64}}
     sos1::Dict{VVCI{SOS1}, Int}
     sos2::Dict{VVCI{SOS2}, Int}
+    semicontinuous::Dict{SVCI{MOI.Semicontinuous{Float64}}, VarInd}
+    semiinteger::Dict{SVCI{MOI.Semiinteger{Float64}}, VarInd}
+
 end
 ConstraintMapping() = ConstraintMapping(
     Dict{LCI{LE}, Int}(),
@@ -99,8 +102,66 @@ ConstraintMapping() = ConstraintMapping(
     Dict{SVCI{MOI.Integer}, VarInd}(),
     Dict{SVCI{MOI.ZeroOne}, Tuple{VarInd, Float64, Float64}}(),
     Dict{VVCI{SOS1}, Int}(),
-    Dict{VVCI{SOS2}, Int}()
+    Dict{VVCI{SOS2}, Int}(),
+    Dict{SVCI{MOI.Semicontinuous{Float64}}, VarInd}(),
+    Dict{SVCI{MOI.Semiinteger{Float64}}, VarInd}()
 )
+
+"""
+    shift_references_after_delete_affine!(m, row)
+
+This function updates all of the references in `m`
+after we have deleted row `row` in the affine constraint matrix.
+"""
+function shift_references_after_delete_affine!(m, row)
+    for scalar_affine in [
+            cmap(m).less_than,
+            cmap(m).greater_than,
+            cmap(m).equal_to,
+            cmap(m).interval
+        ]
+        for (key, val) in scalar_affine
+            if val > row
+                scalar_affine[key] -= 1
+            end
+        end
+    end
+
+    for vector_affine in [
+            cmap(m).vv_nonnegatives,
+            cmap(m).vv_nonpositives,
+            cmap(m).vv_zeros
+        ]
+        for (key, vals) in vector_affine
+            for (i, val) in enumerate(vals)
+                if val > row
+                    vector_affine[key][i] -= 1
+                end
+            end
+        end
+    end
+end
+
+"""
+    shift_references_after_delete_quadratic!(m, row)
+
+This function updates all of the references in `m`
+after we have deleted row `row` in the quadratic constraint matrix.
+"""
+function shift_references_after_delete_quadratic!(m, row)
+    for scalar_quadratic in [
+            cmap(m).q_less_than,
+            cmap(m).q_greater_than,
+            cmap(m).q_equal_to
+        ]
+        for (key, val) in scalar_quadratic
+            if val > row
+                scalar_quadratic[key] -= 1
+            end
+        end
+    end
+end
+
 function Base.isempty(map::ConstraintMapping)
 
     ret = true
@@ -125,6 +186,8 @@ function Base.isempty(map::ConstraintMapping)
     ret = ret && isempty(map.binary)
     ret = ret && isempty(map.sos1)
     ret = ret && isempty(map.sos2)
+    ret = ret && isempty(map.semiinteger)
+    ret = ret && isempty(map.semicontinuous)
 
     return ret
 end
