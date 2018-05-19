@@ -1,5 +1,18 @@
 # LinQuadOptInterface.jl
 
+| **Build Status** | **Social** |
+|:-----------------:|:----------:|
+| [![Build Status][build-img]][build-url] [![Codecov branch][codecov-img]][codecov-url] | [![Gitter][gitter-img]][gitter-url] [<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Discourse_logo.png/799px-Discourse_logo.png" width="64">][discourse-url] |
+
+[build-img]: https://travis-ci.org/JuliaOpt/LinQuadOptInterface.jl.svg?branch=master
+[build-url]: https://travis-ci.org/JuliaOpt/LinQuadOptInterface.jl
+[codecov-img]: http://codecov.io/github/JuliaOpt/LinQuadOptInterface.jl/coverage.svg?branch=master
+[codecov-url]: http://codecov.io/github/JuliaOpt/LinQuadOptInterface.jl?branch=master
+
+[gitter-url]: https://gitter.im/JuliaOpt/JuMP-dev?utm_source=share-link&utm_medium=link&utm_campaign=share-link
+[gitter-img]: https://badges.gitter.im/JuliaOpt/JuMP-dev.svg
+[discourse-url]: https://discourse.julialang.org/c/domain/opt
+
 LinQuadOptInterface.jl (LQOI) is designed to simplify [MathOptInterface.jl](https://github.com/JuliaOpt/MathOptInterface.jl)'s (MOI) implementation for some solvers. The target use cases are low-level wrappers designed to bridge low-level Integer Linear and Quadratic solvers, for instance [GLPK.jl](https://github.com/JuliaOpt/GLPK.jl), [Gurobi.jl](https://github.com/JuliaOpt/Gurobi.jl), [Xpress.jl](https://github.com/JuliaOpt/Xpress.jl) and [CPLEX.jl](https://github.com/JuliaOpt/CPLEX.jl).
 
 The use of LQOI for MOI implementations is entirely optional. Using LQOI introduces an extra abstraction layer between a solver and MOI. Its recommended to carefully analyse if the solver's low-level API is close to what LQOI expects, otherwise a direct implementation of MOI might be a better option.
