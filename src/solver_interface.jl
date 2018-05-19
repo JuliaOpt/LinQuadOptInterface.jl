@@ -161,7 +161,7 @@ function add_linear_constraints! end
 @deprecate lqs_addrows! add_linear_constraints!
 
 """
-    add_ranged_constraint!(m, rows::Vector{Int}, cols::Vector{Int},
+    add_ranged_constraints!(m, rows::Vector{Int}, cols::Vector{Int},
         coefs::Vector{Float64}, lowerbound::Vector{Float64}, upperbound::Vector{Float64})
 
 Adds linear constraints of the form `lowerbound <= Ax <= upperbound` to the
