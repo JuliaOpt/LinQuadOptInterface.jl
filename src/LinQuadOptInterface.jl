@@ -362,4 +362,6 @@ include("copy.jl")
 
 include("solver_interface.jl")
 
+include("mockoptimizer.jl")
+
 end
