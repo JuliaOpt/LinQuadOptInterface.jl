@@ -149,8 +149,11 @@ function get_number_linear_constraints end
 
 Adds linear constraints of the form `Ax (sense) rhs` to the model `m`.
 
-The A matrix is given in triplet form `A[rows[i], cols[i]] = coef[i]` for all
-`i`, and `length(rows) == length(cols) == length(coefs)`.
+The A matrix is given in triplet form `A[row(i), cols[i]] = coef[i]` for all
+`i` where `row(i)` is the largest element in `rows` that is smaller or equal 
+than `i`. `rows` is a list of integers sorted in increasing order. It contains 
+the starting index (of `cols`) for each row. `length(cols) == length(coefs)` 
+and `length(rows) == length(sense) == length(rhs)`.
 
 The `sense` is given by `backend_type(m, set)`.
 
