@@ -155,6 +155,20 @@ than `i`. `rows` is a list of integers sorted in increasing order. It contains
 the starting index (of `cols`) for each row. `length(cols) == length(coefs)` 
 and `length(rows) == length(sense) == length(rhs)`.
 
+### Example
+
+To add the constraints:
+    1.0x + 2.0y <= 3.0
+            4.0y >= 5.0,
+the call is:
+    add_linear_constraints(m, 
+        [1, 3], 
+        [1, 2, 2], 
+        [1.0, 2.0, 4.0], 
+        ["<=", ">="], 
+        [3.0, 5.0]
+    )
+
 The `sense` is given by `backend_type(m, set)`.
 
 Ranged constraints (`set=MOI.Interval`) should be added via `add_ranged_constraint!`
