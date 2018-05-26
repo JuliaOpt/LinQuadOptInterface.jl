@@ -118,5 +118,5 @@ function MOI.modifyobjective!(m::LinQuadOptimizer, chg::MOI.ScalarCoefficientCha
     end
     col = m.variable_mapping[chg.variable]
     # 0 row is the objective
-    change_coefficient!(m, 0, col, chg.new_coefficient)
+    change_objective_coefficient!(m, col, chg.new_coefficient)
 end

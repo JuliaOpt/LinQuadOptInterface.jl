@@ -277,7 +277,7 @@ function LQOI.get_linear_constraint(instance::MockLinQuadOptimizer, idx)
 end
 
 # TODO SPLIT THIS ONE
-function LQOI.change_coefficient!(instance::MockLinQuadOptimizer, row, col, coef)
+function LQOI.change_matrix_coefficient!(instance::MockLinQuadOptimizer, row, col, coef)
     # if row == 0
     #     set_dblattrlist!(instance.inner, "Obj", Cint[col], Float64[coef])
     # elseif col == 0
