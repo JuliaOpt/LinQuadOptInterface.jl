@@ -287,7 +287,10 @@ function LQOI.change_matrix_coefficient!(instance::MockLinQuadOptimizer, row, co
     #     #TODO fix this function in gurobi
     # end
 end
-
+function LQOI.change_rhs_coefficient!(instance::MockLinQuadOptimizer, row, coef)
+end
+function LQOI.change_objective_coefficient!(instance::MockLinQuadOptimizer, col, coef)
+end
 function LQOI.delete_linear_constraints!(instance::MockLinQuadOptimizer, rowbeg, rowend)
     if rowbeg > 1 && rowend < length(instance.inner.b)
         instance.inner.A = vcat(instance.inner.A[1:rowbeg-1,:],instance.inner.A[rowend+1:end,:])
