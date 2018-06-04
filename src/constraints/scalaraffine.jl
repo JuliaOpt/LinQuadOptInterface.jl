@@ -163,7 +163,7 @@ end
 MOI.canmodifyconstraint(m::LinQuadOptimizer, c::LCI{<: LinSets}, ::Type{MOI.ScalarCoefficientChange{Float64}}) = true
 function MOI.modifyconstraint!(m::LinQuadOptimizer, c::LCI{<: LinSets}, chg::MOI.ScalarCoefficientChange{Float64})
     col = m.variable_mapping[chg.variable]
-    change_coefficient!(m, m[c], col, chg.new_coefficient)
+    change_matrix_coefficient!(m, m[c], col, chg.new_coefficient)
 end
 
 #=
@@ -172,8 +172,7 @@ end
 
 MOI.canmodifyconstraint(m::LinQuadOptimizer, c::LCI{S}, ::Type{S}) where S <: Union{LE, GE, EQ} = true
 function MOI.modifyconstraint!(m::LinQuadOptimizer, c::LCI{S}, newset::S) where S <: Union{LE, GE, EQ}
-    # the column 0 (or -1 in 0-index) is the rhs.
-    change_coefficient!(m, m[c], 0, _getrhs(newset))
+    change_rhs_coefficient!(m, m[c], _getrhs(newset))
 end
 
 MOI.canmodifyconstraint(m::LinQuadOptimizer, c::LCI{IV}, ::Type{IV}) = true

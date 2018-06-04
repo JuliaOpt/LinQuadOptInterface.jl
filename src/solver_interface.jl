@@ -180,7 +180,7 @@ function add_ranged_constraints! end
 
 Modify the lower and upperbounds of a ranged constraint in the model `m`.
 
-This is a special case compared to standard the `change_coefficient!` since it
+This is a special case compared to standard the `change_rhs_coefficient!` since it
 is often implemented via multiple API calls.
 """
 function modify_ranged_constraints! end
@@ -205,13 +205,27 @@ function get_linear_constraint end
 @deprecate lqs_getrows get_linear_constraint
 
 """
-    change_coefficient!(m, row, col, coef)
+    change_matrix_coefficient!(m, row, col, coef)
 
 Set the linear coefficient of the variable in column `col`, constraint `row` to
 `coef`.
 """
-function change_coefficient! end
-@deprecate lqs_chgcoef! change_coefficient!
+function change_matrix_coefficient! end
+@deprecate lqs_chgcoef! change_matrix_coefficient!
+
+"""
+change_objective_coefficient!(m, col, coef)
+
+Set the linear coefficient of the variable in column `col` to `coef` in the objective function.
+"""
+function change_objective_coefficient! end
+
+"""
+change_rhs_coefficient!(m, row, coef)
+
+Set the rhs of the constraint in row `row` to `coef`.
+"""
+function change_rhs_coefficient! end
 
 """
     delete_linear_constraints!(m, start_row::Int, end_row::Int)::Void
