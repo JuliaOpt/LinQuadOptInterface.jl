@@ -29,7 +29,8 @@ end
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::IV)
     columns = [getcol(m, term.variable_index) for term in func.terms]
     coefficients = [term.coefficient for term in func.terms]
-    add_ranged_constraints!(m, [1], columns, coefficients, [set.lower], [set.upper])
+    A = CSRMatrix{Float64}(columns, coefficients, [1])
+    add_ranged_constraints!(m, A, [set.lower], [set.upper])
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, sense::Cchar, rhs)
@@ -38,7 +39,8 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, sense::Cchar, r
     end
     columns = [getcol(m, term.variable_index) for term in func.terms]
     coefficients = [term.coefficient for term in func.terms]
-    add_linear_constraints!(m, [1], columns, coefficients, [sense], [rhs - func.constant])
+    A = CSRMatrix{Float64}(columns, coefficients, [1])
+    add_linear_constraints!(m, A, [sense], [rhs - func.constant])
 end
 
 #=
@@ -95,7 +97,8 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::V
             i += 1
         end
     end
-    add_ranged_constraints!(m, row_starts, column_indices, coefficients, lowerbounds, upperbounds)
+    A = CSRMatrix{Float64}(column_indices, coefficients, row_starts)
+    add_ranged_constraints!(m, A, lowerbounds, upperbounds)
 end
 
 function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, sense::Vector{Cchar}, rhs::Vector{Float64})
@@ -120,7 +123,8 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, sense:
             cnt += 1
         end
     end
-    add_linear_constraints!(m, rowbegins, column_indices, nnz_vals, sense, rhs)
+    A = CSRMatrix{Float64}(column_indices, nnz_vals, rowbegins)
+    add_linear_constraints!(m, A, sense, rhs)
 end
 
 #=

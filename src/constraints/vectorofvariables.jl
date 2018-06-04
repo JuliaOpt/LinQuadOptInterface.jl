@@ -21,7 +21,11 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <
     ref = VVCI{S}(m.last_constraint_reference)
     rows = get_number_linear_constraints(m)
     n = MOI.dimension(set)
-    add_linear_constraints!(m, collect(1:n), getcol.(m, func.variables), ones(n), fill(backend_type(m, set),n), zeros(n))
+    add_linear_constraints!(m,
+        CSRMatrix{Float64}(getcol.(m, func.variables), ones(n), collect(1:n)),
+        fill(backend_type(m, set),n),
+        zeros(n)
+    )
     dict = constrdict(m, ref)
     dict[ref] = collect(rows+1:rows+n)
     append!(m.constraint_primal_solution, fill(NaN,n))

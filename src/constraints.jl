@@ -152,14 +152,32 @@ function MOI.get(m::LinQuadOptimizer, ::Type{MOI.ConstraintIndex{F,S}}, name::St
     m.constraint_names_rev[name]::MOI.ConstraintIndex{F,S}
 end
 
+
+"""
+    CSRMatrix{T}
+
+Matrix given in compressed sparse row (CSR) format.
+
+It contains three vectors:
+ - `column_indices` is a vector of column numbers;
+ - `data` is a vector of corresponding nonzero values; and
+ - `row_pointers` is a vector pointing to the start of each row in
+    `column_indices` and `data`.
+
+The length of `row_pointers` is the number of rows in the matrix.
+"""
+struct CSRMatrix{T}
+    column_indices::Vector{Int}
+    data::Vector{T}
+    row_pointers::Vector{Int}
+    function CSRMatrix{T}(column_indices, data, row_pointers) where T
+        @assert length(column_indices) == length(data)
+        new(column_indices, data, row_pointers)
+    end
+end
+
 #=
     Below we add constraints.
-
-    - addconstraint!
-    - delete!
-    - get(m, ConstraintSet(), c)
-    - get(m, ConstraintFunction(), c)
-    - modifyconstraint!
 =#
 
 include("constraints/singlevariable.jl")

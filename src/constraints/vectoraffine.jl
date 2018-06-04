@@ -46,7 +46,12 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::VecLin, sense::Cchar)
             rowbegins[cnt] = i
         end
     end
-    add_linear_constraints!(m, rowbegins, columns, coefficients, fill(sense, length(func.constants)), -func.constants)
+    A = CSRMatrix{Float64}(
+        columns,
+        coefficients,
+        rowbegins
+    )
+    add_linear_constraints!(m, A, fill(sense, length(func.constants)), -func.constants)
 end
 
 MOI.canmodifyconstraint(m::LinQuadOptimizer, ::VLCI{<: VecLinSets}, ::Type{MOI.VectorConstantChange{Float64}}) = true
