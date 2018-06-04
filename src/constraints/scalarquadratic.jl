@@ -32,14 +32,19 @@ function addquadraticconstraint!(m::LinQuadOptimizer, f::Quad, sense::Cchar, rhs
     if abs(f.constant) > 0
         warn("Constant in quadratic function. Moving into set")
     end
+    quadratic_columns_1 = [getcol(m, term.variable_index_1) for term in f.quadratic_terms]
+    quadratic_columns_2 = [getcol(m, term.variable_index_2) for term in f.quadratic_terms]
+    quadratic_coefficients = [term.coefficient for term in f.quadratic_terms]
     ri, ci, vi = reduceduplicates(
-        getcol.(m, f.quadratic_rowvariables),
-        getcol.(m, f.quadratic_colvariables),
-        f.quadratic_coefficients
+        quadratic_columns_1,
+        quadratic_columns_2,
+        quadratic_coefficients
     )
+    affine_columns = [getcol(m, term.variable_index) for term in f.affine_terms]
+    affine_coefficients = [term.coefficient for term in f.affine_terms]
     add_quadratic_constraint!(m,
-        getcol.(m, f.affine_variables),
-        f.affine_coefficients,
+        affine_columns,
+        affine_coefficients,
         rhs - f.constant,
         sense,
         ri, ci, vi

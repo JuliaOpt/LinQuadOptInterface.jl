@@ -6,7 +6,7 @@ constrdict(m::LinQuadOptimizer, ::VLCI{MOI.Nonpositives}) = cmap(m).nonpositives
 constrdict(m::LinQuadOptimizer, ::VLCI{MOI.Zeros})        = cmap(m).zeros
 
 function MOI.addconstraint!(m::LinQuadOptimizer, func::VecLin, set::S) where S <: VecLinSets
-    @assert MOI.dimension(set) == length(func.constant)
+    @assert MOI.dimension(set) == length(func.constants)
 
     nrows = get_number_linear_constraints(m)
     addlinearconstraint!(m, func, backend_type(m,set))
@@ -20,31 +20,33 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecLin, set::S) where S <
     for i in 1:MOI.dimension(set)
         push!(m.constraint_primal_solution, NaN)
         push!(m.constraint_dual_solution, NaN)
-        push!(m.constraint_constant, func.constant[i])
+        push!(m.constraint_constant, func.constants[i])
     end
     ref
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::VecLin, sense::Cchar)
-    @assert length(func.outputindex) == length(func.variables) == length(func.coefficients)
-    # get list of unique rows
-    rows = unique(func.outputindex)
-    @assert length(rows) == length(func.constant)
+    outputindex = [term.output_index for term in func.terms]
+    columns = [getcol(m, term.scalar_term.variable_index) for term in func.terms]
+    coefficients = [term.scalar_term.coefficient for term in func.terms]
     # sort into row order
-    pidx = sortperm(func.outputindex)
-    cols = getcol.(m, func.variables)[pidx]
-    vals = func.coefficients[pidx]
-    # loop through to gte starting position of each row
-    rowbegins = Vector{Int}(length(rows))
+    pidx = sortperm(outputindex)
+    permute!(columns, pidx)
+    permute!(coefficients, pidx)
+
+    # check that there is at least a RHS for each row
+    @assert maximum(outputindex) <= length(func.constants)
+    # loop through to get starting position of each row
+    rowbegins = Vector{Int}(length(func.constants))
     rowbegins[1] = 1
     cnt = 1
     for i in 2:length(pidx)
-        if func.outputindex[pidx[i]] != func.outputindex[pidx[i-1]]
+        if outputindex[pidx[i]] != outputindex[pidx[i-1]]
             cnt += 1
             rowbegins[cnt] = i
         end
     end
-    add_linear_constraints!(m, rowbegins, cols, vals, fill(sense, length(rows)), -func.constant)
+    add_linear_constraints!(m, rowbegins, columns, coefficients, fill(sense, length(func.constants)), -func.constants)
 end
 
 MOI.canmodifyconstraint(m::LinQuadOptimizer, ::VLCI{<: VecLinSets}, ::Type{MOI.VectorConstantChange{Float64}}) = true
@@ -93,16 +95,22 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{VLCI{S}}) where
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VLCI{<: VecLinSets})
     ctrs = m[c]
     n = length(ctrs)
-    out = MOI.VectorAffineFunction(Int[],VarInd[],Float64[],Float64[])
+    constants = Float64[]
+    terms = MOI.VectorAffineTerm{Float64}[]
     for i in 1:n
         rhs = get_rhs(m, ctrs[i])
-        push!(out.constant, -rhs)
-
+        push!(constants, -rhs)
         # TODO more efficiently
         colidx, coefs = get_linear_constraint(m, ctrs[i])
-        append!(out.variables, m.variable_references[colidx+1])
-        append!(out.coefficients, coefs)
-        append!(out.outputindex, i*ones(Int,length(coefs)))
+        for (column, coefficient) in zip(colidx, coefs)
+            push!(terms, MOI.VectorAffineTerm{Float64}(
+                    i,
+                    MOI.ScalarAffineTerm{Float64}(
+                        coefficient, m.variable_references[column+1]
+                    )
+                )
+            )
+        end
     end
-    return out
+    return MOI.VectorAffineFunction(terms, constants)
 end

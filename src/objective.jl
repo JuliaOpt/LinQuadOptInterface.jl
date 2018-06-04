@@ -16,7 +16,7 @@ function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveSense, sense::MOI.Optimiza
     elseif sense == MOI.FeasibilitySense
         # we set the objective sense to :min, and the objective to 0.0
         change_objective_sense!(m, :min)
-        unsafe_set!(m, MOI.ObjectiveFunction{Linear}(), MOI.ScalarAffineFunction(VarInd[],Float64[],0.0))
+        unsafe_set!(m, MOI.ObjectiveFunction{Linear}(), MOI.ScalarAffineFunction(MOI.ScalarAffineTerm{Float64}[],0.0))
         m.obj_type = AffineObjective
         m.obj_sense = MOI.FeasibilitySense
     else
@@ -64,7 +64,9 @@ function unsafe_set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, objf::Line
     end
     m.obj_type = AffineObjective
     m.single_obj_var = nothing
-    set_linear_objective!(m, getcol.(m, objf.variables), objf.coefficients)
+    columns = [getcol(m, term.variable_index) for term in objf.terms]
+    coefficients = [term.coefficient for term in objf.terms]
+    set_linear_objective!(m, columns, coefficients)
     m.objective_constant = objf.constant
     nothing
 end
@@ -72,20 +74,19 @@ end
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction, objf::Quad)
     m.obj_type = QuadraticObjective
     m.single_obj_var = nothing
-    set_linear_objective!(m,
-        getcol.(m, objf.affine_variables),
-        objf.affine_coefficients
-    )
+    columns = [getcol(m, term.variable_index) for term in objf.affine_terms]
+    coefficients = [term.coefficient for term in objf.affine_terms]
+    set_linear_objective!(m, columns, coefficients)
+
+    quadratic_columns_1 = [getcol(m, term.variable_index_1) for term in objf.quadratic_terms]
+    quadratic_columns_2 = [getcol(m, term.variable_index_2) for term in objf.quadratic_terms]
+    quadratic_coefficients = [term.coefficient for term in objf.quadratic_terms]
     ri, ci, vi = reduceduplicates(
-        getcol.(m, objf.quadratic_rowvariables),
-        getcol.(m, objf.quadratic_colvariables),
-        objf.quadratic_coefficients
+        quadratic_columns_1,
+        quadratic_columns_2,
+        quadratic_coefficients
     )
-    set_quadratic_objective!(m,
-        ri,
-        ci,
-        vi
-    )
+    set_quadratic_objective!(m, ri, ci, vi)
     m.objective_constant = objf.constant
     nothing
 end
@@ -103,7 +104,12 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear}) = m.obj_type !=
 function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear})
     variable_coefficients = zeros(length(m.variable_references))
     get_linear_objective!(m, variable_coefficients)
-    Linear(m.variable_references, variable_coefficients, m.objective_constant)
+    terms = map(
+        (v,c)->MOI.ScalarAffineTerm{Float64}(c,v),
+        m.variable_references,
+        variable_coefficients
+    )
+    Linear(terms, m.objective_constant)
 end
 
 #=

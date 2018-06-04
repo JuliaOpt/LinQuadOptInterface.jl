@@ -27,14 +27,18 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::S) where S
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::IV)
-    add_ranged_constraints!(m, [1], getcol.(m, func.variables), func.coefficients, [set.lower], [set.upper])
+    columns = [getcol(m, term.variable_index) for term in func.terms]
+    coefficients = [term.coefficient for term in func.terms]
+    add_ranged_constraints!(m, [1], columns, coefficients, [set.lower], [set.upper])
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, sense::Cchar, rhs)
     if abs(func.constant) > eps(Float64)
         warn("Constant in scalar function moved into set.")
     end
-    add_linear_constraints!(m, [1], getcol.(m, func.variables), func.coefficients, [sense], [rhs - func.constant])
+    columns = [getcol(m, term.variable_index) for term in func.terms]
+    coefficients = [term.coefficient for term in func.terms]
+    add_linear_constraints!(m, [1], columns, coefficients, [sense], [rhs - func.constant])
 end
 
 #=
@@ -77,7 +81,7 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::V
             lowerbounds[i] -= f.constant
             upperbounds[i] -= f.constant
         end
-        nnz += length(f.coefficients)
+        nnz += length(f.terms)
     end
     row_starts     = Vector{Int}(length(func))  # index of start of each row
     column_indices = Vector{Int}(nnz)           # flattened columns for each function
@@ -85,9 +89,9 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::V
     i = 1
     for (fi, f) in enumerate(func)
         row_starts[fi] = i
-        for (var, coef) in zip(f.variables, f.coefficients)
-            column_indices[i] = getcol(m, var)
-            coefficients[i]   = coef
+        for term in f.terms
+            column_indices[i] = getcol(m, term.variable_index)
+            coefficients[i]   = term.coefficient
             i += 1
         end
     end
@@ -102,7 +106,7 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, sense:
             warn("Constant in scalar function moved into set.")
             rhs[i] -= f.constant
         end
-        nnz += length(f.coefficients)
+        nnz += length(f.terms)
     end
     rowbegins = Vector{Int}(length(func))   # index of start of each row
     column_indices = Vector{Int}(nnz)       # flattened columns for each function
@@ -110,9 +114,9 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, sense:
     cnt = 1
     for (fi, f) in enumerate(func)
         rowbegins[fi] = cnt
-        for (var, coef) in zip(f.variables, f.coefficients)
-            column_indices[cnt] = getcol(m, var)
-            nnz_vals[cnt] = coef
+        for term in f.terms
+            column_indices[cnt] = getcol(m, term.variable_index)
+            nnz_vals[cnt] = term.coefficient
             cnt += 1
         end
     end
@@ -144,7 +148,12 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:LCI{<: LinSet
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::LCI{<: LinSets})
     # TODO more efficiently
     colidx, coefs = get_linear_constraint(m, m[c])
-    Linear(m.variable_references[colidx+1], coefs, -m.constraint_constant[m[c]])
+    terms = map(
+        (v,c)->MOI.ScalarAffineTerm{Float64}(c,v),
+        m.variable_references[colidx+1],
+        coefs
+    )
+    Linear(terms, -m.constraint_constant[m[c]])
 end
 
 #=
