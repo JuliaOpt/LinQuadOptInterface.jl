@@ -57,6 +57,8 @@ function reduceduplicates(rowi::Vector{T}, coli::Vector{T}, vals::Vector{S}) whe
     for (r,c,v) in zip(rowi, coli, vals)
         if haskey(d, (r,c))
             d[(r,c)] += v
+        elseif haskey(d, (c,r))
+            d[(c,r)] += v
         else
             d[(r,c)] = v
         end
