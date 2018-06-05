@@ -26,27 +26,27 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecLin, set::S) where S <
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::VecLin, sense::Cchar)
-    outputindex = [term.output_index for term in func.terms]
-    colval = [getcol(m, term.scalar_term.variable_index) for term in func.terms]
-    nzval  = [term.scalar_term.coefficient for term in func.terms]
+    outputindex   = [term.output_index for term in func.terms]
+    columns       = [getcol(m, term.scalar_term.variable_index) for term in func.terms]
+    coefficients  = [term.scalar_term.coefficient for term in func.terms]
     # sort into row order
     pidx = sortperm(outputindex)
-    permute!(colval, pidx)
-    permute!(nzval, pidx)
+    permute!(columns, pidx)
+    permute!(coefficients, pidx)
 
     # check that there is at least a RHS for each row
     @assert maximum(outputindex) <= length(func.constants)
     # loop through to get starting position of each row
     row_pointers = Vector{Int}(length(func.constants))
     row_pointers[1] = 1
-    cnt = 1
+    row = 1
     for i in 2:length(pidx)
         if outputindex[pidx[i]] != outputindex[pidx[i-1]]
-            cnt += 1
-            row_pointers[cnt] = i
+            row += 1
+            row_pointers[row] = i
         end
     end
-    A = CSRMatrix{Float64}(row_pointers, colval, nzval)
+    A = CSRMatrix{Float64}(row_pointers, columns, coefficients)
     add_linear_constraints!(m, A, fill(sense, length(func.constants)), -func.constants)
 end
 
