@@ -22,7 +22,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <
     rows = get_number_linear_constraints(m)
     n = MOI.dimension(set)
     add_linear_constraints!(m,
-        CSRMatrix{Float64}(getcol.(m, func.variables), ones(n), collect(1:n)),
+        CSRMatrix{Float64}(collect(1:n), getcol.(m, func.variables), ones(n)),
         fill(backend_type(m, set),n),
         zeros(n)
     )

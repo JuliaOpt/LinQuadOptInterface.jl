@@ -159,20 +159,23 @@ end
 Matrix given in compressed sparse row (CSR) format.
 
 It contains three vectors:
- - `column_indices` is a vector of column numbers;
- - `data` is a vector of corresponding nonzero values; and
- - `row_pointers` is a vector pointing to the start of each row in
-    `column_indices` and `data`.
+ - `rowptr` is a vector pointing to the start of each row in
+    `colval` and `nzval`;
+ - `colval` is a vector of column numbers; and
+ - `nzval` is a vector of corresponding nonzero values.
 
-The length of `row_pointers` is the number of rows in the matrix.
+The length of `rowptr` is the number of rows in the matrix.
+
+`CSRMatrix` is analgous to the structure in Julia's `SparseMatrixCSC` but with
+the rows and columns flipped.
 """
 struct CSRMatrix{T}
-    column_indices::Vector{Int}
-    data::Vector{T}
-    row_pointers::Vector{Int}
-    function CSRMatrix{T}(column_indices, data, row_pointers) where T
-        @assert length(column_indices) == length(data)
-        new(column_indices, data, row_pointers)
+    rowptr::Vector{Int}
+    colval::Vector{Int}
+    nzval::Vector{T}
+    function CSRMatrix{T}(rowptr, colval, nzval) where T
+        @assert length(colval) == length(nzval)
+        new(rowptr, colval, nzval)
     end
 end
 

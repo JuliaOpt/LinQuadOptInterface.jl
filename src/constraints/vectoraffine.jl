@@ -27,30 +27,26 @@ end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::VecLin, sense::Cchar)
     outputindex = [term.output_index for term in func.terms]
-    columns = [getcol(m, term.scalar_term.variable_index) for term in func.terms]
-    coefficients = [term.scalar_term.coefficient for term in func.terms]
+    colval = [getcol(m, term.scalar_term.variable_index) for term in func.terms]
+    nzval  = [term.scalar_term.coefficient for term in func.terms]
     # sort into row order
     pidx = sortperm(outputindex)
-    permute!(columns, pidx)
-    permute!(coefficients, pidx)
+    permute!(colval, pidx)
+    permute!(nzval, pidx)
 
     # check that there is at least a RHS for each row
     @assert maximum(outputindex) <= length(func.constants)
     # loop through to get starting position of each row
-    rowbegins = Vector{Int}(length(func.constants))
-    rowbegins[1] = 1
+    rowptr = Vector{Int}(length(func.constants))
+    rowptr[1] = 1
     cnt = 1
     for i in 2:length(pidx)
         if outputindex[pidx[i]] != outputindex[pidx[i-1]]
             cnt += 1
-            rowbegins[cnt] = i
+            rowptr[cnt] = i
         end
     end
-    A = CSRMatrix{Float64}(
-        columns,
-        coefficients,
-        rowbegins
-    )
+    A = CSRMatrix{Float64}(rowptr, colval, nzval)
     add_linear_constraints!(m, A, fill(sense, length(func.constants)), -func.constants)
 end
 
