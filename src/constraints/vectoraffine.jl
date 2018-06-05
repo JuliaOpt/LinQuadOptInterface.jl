@@ -37,16 +37,16 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::VecLin, sense::Cchar)
     # check that there is at least a RHS for each row
     @assert maximum(outputindex) <= length(func.constants)
     # loop through to get starting position of each row
-    rowptr = Vector{Int}(length(func.constants))
-    rowptr[1] = 1
+    row_pointers = Vector{Int}(length(func.constants))
+    row_pointers[1] = 1
     cnt = 1
     for i in 2:length(pidx)
         if outputindex[pidx[i]] != outputindex[pidx[i-1]]
             cnt += 1
-            rowptr[cnt] = i
+            row_pointers[cnt] = i
         end
     end
-    A = CSRMatrix{Float64}(rowptr, colval, nzval)
+    A = CSRMatrix{Float64}(row_pointers, colval, nzval)
     add_linear_constraints!(m, A, fill(sense, length(func.constants)), -func.constants)
 end
 

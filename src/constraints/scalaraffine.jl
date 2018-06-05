@@ -85,19 +85,19 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::V
         end
         nnz += length(f.terms)
     end
-    rowptr = Vector{Int}(length(func))  # index of start of each row
+    row_pointers = Vector{Int}(length(func))  # index of start of each row
     colval = Vector{Int}(nnz)           # flattened columns for each function
     nzval  = Vector{Float64}(nnz)       # corresponding non-zeros
     i = 1
     for (fi, f) in enumerate(func)
-        rowptr[fi] = i
+        row_pointers[fi] = i
         for term in f.terms
             colval[i] = getcol(m, term.variable_index)
             nzval[i]   = term.coefficient
             i += 1
         end
     end
-    A = CSRMatrix{Float64}(rowptr, colval, nzval)
+    A = CSRMatrix{Float64}(row_pointers, colval, nzval)
     add_ranged_constraints!(m, A, lowerbounds, upperbounds)
 end
 
@@ -111,19 +111,19 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, sense:
         end
         nnz += length(f.terms)
     end
-    rowptr = Vector{Int}(length(func))   # index of start of each row
+    row_pointers = Vector{Int}(length(func))   # index of start of each row
     colval = Vector{Int}(nnz)       # flattened columns for each function
     nzval  = Vector{Float64}(nnz)         # corresponding non-zeros
     cnt = 1
     for (fi, f) in enumerate(func)
-        rowptr[fi] = cnt
+        row_pointers[fi] = cnt
         for term in f.terms
             colval[cnt] = getcol(m, term.variable_index)
             nzval[cnt] = term.coefficient
             cnt += 1
         end
     end
-    A = CSRMatrix{Float64}(rowptr, colval, nzval)
+    A = CSRMatrix{Float64}(row_pointers, colval, nzval)
     add_linear_constraints!(m, A, sense, rhs)
 end
 

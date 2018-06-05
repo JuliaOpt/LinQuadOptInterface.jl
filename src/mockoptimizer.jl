@@ -213,7 +213,7 @@ function LQOI.get_number_linear_constraints(instance::MockLinQuadOptimizer)
 end
 
 function LQOI.add_linear_constraints!(instance::MockLinQuadOptimizer, A::CSRMatrix{Float64}, sensevec, rhsvec)
-    rowvec, colvec, coefvec = A.rowptr, A.colval, A.nzval
+    rowvec, colvec, coefvec = A.row_pointers, A.columns, A.coefficients
 
     rows = length(rhsvec)
     cols = size(instance.inner.A)[2]
@@ -233,7 +233,7 @@ function LQOI.add_linear_constraints!(instance::MockLinQuadOptimizer, A::CSRMatr
 end
 
 function LQOI.add_ranged_constraints!(instance::MockLinQuadOptimizer, A::CSRMatrix{Float64}, rhsvec, ubvec)
-    rowvec, colvec, coefvec = A.rowptr, A.colval, A.nzval
+    rowvec, colvec, coefvec = A.row_pointers, A.columns, A.coefficients
     rows = length(rhsvec)
     cols = size(instance.inner.A)[2]
     push!(rowvec,length(colvec)+1)
