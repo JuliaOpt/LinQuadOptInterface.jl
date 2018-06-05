@@ -51,27 +51,34 @@ function addquadraticconstraint!(m::LinQuadOptimizer, f::Quad, sense::Cchar, rhs
     )
 end
 
-function reduceduplicates(rowi::Vector{T}, coli::Vector{T}, vals::Vector{S}) where T where S
-    @assert length(rowi) == length(coli) == length(vals)
-    d = Dict{Tuple{T, T},S}()
-    for (r,c,v) in zip(rowi, coli, vals)
-        if haskey(d, (r,c))
-            d[(r,c)] += v
-        elseif haskey(d, (c,r))
-            d[(c,r)] += v
-        else
-            d[(r,c)] = v
+"""
+    reduceduplicates(rows::Vector{T}, cols::Vector{T}, vals::Vector{S})
+
+Given a matrix specified by row indices in `rows`, column indices in `cols` and
+coefficients in `vals`, return new `rows`, `cols`, and `vals` vectors with
+duplicate elements summed and any coefficients in the lower triangle moved to
+the upper triangle.
+
+# Examples
+```jldoctest
+julia> reduceduplicates(
+    [1,   2, 2, 2],  # rows
+    [1,   1, 2, 2],  # cols
+    [1, 0.5, 1, 1]   # vals
+    )
+([1, 1, 2], [1, 2, 2], [1.0, 0.5, 2.0])
+```
+"""
+function reduceduplicates(rows::Vector{T}, cols::Vector{T}, vals::Vector{S}) where T where S
+    @assert length(rows) == length(cols) == length(vals)
+    for i in 1:length(rows)
+        if rows[i] > cols[i]
+            tmp = rows[i]
+            rows[i] = cols[i]
+            cols[i] = tmp
         end
     end
-    ri = Vector{T}(length(d))
-    ci = Vector{T}(length(d))
-    vi = Vector{S}(length(d))
-    for (i, (key, val)) in enumerate(d)
-        ri[i] = key[1]
-        ci[i] = key[2]
-        vi[i] = val
-    end
-    ri, ci, vi
+    findnz(sparse(rows, cols, vals))
 end
 
 
