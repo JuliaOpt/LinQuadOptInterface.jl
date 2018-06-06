@@ -166,6 +166,10 @@ the rows and columns flipped. It contains three vectors:
  - `coefficients` is a vector of corresponding nonzero values.
 
 The length of `row_pointers` is the number of rows in the matrix.
+
+This struct is not a subtype of `AbstractSparseMatrix` as it is intended to be a
+collection of the three vectors as they are required by solvers such as Gurobi.
+It is not intended to be used for general computation.
 """
 struct CSRMatrix{T}
     row_pointers::Vector{Int}
