@@ -29,7 +29,8 @@ end
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::IV)
     columns = [getcol(m, term.variable_index) for term in func.terms]
     coefficients = [term.coefficient for term in func.terms]
-    add_ranged_constraints!(m, [1], columns, coefficients, [set.lower], [set.upper])
+    A = CSRMatrix{Float64}([1], columns, coefficients)
+    add_ranged_constraints!(m, A, [set.lower], [set.upper])
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, sense::Cchar, rhs)
@@ -38,7 +39,8 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, sense::Cchar, r
     end
     columns = [getcol(m, term.variable_index) for term in func.terms]
     coefficients = [term.coefficient for term in func.terms]
-    add_linear_constraints!(m, [1], columns, coefficients, [sense], [rhs - func.constant])
+    A = CSRMatrix{Float64}([1], columns, coefficients)
+    add_linear_constraints!(m, A, [sense], [rhs - func.constant])
 end
 
 #=
@@ -83,19 +85,20 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::V
         end
         nnz += length(f.terms)
     end
-    row_starts     = Vector{Int}(length(func))  # index of start of each row
-    column_indices = Vector{Int}(nnz)           # flattened columns for each function
-    coefficients   = Vector{Float64}(nnz)       # corresponding non-zeros
+    row_pointers = Vector{Int}(length(func))  # index of start of each row
+    columns = Vector{Int}(nnz)                # flattened columns for each function
+    coefficients  = Vector{Float64}(nnz)      # corresponding non-zeros
     i = 1
     for (fi, f) in enumerate(func)
-        row_starts[fi] = i
+        row_pointers[fi] = i
         for term in f.terms
-            column_indices[i] = getcol(m, term.variable_index)
-            coefficients[i]   = term.coefficient
+            columns[i] = getcol(m, term.variable_index)
+            coefficients[i] = term.coefficient
             i += 1
         end
     end
-    add_ranged_constraints!(m, row_starts, column_indices, coefficients, lowerbounds, upperbounds)
+    A = CSRMatrix{Float64}(row_pointers, columns, coefficients)
+    add_ranged_constraints!(m, A, lowerbounds, upperbounds)
 end
 
 function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, sense::Vector{Cchar}, rhs::Vector{Float64})
@@ -108,19 +111,20 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, sense:
         end
         nnz += length(f.terms)
     end
-    rowbegins = Vector{Int}(length(func))   # index of start of each row
-    column_indices = Vector{Int}(nnz)       # flattened columns for each function
-    nnz_vals = Vector{Float64}(nnz)         # corresponding non-zeros
-    cnt = 1
-    for (fi, f) in enumerate(func)
-        rowbegins[fi] = cnt
+    row_pointers = Vector{Int}(length(func))  # index of start of each row
+    columns = Vector{Int}(nnz)                # flattened columns for each function
+    coefficients = Vector{Float64}(nnz)       # corresponding non-zeros
+    i = 1
+    for (row, f) in enumerate(func)
+        row_pointers[row] = i
         for term in f.terms
-            column_indices[cnt] = getcol(m, term.variable_index)
-            nnz_vals[cnt] = term.coefficient
-            cnt += 1
+            columns[i] = getcol(m, term.variable_index)
+            coefficients[i] = term.coefficient
+            i += 1
         end
     end
-    add_linear_constraints!(m, rowbegins, column_indices, nnz_vals, sense, rhs)
+    A = CSRMatrix{Float64}(row_pointers, columns, coefficients)
+    add_linear_constraints!(m, A, sense, rhs)
 end
 
 #=

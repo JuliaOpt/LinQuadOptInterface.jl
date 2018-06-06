@@ -5,9 +5,9 @@ mutable struct LinQuadSOS
 end
 
 mutable struct MockLinQuadModel # <: LinQuadOptInterface.LinQuadOptimizer
-    
+
     sense::Symbol
-    
+
     A::Matrix{Float64}
     b::Vector{Float64}
     c::Vector{Float64}
@@ -20,14 +20,14 @@ mutable struct MockLinQuadModel # <: LinQuadOptInterface.LinQuadOptimizer
     ub::Vector{Float64}
 
     vartype::Vector{Cchar} # :Bin, :Int, :Con
-    contype::Vector{Cchar} # :LEQ :GEQ, :EQ, :RANGE 
+    contype::Vector{Cchar} # :LEQ :GEQ, :EQ, :RANGE
 
     # sos::LinQuadSOS{LinQuadSOS}
 
     termination_status::MOI.TerminationStatusCode
     primal_status::MOI.ResultStatusCode
     dual_status::MOI.ResultStatusCode
- 
+
     variable_primal_solution::Vector{Float64}
     variable_dual_solution::Vector{Float64}
 
@@ -212,12 +212,13 @@ function LQOI.get_number_linear_constraints(instance::MockLinQuadOptimizer)
     size(instance.inner.A)[1]
 end
 
-function LQOI.add_linear_constraints!(instance::MockLinQuadOptimizer, rowvec, colvec, coefvec, sensevec, rhsvec)
+function LQOI.add_linear_constraints!(instance::MockLinQuadOptimizer, A::CSRMatrix{Float64}, sensevec, rhsvec)
+    rowvec, colvec, coefvec = A.row_pointers, A.columns, A.coefficients
 
     rows = length(rhsvec)
     cols = size(instance.inner.A)[2]
     push!(rowvec,length(colvec)+1)
-    
+
     # An = full(sparse(rowvec,colvec,coefvec,rows,cols))
     # @show cols,rows,rowvec,colvec,coefvec
     An = full(SparseMatrixCSC(cols,rows,rowvec,colvec,coefvec)')
@@ -231,11 +232,12 @@ function LQOI.add_linear_constraints!(instance::MockLinQuadOptimizer, rowvec, co
     nothing
 end
 
-function LQOI.add_ranged_constraints!(instance::MockLinQuadOptimizer, rowvec, colvec, coefvec, rhsvec, ubvec)
+function LQOI.add_ranged_constraints!(instance::MockLinQuadOptimizer, A::CSRMatrix{Float64}, rhsvec, ubvec)
+    rowvec, colvec, coefvec = A.row_pointers, A.columns, A.coefficients
     rows = length(rhsvec)
     cols = size(instance.inner.A)[2]
     push!(rowvec,length(colvec)+1)
-    
+
     # An = full(sparse(rowvec,colvec,coefvec,rows,cols))
     # @show cols,rows,rowvec,colvec,coefvec
     An = full(SparseMatrixCSC(cols,rows,rowvec,colvec,coefvec)')

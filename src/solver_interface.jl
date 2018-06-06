@@ -143,32 +143,28 @@ function get_number_linear_constraints end
 @deprecate lqs_getnumrows get_number_linear_constraints
 
 """
-    add_linear_constraints!(m, rows::Vector{Int}, cols::Vector{Int},
-        coefs::Vector{Float64},
+    add_linear_constraints!(m, A::CSRMatrix{Float64},
         sense::Vector{Cchar}, rhs::Vector{Float64})::Void
 
 Adds linear constraints of the form `Ax (sense) rhs` to the model `m`.
 
-The A matrix is given in triplet form `A[rows[i], cols[i]] = coef[i]` for all
-`i`, and `length(rows) == length(cols) == length(coefs)`.
-
+`sense` and `rhs` contain one element for each row in `A`.
 The `sense` is given by `backend_type(m, set)`.
 
 Ranged constraints (`set=MOI.Interval`) should be added via `add_ranged_constraint!`
 instead.
+
+See also: `LinQuadOptInterface.CSRMatrix`.
 """
 function add_linear_constraints! end
 @deprecate lqs_addrows! add_linear_constraints!
 
 """
-    add_ranged_constraints!(m, rows::Vector{Int}, cols::Vector{Int},
-        coefs::Vector{Float64}, lowerbound::Vector{Float64}, upperbound::Vector{Float64})
+    add_ranged_constraints!(m, A::CSRMatrix{Float64},
+        lowerbound::Vector{Float64}, upperbound::Vector{Float64})
 
 Adds linear constraints of the form `lowerbound <= Ax <= upperbound` to the
 model `m`.
-
-The A matrix is given in triplet form `A[rows[i], cols[i]] = coef[i]` for all
-`i`,
 
 This is a special case compared to standard `add_linear_constraints!` since it
 is often implemented via multiple API calls.

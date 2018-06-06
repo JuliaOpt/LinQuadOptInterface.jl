@@ -152,14 +152,37 @@ function MOI.get(m::LinQuadOptimizer, ::Type{MOI.ConstraintIndex{F,S}}, name::St
     m.constraint_names_rev[name]::MOI.ConstraintIndex{F,S}
 end
 
+
+"""
+    CSRMatrix{T}
+
+Matrix given in compressed sparse row (CSR) format.
+
+`CSRMatrix` is analgous to the structure in Julia's `SparseMatrixCSC` but with
+the rows and columns flipped. It contains three vectors:
+ - `row_pointers` is a vector pointing to the start of each row in
+    `columns` and `coefficients`;
+ - `columns` is a vector of column numbers; and
+ - `coefficients` is a vector of corresponding nonzero values.
+
+The length of `row_pointers` is the number of rows in the matrix.
+
+This struct is not a subtype of `AbstractSparseMatrix` as it is intended to be a
+collection of the three vectors as they are required by solvers such as Gurobi.
+It is not intended to be used for general computation.
+"""
+struct CSRMatrix{T}
+    row_pointers::Vector{Int}
+    columns::Vector{Int}
+    coefficients::Vector{T}
+    function CSRMatrix{T}(row_pointers, columns, coefficients) where T
+        @assert length(columns) == length(coefficients)
+        new(row_pointers, columns, coefficients)
+    end
+end
+
 #=
     Below we add constraints.
-
-    - addconstraint!
-    - delete!
-    - get(m, ConstraintSet(), c)
-    - get(m, ConstraintFunction(), c)
-    - modifyconstraint!
 =#
 
 include("constraints/singlevariable.jl")
