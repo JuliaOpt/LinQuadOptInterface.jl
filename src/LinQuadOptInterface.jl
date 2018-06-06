@@ -128,6 +128,9 @@ function shift_references_after_delete_affine!(m, row)
     end
 
     for vector_affine in [
+            cmap(m).nonnegatives,
+            cmap(m).nonpositives,
+            cmap(m).zeros,
             cmap(m).vv_nonnegatives,
             cmap(m).vv_nonpositives,
             cmap(m).vv_zeros
