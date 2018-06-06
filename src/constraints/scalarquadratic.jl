@@ -35,7 +35,7 @@ function addquadraticconstraint!(m::LinQuadOptimizer, f::Quad, sense::Cchar, rhs
     quadratic_columns_1 = [getcol(m, term.variable_index_1) for term in f.quadratic_terms]
     quadratic_columns_2 = [getcol(m, term.variable_index_2) for term in f.quadratic_terms]
     quadratic_coefficients = [term.coefficient for term in f.quadratic_terms]
-    ri, ci, vi = reduceduplicates(
+    ri, ci, vi = reduce_duplicates!(
         quadratic_columns_1,
         quadratic_columns_2,
         quadratic_coefficients
@@ -52,16 +52,18 @@ function addquadraticconstraint!(m::LinQuadOptimizer, f::Quad, sense::Cchar, rhs
 end
 
 """
-    reduceduplicates(rows::Vector{T}, cols::Vector{T}, vals::Vector{S})
+    reduce_duplicates!(rows::Vector{T}, cols::Vector{T}, vals::Vector{S})
 
 Given a matrix specified by row indices in `rows`, column indices in `cols` and
 coefficients in `vals`, return new `rows`, `cols`, and `vals` vectors with
 duplicate elements summed and any coefficients in the lower triangle moved to
 the upper triangle.
 
+This function swaps element `i` in `rows` and `cols` if `rows[i]>cols[i]`.
+
 # Examples
 ```jldoctest
-julia> reduceduplicates(
+julia> reduce_duplicates!(
     [1,   2, 2, 2],  # rows
     [1,   1, 2, 2],  # cols
     [1, 0.5, 1, 1]   # vals
@@ -69,7 +71,7 @@ julia> reduceduplicates(
 ([1, 1, 2], [1, 2, 2], [1.0, 0.5, 2.0])
 ```
 """
-function reduceduplicates(rows::Vector{T}, cols::Vector{T}, vals::Vector{S}) where T where S
+function reduce_duplicates!(rows::Vector{T}, cols::Vector{T}, vals::Vector{S}) where T where S
     @assert length(rows) == length(cols) == length(vals)
     for i in 1:length(rows)
         if rows[i] > cols[i]
