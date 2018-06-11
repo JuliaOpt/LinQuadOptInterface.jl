@@ -112,6 +112,31 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear})
     Linear(terms, m.objective_constant)
 end
 
+MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Quad}) = m.obj_type == QuadraticObjective
+function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Quad})
+    variable_coefficients = zeros(length(m.variable_references))
+    get_linear_objective!(m, variable_coefficients)
+    affine_terms = map(
+        (v,c)->MOI.ScalarAffineTerm{Float64}(c,v),
+        m.variable_references,
+        variable_coefficients
+    )
+    Q = get_quadratic_terms_objective(m)
+    rows = rowvals(Q)
+    vals = nonzeros(Q)
+    nrows, ncols = size(Q)
+    quadratic_terms = MOI.ScalarQuadraticTerm{Float64}[]
+    sizehint!(quadratic_terms, length(vals))
+    for i = 1:ncols
+        for j in nzrange(Q, i)
+            row = rows[j]
+            val = vals[j]
+            push!(quadratic_terms, MOI.ScalarQuadraticTerm{Float64}(0.5*val, m.variable_references[row], m.variable_references[i]))
+        end
+    end
+    Quad(affine_terms, quadratic_terms, m.objective_constant)
+end
+
 #=
     Modify objective function
 =#
