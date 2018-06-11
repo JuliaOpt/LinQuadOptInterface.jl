@@ -352,6 +352,13 @@ Where `Q` represents the matrix in CSC format.
 function get_quadratic_constraint end
 
 """
+    get_quadratic_constraint(m, row::Int)::Float64
+
+Get the right hand-side term of quadratic constraint in row `row` in model `m`.
+"""
+function get_quadratic_rhs end
+
+"""
     set_linear_objective!(m, cols::Vector{Int}, coefs::Vector{Float64})::Void
 
 Set the linear component of the objective.

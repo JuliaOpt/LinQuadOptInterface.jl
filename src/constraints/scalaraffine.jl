@@ -137,7 +137,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{S}) where S <:
     S(rhs+m.constraint_constant[m[c]])
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{IV}}) = false
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{IV}}) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{IV})
     lowerbound, upperbound = get_range(m, m[c])
     IV(lowerbound+m.constraint_constant[m[c]], upperbound + m.constraint_constant[m[c]])
