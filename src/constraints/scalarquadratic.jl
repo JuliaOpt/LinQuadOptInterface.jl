@@ -96,3 +96,43 @@ function MOI.delete!(m::LinQuadOptimizer, c::QCI{<: LinSets})
     shift_references_after_delete_quadratic!(m, row)
     delete!(dict, c)
 end
+
+#=
+    Constraint set of Linear function
+=#
+
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{QCI{S}}) where S <: Union{LE, GE, EQ} = true
+function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::QCI{S}) where S <: Union{LE, GE, EQ}
+    rhs = get_rhs(m, m[c])
+    S(rhs)
+end
+
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{QCI{IV}}) = false
+
+#=
+    Constraint function of Linear function
+=#
+
+MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:QCI{<: LinSets}}) = true
+function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::QCI{<: LinSets})
+    # TODO more efficiently
+    colidx, coefs, Q = get_quadratic_constraint(m, m[c])
+    affine_terms = map(
+        (v,c)->MOI.ScalarAffineTerm{Float64}(c,v),
+        m.variable_references[colidx+1],
+        coefs
+    )
+    rows = rowvals(Q)
+    vals = nonzeros(Q)
+    nrows, ncols = size(Q)
+    quadratic_terms = MOI.ScalarQuadraticTerm{Float64}[]
+    sizehint!(quadratic_terms, length(vals))
+    for i = 1:ncols
+        for j in nzrange(Q, i)
+            row = rows[j]
+            val = vals[j]
+            push!(quadratic_terms, MOI.ScalarQuadraticTerm{Float64}(2*val, m.variable_references[row], m.variable_references[i]))
+        end
+    end
+    Quad(affine_terms, quadratic_terms, 0.0) # constant was moved into set
+end

@@ -172,7 +172,7 @@ is often implemented via multiple API calls.
 function add_ranged_constraints! end
 
 """
-    modify_ranged_constraint!(m, rows::Vector{Int}, lowerbound::Vector{Float64}, upperbound::Vector{Float64})
+    modify_ranged_constraints!(m, rows::Vector{Int}, lowerbound::Vector{Float64}, upperbound::Vector{Float64})
 
 Modify the lower and upperbounds of a ranged constraint in the model `m`.
 
@@ -180,7 +180,6 @@ This is a special case compared to standard the `change_rhs_coefficient!` since 
 is often implemented via multiple API calls.
 """
 function modify_ranged_constraints! end
-
 
 """
     get_rhs(m, row::Int)::Float64
@@ -190,6 +189,13 @@ the model `m`.
 """
 function get_rhs end
 @deprecate lqs_getrhs get_rhs
+
+"""
+    get_range(m, row::Int)::Tuple{Float64,Float64}
+
+Get the range which the constraint `row` belongs to. The output of the function is the tuple `lowerbound, upperbound` of bounds: `lowerbound <= a'x < = upperbound`
+"""
+function get_range end
 
 """
     get_linear_constraint(m, row::Int)::Tuple{Vector{Int}, Vector{Float64}}
@@ -241,7 +247,7 @@ the model `m`.
 function delete_quadratic_constraints! end
 
 """
-    lqs_chgctype(m, cols::Vector{Int}, types):Void
+    change_variable_types(m, cols::Vector{Int}, types):Void
 
 Change the variable types. Type is the output of one of:
  - `backend_type(m, ::ZeroOne)`, for binary variables;
@@ -337,6 +343,15 @@ function set_quadratic_objective! end
 @deprecate lqs_copyquad! set_quadratic_objective!
 
 """
+    get_quadratic_constraint(m, row::Int)::Tuple{Vector{Int}, Vector{Float64}, SparseMatrixCSC{Float64,Int64}}
+
+Get the linear and quadratic components of the constraint in the 1-indexed row `row` in
+the model `m`. Returns a tuple of `(lin_cols, lin_vals, Q)`.
+Where `Q` represents the matrix in CSC format.
+"""
+function get_quadratic_constraint end
+
+"""
     set_linear_objective!(m, cols::Vector{Int}, coefs::Vector{Float64})::Void
 
 Set the linear component of the objective.
@@ -356,11 +371,18 @@ function change_objective_sense! end
 """
     get_linear_objective!(m, x::Vector{Float64})
 
-Change the linear coefficients of the objective and store
+Get the linear coefficients of the objective and store
 in `x`.
 """
 function get_linear_objective! end
 @deprecate lqs_getobj get_linear_objective!
+
+"""
+    get_quadratic_terms_objective(m)::SparseMatrixCSC{Float64,Int64}
+
+Get quadratic terms of the objective function returned in sparse CSC format.
+"""
+function get_quadratic_terms_objective end
 
 """
     get_objectivesense(m)::MOI.OptimizationSense

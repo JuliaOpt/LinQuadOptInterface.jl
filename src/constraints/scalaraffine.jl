@@ -131,18 +131,17 @@ end
     Constraint set of Linear function
 =#
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{S}}) where S <: Union{LE, GE, EQ} = true
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{S}}) where S <: Union{LE, GE, EQ} = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{S}) where S <: Union{LE, GE, EQ}
     rhs = get_rhs(m, m[c])
     S(rhs+m.constraint_constant[m[c]])
 end
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{IV}}) = false
-# TODO(odow): get constraint sets for ranged constraints.
-# function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{IV})
-#     ???
-#     IV(lowerbound+m.constraint_constant[m[c]], upperbound + m.constraint_constant[m[c]])
-# end
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{IV}}) = false
+function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{IV})
+    lowerbound, upperbound = get_range(m, m[c])
+    IV(lowerbound+m.constraint_constant[m[c]], upperbound + m.constraint_constant[m[c]])
+end
 
 #=
     Constraint function of Linear function
