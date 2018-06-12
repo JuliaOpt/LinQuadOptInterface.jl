@@ -352,7 +352,7 @@ Where `Q` represents the matrix in CSC format.
 function get_quadratic_constraint end
 
 """
-    get_quadratic_constraint(m, row::Int)::Float64
+    get_quadratic_rhs(m, row::Int)::Float64
 
 Get the right hand-side term of quadratic constraint in row `row` in model `m`.
 """
