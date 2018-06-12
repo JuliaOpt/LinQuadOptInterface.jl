@@ -19,7 +19,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <
     @assert length(func.variables) == MOI.dimension(set)
     m.last_constraint_reference += 1
     ref = VVCI{S}(m.last_constraint_reference)
-    rows = get_number_linear_constraints(m)
+    rows = get_last_linear_constraint_index(m)
     n = MOI.dimension(set)
     add_linear_constraints!(m,
         CSRMatrix{Float64}(collect(1:n), getcol.(m, func.variables), ones(n)),
