@@ -103,7 +103,7 @@ end
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{QCI{S}}) where S <: Union{LE, GE, EQ} = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::QCI{S}) where S <: Union{LE, GE, EQ}
-    rhs = get_rhs(m, m[c])
+    rhs = get_quadratic_rhs(m, m[c])
     S(rhs)
 end
 
@@ -118,7 +118,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::QCI{<: LinSet
     # TODO more efficiently
     colidx, coefs, Q = get_quadratic_constraint(m, m[c])
     affine_terms = map(
-        (v,c)->MOI.ScalarAffineTerm{Float64}(c,m.variable_references[v]),
+        (v,c)->MOI.ScalarAffineTerm{Float64}(c, m.variable_references[v]),
         colidx,
         coefs
     )
