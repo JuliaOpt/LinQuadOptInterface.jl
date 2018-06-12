@@ -143,6 +143,14 @@ function get_number_linear_constraints end
 @deprecate lqs_getnumrows get_number_linear_constraints
 
 """
+    get_last_linear_constraint_index(m)::Int
+
+Get the index of the last linear constraints added to the model `m`.
+"""
+function get_last_linear_constraint_index end
+get_last_linear_constraint_index(m) = get_number_linear_constraints(m)
+
+"""
     add_linear_constraints!(m, A::CSRMatrix{Float64},
         sense::Vector{Cchar}, rhs::Vector{Float64})::Void
 
@@ -324,6 +332,14 @@ function get_number_quadratic_constraints end
 @deprecate lqs_getnumqcosntrs get_number_quadratic_constraints
 
 """
+    get_last_quadratic_constraint_index(m)::Int
+
+Get the index of the last quadratic constraints added to the model `m`.
+"""
+function get_last_quadratic_constraint_index end
+get_last_quadratic_constraint_index(m) = get_number_quadratic_constraints(m)
+
+"""
     add_quadratic_constraint!(m, cols::Vector{Int}, coefs::Vector{Float64}, rhs::Float64,
         sense, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Void
 
@@ -350,6 +366,13 @@ the model `m`. Returns a tuple of `(lin_cols, lin_vals, Q)`.
 Where `Q` represents the matrix in CSC format.
 """
 function get_quadratic_constraint end
+
+"""
+    get_quadratic_constraint(m, row::Int)::Float64
+
+Get the right hand-side term of quadratic constraint in row `row` in model `m`.
+"""
+function get_quadratic_rhs end
 
 """
     set_linear_objective!(m, cols::Vector{Int}, coefs::Vector{Float64})::Void

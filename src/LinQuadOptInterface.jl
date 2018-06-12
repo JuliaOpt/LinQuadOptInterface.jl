@@ -113,7 +113,8 @@ ConstraintMapping() = ConstraintMapping(
 This function updates all of the references in `m`
 after we have deleted row `row` in the affine constraint matrix.
 """
-function shift_references_after_delete_affine!(m, row)
+shift_references_after_delete_affine!(m, row) = shift_references_after_delete_affine_base!(m, row)
+function shift_references_after_delete_affine_base!(m, row)
     for scalar_affine in [
             cmap(m).less_than,
             cmap(m).greater_than,
@@ -151,7 +152,8 @@ end
 This function updates all of the references in `m`
 after we have deleted row `row` in the quadratic constraint matrix.
 """
-function shift_references_after_delete_quadratic!(m, row)
+shift_references_after_delete_quadratic!(m, row) = shift_references_after_delete_quadratic_base!(m, row)
+function shift_references_after_delete_quadratic_base!(m, row)
     for scalar_quadratic in [
             cmap(m).q_less_than,
             cmap(m).q_greater_than,

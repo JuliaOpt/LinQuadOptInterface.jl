@@ -15,7 +15,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <
     m.last_constraint_reference += 1
     ref = LCI{T}(m.last_constraint_reference)
     dict = constrdict(m, ref)
-    dict[ref] = get_number_linear_constraints(m)
+    dict[ref] = get_last_linear_constraint_index(m)
     push!(m.constraint_primal_solution, NaN)
     push!(m.constraint_dual_solution, NaN)
     push!(m.constraint_constant, func.constant)
@@ -52,7 +52,7 @@ function MOI.addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vec
     cfunc = MOIU.canonical.(func)
 
     @assert length(cfunc) == length(set)
-    numrows = get_number_linear_constraints(m)
+    numrows = get_last_linear_constraint_index(m)
     addlinearconstraints!(m, cfunc, set)
     crefs = Vector{LCI{S}}(length(cfunc))
     for i in 1:length(cfunc)
@@ -137,7 +137,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{S}) where S <:
     S(rhs+m.constraint_constant[m[c]])
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{IV}}) = false
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{IV}}) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{IV})
     lowerbound, upperbound = get_range(m, m[c])
     IV(lowerbound+m.constraint_constant[m[c]], upperbound + m.constraint_constant[m[c]])
