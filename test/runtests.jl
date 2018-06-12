@@ -14,11 +14,11 @@ const LQOI = LinQuadOptInterface
         MOIT.contlineartest(solver , linconfig, ["linear10"])
     end
 
-    # @testset "Quadratic tests" begin
-    #     quadconfig = MOIT.TestConfig(solve=false)
-    #     solver = LQOI.MockLinQuadOptimizer()
-    #     MOIT.contquadratictest(solver, quadconfig)
-    # end
+    @testset "Quadratic tests" begin
+        quadconfig = MOIT.TestConfig(solve=false)
+        solver = LQOI.MockLinQuadOptimizer()
+        MOIT.contquadratictest(solver, quadconfig)
+    end
 
     @testset "Linear Conic tests" begin
         linconfig = MOIT.TestConfig(solve=false)

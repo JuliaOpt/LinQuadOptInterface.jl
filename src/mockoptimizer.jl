@@ -142,7 +142,7 @@ function fakesolve(m::MockLinQuadModel)
 end
 
 num_vars(inner::MockLinQuadModel) = length(inner.c)
-num_cons(inner::MockLinQuadModel) = length(inner.rhs)
+num_cons(inner::MockLinQuadModel) = length(inner.b)
 
 function set_variable_primal_solution!(inner::MockLinQuadModel,input)
     push!(m.variable_primal_solution_stored, input)
@@ -232,9 +232,19 @@ end
 
 function MOI.empty!(m::MockLinQuadOptimizer)
     MOI.empty!(m,nothing)
+    m.constraint_primal_solution = m.qconstraint_primal_solution
+    m.constraint_dual_solution = m.qconstraint_dual_solution
     for (name,value) in m.params
         setparam!(m.inner, name, value)
     end
+end
+function LQOI.shift_references_after_delete_quadratic!(instance::MockLinQuadOptimizer, row)
+    LQOI.shift_references_after_delete_quadratic_base!(instance, row)
+    LQOI.shift_references_after_delete_affine_base!(instance, row)
+end
+function LQOI.shift_references_after_delete_affine!(instance::MockLinQuadOptimizer, row)
+    LQOI.shift_references_after_delete_quadratic_base!(instance, row)
+    LQOI.shift_references_after_delete_affine_base!(instance, row)
 end
 
 LQOI.supported_constraints(s::MockLinQuadOptimizer) = SUPPORTED_CONSTRAINTS
@@ -299,7 +309,7 @@ function LQOI.get_variable_upperbound(instance::MockLinQuadOptimizer, col)
 end
 
 function LQOI.get_last_linear_constraint_index(instance::MockLinQuadOptimizer)
-    size(instance.inner.A)[1]
+    out = size(instance.inner.A)[1]
 end
 
 function LQOI.add_linear_constraints!(instance::MockLinQuadOptimizer, A::CSRMatrix{Float64}, sensevec, rhsvec)
@@ -309,8 +319,6 @@ function LQOI.add_linear_constraints!(instance::MockLinQuadOptimizer, A::CSRMatr
     cols = size(instance.inner.A)[2]
     push!(rowvec,length(colvec)+1)
 
-    # An = full(sparse(rowvec,colvec,coefvec,rows,cols))
-    # @show cols,rows,rowvec,colvec,coefvec
     An = full(SparseMatrixCSC(cols,rows,rowvec,colvec,coefvec)')
 
     instance.inner.A = vcat(instance.inner.A,An)
@@ -349,7 +357,10 @@ function LQOI.add_quadratic_constraint!(instance::MockLinQuadOptimizer, cols, co
     nvars = length(instance.inner.c)
     Q = full(sparse(I,J,V,nvars,nvars))
 
-    a = full(sparsevec(cols,coefs))
+    a = zeros(nvars)
+    for i in eachindex(cols)
+        a[cols[i]] = coefs[i]
+    end
 
     instance.inner.A = vcat(instance.inner.A,a')
     push!(instance.inner.b,rhs)
@@ -361,9 +372,13 @@ function LQOI.add_quadratic_constraint!(instance::MockLinQuadOptimizer, cols, co
     # scalediagonal!(V, I, J, 2.0)
 end
 
+
+LQOI.get_last_quadratic_constraint_index(instance::MockLinQuadOptimizer) = LQOI.get_last_linear_constraint_index(instance)
+
+LQOI.get_number_linear_constraints(instance) = num_cons(instance.inner) - LQOI.get_number_quadratic_constraints(instance)
 function LQOI.get_number_quadratic_constraints(instance::MockLinQuadOptimizer)
     c = 0
-    for i in 1:num_cons(instance)
+    for i in 1:num_cons(instance.inner)
         if isempty(instance.inner.Qcon[i])
             c += 1
         end
@@ -515,6 +530,13 @@ function LQOI.get_quadratic_terms_objective(instance::MockLinQuadOptimizer)
         end
     end
     return sparse(Q)
+end
+
+function LQOI.get_quadratic_constraint(instance::MockLinQuadOptimizer, idx)
+    Q = instance.inner.Qcon[idx]
+    colidx, coefs = LQOI.get_linear_constraint(instance, idx)
+    #TODO (@joaquim) fix here
+    return colidx+1, coefs, sparse(0.5*Q)
 end
 
 function LQOI.change_objective_sense!(instance::MockLinQuadOptimizer, symbol)
