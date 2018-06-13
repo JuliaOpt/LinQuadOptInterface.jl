@@ -15,7 +15,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <
     m.last_constraint_reference += 1
     ref = LCI{T}(m.last_constraint_reference)
     dict = constrdict(m, ref)
-    dict[ref] = get_last_linear_constraint_index(m)
+    dict[ref] = get_number_linear_constraints(m)
     push!(m.constraint_primal_solution, NaN)
     push!(m.constraint_dual_solution, NaN)
     push!(m.constraint_constant, func.constant)
@@ -52,7 +52,7 @@ function MOI.addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vec
     cfunc = MOIU.canonical.(func)
 
     @assert length(cfunc) == length(set)
-    numrows = get_last_linear_constraint_index(m)
+    numrows = get_number_linear_constraints(m)
     addlinearconstraints!(m, cfunc, set)
     crefs = Vector{LCI{S}}(length(cfunc))
     for i in 1:length(cfunc)

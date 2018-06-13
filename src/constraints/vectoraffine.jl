@@ -8,9 +8,9 @@ constrdict(m::LinQuadOptimizer, ::VLCI{MOI.Zeros})        = cmap(m).zeros
 function MOI.addconstraint!(m::LinQuadOptimizer, func::VecLin, set::S) where S <: VecLinSets
     @assert MOI.dimension(set) == length(func.constants)
 
-    nrows = get_last_linear_constraint_index(m)
+    nrows = get_number_linear_constraints(m)
     addlinearconstraint!(m, func, backend_type(m,set))
-    nrows2 = get_last_linear_constraint_index(m)
+    nrows2 = get_number_linear_constraints(m)
 
     m.last_constraint_reference += 1
     ref = VLCI{S}(m.last_constraint_reference)
