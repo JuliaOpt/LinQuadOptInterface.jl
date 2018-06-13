@@ -154,7 +154,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::LCI{<: LinSet
     # TODO (@joaquim) fix indexing
     terms = map(
         (v,c)->MOI.ScalarAffineTerm{Float64}(c,v),
-        m.variable_references[colidx+1],
+        m.variable_references[colidx],
         coefs
     )
     Linear(terms, -m.constraint_constant[m[c]])

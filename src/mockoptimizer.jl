@@ -418,7 +418,7 @@ function LQOI.get_linear_constraint(instance::MockLinQuadOptimizer, row)
             push!(outinds,i)
         end
     end
-    return outinds-1, outvals
+    return outinds, outvals
 end
 
 function LQOI.get_quadratic_constraint(instance::MockLinQuadOptimizer, row)
