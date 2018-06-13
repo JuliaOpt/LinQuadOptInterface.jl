@@ -151,7 +151,6 @@ MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:LCI{<: LinSet
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::LCI{<: LinSets})
     # TODO more efficiently
     colidx, coefs = get_linear_constraint(m, m[c])
-    # TODO (@joaquim) fix indexing
     terms = map(
         (v,c)->MOI.ScalarAffineTerm{Float64}(c,v),
         m.variable_references[colidx],
