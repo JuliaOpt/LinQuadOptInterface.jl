@@ -131,7 +131,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Quad})
         for j in nzrange(Q, i)
             row = rows[j]
             val = vals[j]
-            push!(quadratic_terms, MOI.ScalarQuadraticTerm{Float64}(0.5*val, m.variable_references[row], m.variable_references[i]))
+            push!(quadratic_terms, MOI.ScalarQuadraticTerm{Float64}(val, m.variable_references[row], m.variable_references[i]))
         end
     end
     Quad(affine_terms, quadratic_terms, m.objective_constant)

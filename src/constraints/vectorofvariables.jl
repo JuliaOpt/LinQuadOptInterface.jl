@@ -75,7 +75,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VVCI{<: VecLi
         if length(colidx) != 1
             error("Unexpected constraint")
         end
-        push!(out,m.variable_references[colidx[1]+1])
+        push!(out,m.variable_references[colidx[1]])
     end
     return VecVar(out)
 end

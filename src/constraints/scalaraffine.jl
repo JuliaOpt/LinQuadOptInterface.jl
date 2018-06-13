@@ -153,7 +153,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::LCI{<: LinSet
     colidx, coefs = get_linear_constraint(m, m[c])
     terms = map(
         (v,c)->MOI.ScalarAffineTerm{Float64}(c,v),
-        m.variable_references[colidx+1],
+        m.variable_references[colidx],
         coefs
     )
     Linear(terms, -m.constraint_constant[m[c]])

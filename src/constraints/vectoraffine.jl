@@ -107,7 +107,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VLCI{<: VecLi
             push!(terms, MOI.VectorAffineTerm{Float64}(
                     i,
                     MOI.ScalarAffineTerm{Float64}(
-                        coefficient, m.variable_references[column+1]
+                        coefficient, m.variable_references[column]
                     )
                 )
             )

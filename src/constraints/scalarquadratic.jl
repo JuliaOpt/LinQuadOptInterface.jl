@@ -19,8 +19,8 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::Quad, set::S) where S <: 
     dict = constrdict(m, ref)
     push!(m.qconstraint_primal_solution, NaN)
     push!(m.qconstraint_dual_solution, NaN)
-    # dict[ref] = get_number_quadratic_constraints(m)
-    dict[ref] = length(m.qconstraint_primal_solution)
+    dict[ref] = get_number_quadratic_constraints(m)
+    # dict[ref] = length(m.qconstraint_primal_solution)
     return ref
 end
 
