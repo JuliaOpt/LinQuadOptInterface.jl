@@ -245,38 +245,34 @@ end
 
 function MOI.empty!(m::MockLinQuadOptimizer)
     MOI.empty!(m,nothing)
-    # m.constraint_primal_solution = m.qconstraint_primal_solution
-    # m.constraint_dual_solution = m.qconstraint_dual_solution
     m.l_rows = Int[]
     m.q_rows = Int[]
     for (name,value) in m.params
         setparam!(m.inner, name, value)
     end
 end
-# function LQOI.shift_references_after_delete_quadratic!(instance::MockLinQuadOptimizer, row)
-#     LQOI.shift_references_after_delete_quadratic_base!(instance, row)
-#     LQOI.shift_references_after_delete_affine_base!(instance, row)
-# end
-# function LQOI.shift_references_after_delete_affine!(instance::MockLinQuadOptimizer, row)
-#     LQOI.shift_references_after_delete_quadratic_base!(instance, row)
-#     LQOI.shift_references_after_delete_affine_base!(instance, row)
-# end
 
 LQOI.supported_constraints(s::MockLinQuadOptimizer) = SUPPORTED_CONSTRAINTS
 LQOI.supported_objectives(s::MockLinQuadOptimizer) = SUPPORTED_OBJECTIVES
 
 cintvec(v::Vector) = convert(Vector{Int32}, v)
 
-LQOI.backend_type(m::MockLinQuadOptimizer, ::MOI.EqualTo{Float64})     = Cchar('E')#Cchar('=')
-LQOI.backend_type(m::MockLinQuadOptimizer, ::MOI.LessThan{Float64})    = Cchar('L')#Cchar('<')
-LQOI.backend_type(m::MockLinQuadOptimizer, ::MOI.GreaterThan{Float64}) = Cchar('G')#Cchar('>')
-LQOI.backend_type(m::MockLinQuadOptimizer, ::MOI.Zeros)                = Cchar('E')#Cchar('=')
-LQOI.backend_type(m::MockLinQuadOptimizer, ::MOI.Nonpositives)         = Cchar('L')#Cchar('<')
-LQOI.backend_type(m::MockLinQuadOptimizer, ::MOI.Nonnegatives)         = Cchar('G')#Cchar('>')
+backend_type(m::MockLinQuadOptimizer, ::MOI.GreaterThan{T}) where T = Cchar('G')
+backend_type(m::MockLinQuadOptimizer, ::MOI.LessThan{T}) where T    = Cchar('L')
+backend_type(m::MockLinQuadOptimizer, ::MOI.EqualTo{T}) where T     = Cchar('E')
+# Implemented separately
+# backend_type(m::MockLinQuadOptimizer, ::MOI.Interval{T}) where T    = Cchar('R')
+
+backend_type(m::MockLinQuadOptimizer, ::MOI.Zeros)        = Cchar('E')
+backend_type(m::MockLinQuadOptimizer, ::MOI.Nonpositives) = Cchar('L')
+backend_type(m::MockLinQuadOptimizer, ::MOI.Nonnegatives) = Cchar('G')
+
+backend_type(m::MockLinQuadOptimizer, ::Val{:Continuous}) = Cchar('C')
+backend_type(m::MockLinQuadOptimizer, ::Val{:Upperbound}) = Cchar('U')
+backend_type(m::MockLinQuadOptimizer, ::Val{:Lowerbound}) = Cchar('L')
 
 # TODO - improve single type
 function LQOI.change_variable_bounds!(instance::MockLinQuadOptimizer, colvec, valvec, sensevec)
-    # colvec = colvec+1
 
     lb_len = count(x->x==Cchar('L'), sensevec)
     LB_val = Array{Float64}(0)
@@ -284,17 +280,21 @@ function LQOI.change_variable_bounds!(instance::MockLinQuadOptimizer, colvec, va
     LB_col = Array{Cint}(0)
     sizehint!(LB_col, lb_len)
 
-    ub_len = count(x->x==Cchar('G'), sensevec)
+    ub_len = count(x->x==Cchar('U'), sensevec)
     UB_val = Array{Float64}(0)
     sizehint!(UB_val, ub_len)
     UB_col = Array{Cint}(0)
     sizehint!(UB_col, ub_len)
 
+    if lb_len + ub_len != length(sensevec)
+        error("Invalid values for sensevec")
+    end
+
     for i in eachindex(valvec)
         if sensevec[i] == Cchar('L')
             push!(LB_col, colvec[i])
             push!(LB_val, valvec[i])
-        elseif sensevec[i] == Cchar('G')
+        elseif sensevec[i] == Cchar('U')
             push!(UB_col, colvec[i])
             push!(UB_val, valvec[i])
         end
@@ -321,14 +321,6 @@ end
 
 function LQOI.get_variable_upperbound(instance::MockLinQuadOptimizer, col)
     instance.inner.ub[col]
-end
-
-function LQOI.get_last_linear_constraint_index(instance::MockLinQuadOptimizer)
-    out = LQOI.get_number_linear_constraints(instance)
-end
-
-function LQOI.get_last_quadratic_constraint_index(instance::MockLinQuadOptimizer)
-    out = LQOI.get_number_quadratic_constraints(instance)
 end
 
 function LQOI.add_linear_constraints!(instance::MockLinQuadOptimizer, A::CSRMatrix{Float64}, sensevec, rhsvec)

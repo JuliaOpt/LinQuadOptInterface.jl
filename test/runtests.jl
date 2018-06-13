@@ -8,10 +8,21 @@ const LQOI = LinQuadOptInterface
 
 
 @testset "LinQuadOptInterface" begin
+    @testset "Unit Tests" begin
+        config = MOIT.TestConfig(solve = false)
+        solver = LQOI.MockLinQuadOptimizer()
+        MOIT.basic_constraint_tests(solver, config;
+            exclude = [
+            ]
+        )
+        MOIT.unittest(solver, config, [
+            "solve_affine_interval"
+        ])
+    end
     @testset "Linear tests" begin
         linconfig = MOIT.TestConfig(solve = false)
         solver = LQOI.MockLinQuadOptimizer()
-        MOIT.contlineartest(solver , linconfig, ["linear10"])
+        MOIT.contlineartest(solver , linconfig)
     end
 
     @testset "Quadratic tests" begin
@@ -33,12 +44,25 @@ const LQOI = LinQuadOptInterface
     end
 
     @testset "ModelLike tests" begin
-        intconfig = MOIT.TestConfig(solve=false)
+        intconfig = MOIT.TestConfig()
         solver = LQOI.MockLinQuadOptimizer()
-        MOIT.validtest(solver)
-        MOIT.emptytest(solver)
-        solver2 = LQOI.MockLinQuadOptimizer()
-        MOIT.copytest(solver,solver2)
+        MOIT.nametest(solver)
+        @testset "validtest" begin
+            MOIT.validtest(solver)
+        end
+        @testset "emptytest" begin
+            MOIT.emptytest(solver)
+        end
+        @testset "orderedindicestest" begin
+            MOIT.orderedindicestest(solver)
+        end
+        @testset "canaddconstrainttest" begin
+            MOIT.canaddconstrainttest(solver, Float64, Complex{Float64})
+        end
+        @testset "copytest" begin
+            solver2 = LQOI.MockLinQuadOptimizer()
+            MOIT.copytest(solver,solver2)
+        end
     end
 end
 ;
