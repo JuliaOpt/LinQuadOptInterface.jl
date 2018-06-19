@@ -1,24 +1,22 @@
-#push!(Base.LOAD_PATH,joinpath(dirname(@__FILE__),"..",".."))
-
 using Base.Test, MathOptInterface
 using LinQuadOptInterface
 
 const MOIT = MathOptInterface.Test
 const LQOI = LinQuadOptInterface
 
-
 @testset "LinQuadOptInterface" begin
     @testset "Unit Tests" begin
         config = MOIT.TestConfig(solve = false)
         solver = LQOI.MockLinQuadOptimizer()
-        MOIT.basic_constraint_tests(solver, config;
-            exclude = [
-            ]
-        )
+        MOIT.basic_constraint_tests(solver, config)
         MOIT.unittest(solver, config, [
-            "solve_affine_interval"
+            "solve_affine_interval",
+            "solve_qp_edge_cases",
+            "solve_qcp_edge_cases",
+            "solve_affine_deletion_edge_cases"
         ])
     end
+    
     @testset "Linear tests" begin
         linconfig = MOIT.TestConfig(solve = false)
         solver = LQOI.MockLinQuadOptimizer()
@@ -65,4 +63,3 @@ const LQOI = LinQuadOptInterface
         end
     end
 end
-;

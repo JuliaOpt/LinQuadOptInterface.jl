@@ -50,8 +50,8 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::VecLin, sense::Cchar)
     add_linear_constraints!(m, A, fill(sense, length(func.constants)), -func.constants)
 end
 
-MOI.canmodifyconstraint(m::LinQuadOptimizer, ::VLCI{<: VecLinSets}, ::Type{MOI.VectorConstantChange{Float64}}) = true
-function MOI.modifyconstraint!(m::LinQuadOptimizer, ref::VLCI{<: VecLinSets}, chg::MOI.VectorConstantChange{Float64})
+MOI.canmodify(m::LinQuadOptimizer, ::Type{VLCI{S}}, ::Type{MOI.VectorConstantChange{Float64}}) where S <: VecLinSets = true
+function MOI.modify!(m::LinQuadOptimizer, ref::VLCI{<: VecLinSets}, chg::MOI.VectorConstantChange{Float64})
     @assert length(chg.new_constant) == length(m[ref])
     for (r, v) in zip(m[ref], chg.new_constant)
         change_rhs_coefficient!(m, r, -v)
