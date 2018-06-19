@@ -205,12 +205,12 @@ end
     Transform scalar constraint
 =#
 
-# function MOI.cantransform(m::LinQuadOptimizer, ref::LCI{S}, newset::S) where S
-#     false
-# end
-# function MOI.transform!(m::LinQuadOptimizer, ::LCI{S}, newset::S) where S
-#     error("Cannot transform constraint of same set. use `set!` instead.")
-# end
+function MOI.cantransform(m::LinQuadOptimizer, ref::LCI{S}, newset::S) where S
+    false
+end
+function MOI.transform!(m::LinQuadOptimizer, ::LCI{S}, newset::S) where S
+    error("Cannot transform constraint of same set. use `set!` instead.")
+end
 
 function MOI.cantransform(m::LinQuadOptimizer, ref::LCI{S1}, newset::S2) where S1 where S2 <: Union{LE, GE, EQ}
     true

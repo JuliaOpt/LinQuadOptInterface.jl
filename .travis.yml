@@ -36,7 +36,7 @@ notifications:
 
 ## uncomment the following lines to override the default test script
 script:
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("LinQuadOptInterface"); Pkg.test("LinQuadOptInterface"; coverage=true)'
+  - julia -e 'Pkg.clone(pwd()); Pkg.build("LinQuadOptInterface"); Pkg.checkout("MathOptInterface", "odow/new-modifications"); Pkg.test("LinQuadOptInterface"; coverage=true)'
 after_success:
   # push coverage results to Coveralls
   #- julia -e 'cd(Pkg.dir("LinQuadOptInterface")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'

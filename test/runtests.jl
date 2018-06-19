@@ -16,7 +16,7 @@ const LQOI = LinQuadOptInterface
             "solve_affine_deletion_edge_cases"
         ])
     end
-    
+
     @testset "Linear tests" begin
         linconfig = MOIT.TestConfig(solve = false)
         solver = LQOI.MockLinQuadOptimizer()
