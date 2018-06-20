@@ -40,11 +40,30 @@ function setvariablebound!(m::LinQuadOptimizer, v::SinVar, set::IV)
     setvariablebound!(m, getcol(m, v), set.lower, backend_type(m, Val{:Lowerbound}()))
 end
 
+SVCI(v::SinVar, ::S) where S = SVCI{S}(v.variable.value)
+
+function checkexisting(m::LinQuadOptimizer, v::SinVar, set::S) where S
+    ref = SVCI(v, set)
+    if haskey(constrdict(m, ref), ref)
+        error("Adding the same constraint type: $(S) is not allowed for SingleVariable function")
+    end
+end
+
+function checkconflicting(m::LinQuadOptimizer, v::SinVar, set_to_add::S0, set_to_test::S) where S where S0
+    ref = SVCI(v, set_to_test)
+    if haskey(constrdict(m, ref), ref)
+        error("Adding the same constraint type: $(S0) is not allowed for SingleVariable function because there is constraint of type $(S) tied to the respective variable")
+    end
+end
+
 # add constraint
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: LinSets
+    checkexisting(m, v, set)
+    checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
+    checkconflicting(m, v, set, MOI.Semiinteger(0.0, 0.0))
+    checkconflicting(m, v, set, MOI.ZeroOne())
     setvariablebound!(m, v, set)
-    m.last_constraint_reference += 1
-    ref = SVCI{S}(m.last_constraint_reference)
+    ref = SVCI(v, set)
     dict = constrdict(m, ref)
     dict[ref] = v.variable
     ref
@@ -105,8 +124,11 @@ we can revert to the old bounds
 Xpress is worse, once binary, the bounds are changed independently of what the user does
 =#
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.ZeroOne)
-    m.last_constraint_reference += 1
-    ref = SVCI{MOI.ZeroOne}(m.last_constraint_reference)
+    checkexisting(m, v, set)
+    checkconflicting(m, v, set, MOI.Integer())
+    checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
+    checkconflicting(m, v, set, MOI.Semiinteger(0.0, 0.0))
+    ref = SVCI(v, set)
     dict = constrdict(m, ref)
     ub = get_variable_upperbound(m, getcol(m, v))
     lb = get_variable_lowerbound(m, getcol(m, v))
@@ -143,9 +165,12 @@ MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.ZeroOne}) = S
 =#
 
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.Integer)
+    checkexisting(m, v, set)
+    checkconflicting(m, v, set, MOI.ZeroOne())
+    checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
+    checkconflicting(m, v, set, MOI.Semiinteger(0.0, 0.0))
     change_variable_types!(m, [getcol(m, v)], [backend_type(m, set)])
-    m.last_constraint_reference += 1
-    ref = SVCI{MOI.Integer}(m.last_constraint_reference)
+    ref = SVCI(v, set)
     dict = constrdict(m, ref)
     dict[ref] = v.variable
     make_problem_type_integer(m)
@@ -174,13 +199,19 @@ MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.Integer}) = S
     Semicontinuous / Semiinteger constraints
 =#
 const SEMI_TYPES = Union{MOI.Semicontinuous{Float64}, MOI.Semiinteger{Float64}}
-function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::SEMI_TYPES)
+function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: SEMI_TYPES
+    checkexisting(m, v, set)
+    checkconflicting(m, v, set, MOI.ZeroOne())
+    checkconflicting(m, v, set, MOI.Integer())
+    if S == MOI.Semicontinuous{Float64}
+        checkconflicting(m, v, set, MOI.Semiinteger(0.0, 0.0))
+    else
+        checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
+    end
     change_variable_types!(m, [getcol(m, v)], [backend_type(m, set)])
     setvariablebound!(m, getcol(m, v), set.upper, backend_type(m, Val{:Upperbound}()))
     setvariablebound!(m, getcol(m, v), set.lower, backend_type(m, Val{:Lowerbound}()))
-
-    m.last_constraint_reference += 1
-    ref = SVCI{typeof(set)}(m.last_constraint_reference)
+    ref = SVCI(v, set)
     dict = constrdict(m, ref)
     dict[ref] = v.variable
     make_problem_type_integer(m)
