@@ -163,8 +163,8 @@ end
     Scalar Coefficient Change of Linear Constraint
 =#
 
-MOI.canmodifyconstraint(m::LinQuadOptimizer, c::LCI{<: LinSets}, ::Type{MOI.ScalarCoefficientChange{Float64}}) = true
-function MOI.modifyconstraint!(m::LinQuadOptimizer, c::LCI{<: LinSets}, chg::MOI.ScalarCoefficientChange{Float64})
+MOI.canmodify(m::LinQuadOptimizer, ::Type{LCI{S}}, ::Type{MOI.ScalarCoefficientChange{Float64}}) where S <: LinSets = true
+function MOI.modify!(m::LinQuadOptimizer, c::LCI{S}, chg::MOI.ScalarCoefficientChange{Float64}) where S <: LinSets
     col = m.variable_mapping[chg.variable]
     change_matrix_coefficient!(m, m[c], col, chg.new_coefficient)
 end
@@ -173,13 +173,13 @@ end
     Change RHS of linear constraint without modifying sense
 =#
 
-MOI.canmodifyconstraint(m::LinQuadOptimizer, c::LCI{S}, ::Type{S}) where S <: Union{LE, GE, EQ} = true
-function MOI.modifyconstraint!(m::LinQuadOptimizer, c::LCI{S}, newset::S) where S <: Union{LE, GE, EQ}
+MOI.canset(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{S}}) where S <: Union{LE, GE, EQ} = true
+function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{S}, newset::S) where S <: Union{LE, GE, EQ}
     change_rhs_coefficient!(m, m[c], _getrhs(newset))
 end
 
-MOI.canmodifyconstraint(m::LinQuadOptimizer, c::LCI{IV}, ::Type{IV}) = true
-function MOI.modifyconstraint!(m::LinQuadOptimizer, c::LCI{IV}, set::IV)
+MOI.canset(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{IV}}) = true
+function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{IV}, set::IV)
     modify_ranged_constraints!(m, [m[c]], [set.lower], [set.upper])
 end
 
@@ -205,17 +205,17 @@ end
     Transform scalar constraint
 =#
 
-function MOI.cantransformconstraint(m::LinQuadOptimizer, ref::LCI{S}, newset::S) where S
+function MOI.cantransform(m::LinQuadOptimizer, ref::LCI{S}, newset::S) where S
     false
 end
-function MOI.transformconstraint!(m::LinQuadOptimizer, ref::LCI{S}, newset::S) where S
-    error("Cannot transform constraint of same set. use `modifyconstraint!` instead.")
+function MOI.transform!(m::LinQuadOptimizer, ::LCI{S}, newset::S) where S
+    error("Cannot transform constraint of same set. use `set!` instead.")
 end
 
-function MOI.cantransformconstraint(m::LinQuadOptimizer, ref::LCI{S1}, newset::S2) where S1 where S2 <: Union{LE, GE, EQ}
+function MOI.cantransform(m::LinQuadOptimizer, ref::LCI{S1}, newset::S2) where S1 where S2 <: Union{LE, GE, EQ}
     true
 end
-function MOI.transformconstraint!(m::LinQuadOptimizer, ref::LCI{S1}, newset::S2) where S1 where S2 <: Union{LE, GE, EQ}
+function MOI.transform!(m::LinQuadOptimizer, ref::LCI{S1}, newset::S2) where S1 where S2 <: Union{LE, GE, EQ}
     dict = constrdict(m, ref)
     row = dict[ref]
     change_linear_constraint_sense!(m, [row], [backend_type(m,newset)])
