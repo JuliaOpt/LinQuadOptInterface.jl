@@ -1,8 +1,9 @@
-#push!(Base.LOAD_PATH,joinpath(dirname(@__FILE__),"..",".."))
+push!(Base.LOAD_PATH,joinpath(dirname(@__FILE__),"..",".."))
 
 using Base.Test, MathOptInterface
 using LinQuadOptInterface
 
+const MOI= MathOptInterface
 const MOIT = MathOptInterface.Test
 const LQOI = LinQuadOptInterface
 
@@ -13,6 +14,11 @@ const LQOI = LinQuadOptInterface
         solver = LQOI.MockLinQuadOptimizer()
         MOIT.basic_constraint_tests(solver, config;
             exclude = [
+                (MOI.SingleVariable, MOI.EqualTo{Float64}),
+                (MOI.SingleVariable, MOI.Integer),
+                (MOI.SingleVariable, MOI.LessThan{Float64}),
+                (MOI.SingleVariable, MOI.Interval{Float64}),
+                (MOI.SingleVariable, MOI.GreaterThan{Float64})
             ]
         )
         MOIT.unittest(solver, config, [

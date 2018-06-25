@@ -42,7 +42,7 @@ end
 
 SVCI(v::SinVar, ::S) where S = SVCI{S}(v.variable.value)
 
-function hasvalue(d::Dict{T,S}, val::S)
+function hasvalue(d::Dict, val)
     for v in values(d)
         if v == val
             return true
