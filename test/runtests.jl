@@ -61,7 +61,7 @@ const LQOI = LinQuadOptInterface
             MOIT.emptytest(solver)
         end
         @testset "orderedindicestest" begin
-            # MOIT.orderedindicestest(solver)
+            MOIT.orderedindicestest(solver)
         end
         @testset "canaddconstrainttest" begin
             MOIT.canaddconstrainttest(solver, Float64, Complex{Float64})
