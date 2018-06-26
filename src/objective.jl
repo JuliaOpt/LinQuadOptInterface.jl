@@ -141,13 +141,26 @@ end
     Modify objective function
 =#
 
-MOI.canmodifyobjective(m::LinQuadOptimizer, ::Type{MOI.ScalarCoefficientChange{Float64}}) = true
-function MOI.modifyobjective!(m::LinQuadOptimizer, chg::MOI.ScalarCoefficientChange{Float64})
+function MOI.canmodify(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, ::Type{MOI.ScalarCoefficientChange{Float64}}) where F
+    if F <: MOI.ScalarQuadraticFunction
+        return m.obj_type == QuadraticObjective
+    elseif F <: MOI.ScalarAffineFunction
+        return m.obj_type == AffineObjective
+    end
+    return false
+end
+function MOI.modify!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, chg::MOI.ScalarCoefficientChange{Float64}) where F
     if m.obj_type == SingleVariableObjective
         m.obj_type = AffineObjective
         m.single_obj_var = nothing
     end
     col = m.variable_mapping[chg.variable]
-    # 0 row is the objective
     change_objective_coefficient!(m, col, chg.new_coefficient)
+end
+
+function MOI.canmodify(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, ::Type{MOI.ScalarConstantChange{Float64}}) where F
+    return !(F == MOI.SingleVariable)
+end
+function MOI.modify!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, chg::MOI.ScalarConstantChange{Float64}) where F
+    m.objective_constant = chg.new_constant
 end

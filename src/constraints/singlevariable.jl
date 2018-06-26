@@ -120,8 +120,8 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{<: LinSe
 end
 
 # modify
-MOI.canmodifyconstraint(::LinQuadOptimizer, ::SVCI{S}, ::Type{S}) where S <: LinSets = true
-function MOI.modifyconstraint!(m::LinQuadOptimizer, c::SVCI{S}, newset::S) where S <: LinSets
+MOI.canset(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S <: LinSets = true
+function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{S}, newset::S) where S <: LinSets
     setvariablebound!(m, SinVar(m[c]), newset)
 end
 
