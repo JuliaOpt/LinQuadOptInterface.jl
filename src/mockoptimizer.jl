@@ -58,7 +58,7 @@ mutable struct MockLinQuadModel # <: LinQuadOptInterface.LinQuadOptimizer
     ray_primal_solution::Vector{Float64}
     ray_primal_solution_stored::Vector{Vector{Float64}}
 
-    function MockLinQuadModel(env::Void,str::String="defaultname")
+    function MockLinQuadModel(env::Nothing,str::String="defaultname")
         m = new()
 
         m.sense = :minimize
@@ -117,7 +117,7 @@ function unload(from,to,warn = true)
         return out
     else
         if warn
-            warn("cant solve this model no extra solution")
+            Compat.@warn("cant solve this model no extra solution")
         end
         return to
     end
@@ -215,10 +215,10 @@ mutable struct MockLinQuadOptimizer <: LQOI.LinQuadOptimizer
     params::Dict{String,Any}
     l_rows::Vector{Int}
     q_rows::Vector{Int}
-    MockLinQuadOptimizer(::Void) = new()
+    MockLinQuadOptimizer(::Nothing) = new()
 end
 
-LQOI.LinearQuadraticModel(::Type{MockLinQuadOptimizer},env::Void) = MockLinQuadModel(env,"defaultname")
+LQOI.LinearQuadraticModel(::Type{MockLinQuadOptimizer},env::Nothing) = MockLinQuadModel(env,"defaultname")
 
 function MockLinQuadOptimizer(;kwargs...)
 
@@ -275,15 +275,15 @@ backend_type(m::MockLinQuadOptimizer, ::Val{:Lowerbound}) = Cchar('L')
 function LQOI.change_variable_bounds!(instance::MockLinQuadOptimizer, colvec, valvec, sensevec)
 
     lb_len = count(x->x==Cchar('L'), sensevec)
-    LB_val = Array{Float64}(0)
+    LB_val = Array{Float64}(undef, 0)
     sizehint!(LB_val, lb_len)
-    LB_col = Array{Cint}(0)
+    LB_col = Array{Cint}(undef, 0)
     sizehint!(LB_col, lb_len)
 
     ub_len = count(x->x==Cchar('U'), sensevec)
-    UB_val = Array{Float64}(0)
+    UB_val = Array{Float64}(undef, 0)
     sizehint!(UB_val, ub_len)
-    UB_col = Array{Cint}(0)
+    UB_col = Array{Cint}(undef, 0)
     sizehint!(UB_col, ub_len)
 
     if lb_len + ub_len != length(sensevec)
@@ -337,7 +337,7 @@ function LQOI.add_linear_constraints!(instance::MockLinQuadOptimizer, A::CSRMatr
     cols = size(instance.inner.A)[2]
     push!(rowvec,length(colvec)+1)
 
-    An = full(SparseMatrixCSC(cols,rows,rowvec,colvec,coefvec)')
+    An = Array(SparseMatrixCSC(cols,rows,rowvec,colvec,coefvec)')
 
     instance.inner.A = vcat(instance.inner.A,An)
 
@@ -363,9 +363,9 @@ function LQOI.add_ranged_constraints!(instance::MockLinQuadOptimizer, A::CSRMatr
     cols = size(instance.inner.A)[2]
     push!(rowvec,length(colvec)+1)
 
-    # An = full(sparse(rowvec,colvec,coefvec,rows,cols))
+    # An = Array(sparse(rowvec,colvec,coefvec,rows,cols))
     # @show cols,rows,rowvec,colvec,coefvec
-    An = full(SparseMatrixCSC(cols,rows,rowvec,colvec,coefvec)')
+    An = Array(SparseMatrixCSC(cols,rows,rowvec,colvec,coefvec)')
 
     instance.inner.A = vcat(instance.inner.A,An)
 
@@ -531,7 +531,7 @@ function LQOI.add_quadratic_constraint!(instance::MockLinQuadOptimizer, cols, co
     @assert length(I) == length(J) == length(V)
 
     nvars = length(instance.inner.c)
-    Q = full(sparse(I,J,V,nvars,nvars))
+    Q = Array(sparse(I,J,V,nvars,nvars))
 
     a = zeros(nvars)
     for i in eachindex(cols)
@@ -557,7 +557,7 @@ end
 function LQOI.set_quadratic_objective!(instance::MockLinQuadOptimizer, I, J, V)
     @assert length(I) == length(J) == length(V)
     n = num_vars(instance.inner)
-    Q = full(sparse(I,J,V,n,n))
+    Q = Array(sparse(I,J,V,n,n))
     # scalediagonal!(V, I, J, 0.5)
     instance.inner.Qobj = Q
     # scalediagonal!(V, I, J, 2.0)

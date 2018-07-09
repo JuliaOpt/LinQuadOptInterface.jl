@@ -1,7 +1,7 @@
-using Base.Test, MathOptInterface
+using Compat.Test, MathOptInterface
 using LinQuadOptInterface
 
-const MOI= MathOptInterface
+const MOI = MathOptInterface
 const MOIT = MathOptInterface.Test
 const LQOI = LinQuadOptInterface
 

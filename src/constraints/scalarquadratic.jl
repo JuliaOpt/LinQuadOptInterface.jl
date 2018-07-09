@@ -30,7 +30,7 @@ end
 
 function addquadraticconstraint!(m::LinQuadOptimizer, f::Quad, sense::Cchar, rhs::Float64)
     if abs(f.constant) > 0
-        warn("Constant in quadratic function. Moving into set")
+        Compat.@warn("Constant in quadratic function. Moving into set")
     end
     quadratic_columns_1 = [getcol(m, term.variable_index_1) for term in f.quadratic_terms]
     quadratic_columns_2 = [getcol(m, term.variable_index_2) for term in f.quadratic_terms]
