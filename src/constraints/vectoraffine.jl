@@ -37,7 +37,7 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::VecLin, sense::Cchar)
     # check that there is at least a RHS for each row
     @assert maximum(outputindex) <= length(func.constants)
     # loop through to get starting position of each row
-    row_pointers = Vector{Int}(length(func.constants))
+    row_pointers = Vector{Int}(undef, length(func.constants))
     row_pointers[1] = 1
     row = 1
     for i in 2:length(pidx)

@@ -35,7 +35,7 @@ end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, sense::Cchar, rhs)
     if abs(func.constant) > eps(Float64)
-        warn("Constant in scalar function moved into set.")
+        Compat.@warn("Constant in scalar function moved into set.")
     end
     columns = [getcol(m, term.variable_index) for term in func.terms]
     coefficients = [term.coefficient for term in func.terms]
@@ -54,7 +54,7 @@ function MOI.addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vec
     @assert length(cfunc) == length(set)
     numrows = get_number_linear_constraints(m)
     addlinearconstraints!(m, cfunc, set)
-    crefs = Vector{LCI{S}}(length(cfunc))
+    crefs = Vector{LCI{S}}(undef, length(cfunc))
     for i in 1:length(cfunc)
         m.last_constraint_reference += 1
         ref = LCI{S}(m.last_constraint_reference)
@@ -69,7 +69,7 @@ function MOI.addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vec
 end
 
 function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: LinSets
-    addlinearconstraints!(m, func, backend_type.(m,set), [_getrhs(s) for s in set])
+    addlinearconstraints!(m, func, backend_type.(Ref(m),set), [_getrhs(s) for s in set])
 end
 
 function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{IV})
@@ -79,15 +79,15 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::V
     nnz = 0
     for (i, f) in enumerate(func)
         if abs(f.constant) > eps(Float64)
-            warn("Constant in scalar function moved into set.")
+            Compat.@warn("Constant in scalar function moved into set.")
             lowerbounds[i] -= f.constant
             upperbounds[i] -= f.constant
         end
         nnz += length(f.terms)
     end
-    row_pointers = Vector{Int}(length(func))  # index of start of each row
-    columns = Vector{Int}(nnz)                # flattened columns for each function
-    coefficients  = Vector{Float64}(nnz)      # corresponding non-zeros
+    row_pointers = Vector{Int}(undef, length(func))  # index of start of each row
+    columns = Vector{Int}(undef, nnz)                # flattened columns for each function
+    coefficients  = Vector{Float64}(undef, nnz)      # corresponding non-zeros
     i = 1
     for (fi, f) in enumerate(func)
         row_pointers[fi] = i
@@ -106,14 +106,14 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, sense:
     nnz = 0
     for (i, f) in enumerate(func)
         if abs(f.constant) > eps(Float64)
-            warn("Constant in scalar function moved into set.")
+            Compat.@warn("Constant in scalar function moved into set.")
             rhs[i] -= f.constant
         end
         nnz += length(f.terms)
     end
-    row_pointers = Vector{Int}(length(func))  # index of start of each row
-    columns = Vector{Int}(nnz)                # flattened columns for each function
-    coefficients = Vector{Float64}(nnz)       # corresponding non-zeros
+    row_pointers = Vector{Int}(undef, length(func))  # index of start of each row
+    columns = Vector{Int}(undef, nnz)                # flattened columns for each function
+    coefficients = Vector{Float64}(undef, nnz)       # corresponding non-zeros
     i = 1
     for (row, f) in enumerate(func)
         row_pointers[row] = i

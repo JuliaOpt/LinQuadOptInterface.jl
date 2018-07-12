@@ -143,7 +143,7 @@ end
 MOI.canget(m::LinQuadOptimizer, ::MOI.VariablePrimal, ::Type{VarInd}) = true
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.VariablePrimal, v::Vector{VarInd})
-    MOI.get.(m, MOI.VariablePrimal(), v)
+    MOI.get.(Ref(m), MOI.VariablePrimal(), v)
 end
 MOI.canget(m::LinQuadOptimizer, ::MOI.VariablePrimal, ::Type{Vector{VarInd}}) = true
 

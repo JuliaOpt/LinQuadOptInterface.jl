@@ -144,7 +144,7 @@ function get_number_linear_constraints end
 
 """
     add_linear_constraints!(m, A::CSRMatrix{Float64},
-        sense::Vector{Cchar}, rhs::Vector{Float64})::Void
+        sense::Vector{Cchar}, rhs::Vector{Float64})::Nothing
 
 Adds linear constraints of the form `Ax (sense) rhs` to the model `m`.
 
@@ -230,7 +230,7 @@ Set the rhs of the constraint in row `row` to `coef`.
 function change_rhs_coefficient! end
 
 """
-    delete_linear_constraints!(m, start_row::Int, end_row::Int)::Void
+    delete_linear_constraints!(m, start_row::Int, end_row::Int)::Nothing
 
 Delete the linear constraints `start_row`, `start_row+1`, ..., `end_row` from
 the model `m`.
@@ -239,7 +239,7 @@ function delete_linear_constraints! end
 @deprecate lqs_delrows! delete_linear_constraints!
 
 """
-    delete_quadratic_constraints!(m, start_row::Int, end_row::Int)::Void
+    delete_quadratic_constraints!(m, start_row::Int, end_row::Int)::Nothing
 
 Delete the quadratic constraints `start_row`, `start_row+1`, ..., `end_row` from
 the model `m`.
@@ -247,7 +247,7 @@ the model `m`.
 function delete_quadratic_constraints! end
 
 """
-    change_variable_types(m, cols::Vector{Int}, types):Void
+    change_variable_types(m, cols::Vector{Int}, types):Nothing
 
 Change the variable types. Type is the output of one of:
  - `backend_type(m, ::ZeroOne)`, for binary variables;
@@ -258,7 +258,7 @@ function change_variable_types! end
 @deprecate lqs_chgctype! change_variable_types!
 
 """
-    change_linear_constraint_sense!(m, rows::Vector{Int}, sense::Vector{Symbol})::Void
+    change_linear_constraint_sense!(m, rows::Vector{Int}, sense::Vector{Symbol})::Nothing
 
 Change the sense of the linear constraints in `rows` to `sense`.
 
@@ -271,7 +271,7 @@ function change_linear_constraint_sense! end
 @deprecate lqs_chgsense! change_linear_constraint_sense!
 
 """
-    make_problem_type_integer(m)::Void
+    make_problem_type_integer(m)::Nothing
 
 If an explicit call is needed to change the problem type integer (e.g., CPLEX).
 """
@@ -281,7 +281,7 @@ end
 @deprecate lqs_make_problem_type_integer make_problem_type_integer
 
 """
-    make_problem_type_continuous(m)::Void
+    make_problem_type_continuous(m)::Nothing
 
 If an explicit call is needed to change the problem type continuous (e.g., CPLEX).
 """
@@ -291,7 +291,7 @@ end
 @deprecate lqs_make_problem_type_continuous make_problem_type_continuous
 
 """
-    add_sos_constraint!(m, cols::Vector{Int}, vals::Vector{Float64}, typ::Symbol)::Void
+    add_sos_constraint!(m, cols::Vector{Int}, vals::Vector{Float64}, typ::Symbol)::Nothing
 
 Add the SOS constraint to the model `m`. `typ` is either `:SOS1` or `:SOS2`.
 """
@@ -299,7 +299,7 @@ function add_sos_constraint! end
 @deprecate lqs_addsos! add_sos_constraint!
 
 """
-    delete_sos!(m, start_idx::Int, end_idx::Int)::Void
+    delete_sos!(m, start_idx::Int, end_idx::Int)::Nothing
 
 Delete the SOS constraints `start_idx`, `start_idx+1`, ..., `end_idx` from
 the model `m`.
@@ -325,7 +325,7 @@ function get_number_quadratic_constraints end
 
 """
     add_quadratic_constraint!(m, cols::Vector{Int}, coefs::Vector{Float64}, rhs::Float64,
-        sense, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Void
+        sense, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Nothing
 
 Add a quadratic constraint `a'x + 0.5 x' Q x`.
 See `add_linear_constraints!` for information of linear component.
@@ -334,7 +334,7 @@ Arguments `(I,J,V)` given in triplet form for the Q matrix in `0.5 x' Q x`.
 function add_quadratic_constraint! end
 
 """
-    set_quadratic_objective!(m, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Void
+    set_quadratic_objective!(m, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Nothing
 
 Set the quadratic component of the objective. Arguments given in triplet form
 for the Q matrix in `0.5 x' Q x`.
@@ -359,7 +359,7 @@ Get the right hand-side term of quadratic constraint in row `row` in model `m`.
 function get_quadratic_rhs end
 
 """
-    set_linear_objective!(m, cols::Vector{Int}, coefs::Vector{Float64})::Void
+    set_linear_objective!(m, cols::Vector{Int}, coefs::Vector{Float64})::Nothing
 
 Set the linear component of the objective.
 """
@@ -367,7 +367,7 @@ function set_linear_objective! end
 @deprecate lqs_chgobj! set_linear_objective!
 
 """
-    change_objective_sense!(m, sense::Symbol)::Void
+    change_objective_sense!(m, sense::Symbol)::Nothing
 
 Change the optimization sense of the model `m` to `sense`. `sense` must be
 `:min` or `:max`.
@@ -400,7 +400,7 @@ function get_objectivesense end
 @deprecate lqs_getobjsen get_objectivesense
 
 """
-    solve_mip_problem!(m)::Void
+    solve_mip_problem!(m)::Nothing
 
 Solve a mixed-integer model `m`.
 """
@@ -408,7 +408,7 @@ function solve_mip_problem! end
 @deprecate lqs_mipopt! solve_mip_problem!
 
 """
-    solve_quadratic_problem!(m)::Void
+    solve_quadratic_problem!(m)::Nothing
 
 Solve a model `m` with quadratic components.
 """
@@ -416,7 +416,7 @@ function solve_quadratic_problem! end
 @deprecate lqs_qpopt! solve_quadratic_problem!
 
 """
-    solve_linear_problem!(m)::Void
+    solve_linear_problem!(m)::Nothing
 
 Solve a linear program `m`.
 """
@@ -583,7 +583,7 @@ function get_number_variables end
 @deprecate lqs_getnumcols get_number_variables
 
 """
-    add_variables!(m, n::Int)::Void
+    add_variables!(m, n::Int)::Nothing
 
 Add `n` new variables to the model `m`.
 """
@@ -591,7 +591,7 @@ function add_variables! end
 @deprecate lqs_newcols! add_variables!
 
 """
-    delete_variables!(m, start_col::Int, end_col::Int)::Void
+    delete_variables!(m, start_col::Int, end_col::Int)::Nothing
 
 Delete the columns `start_col`, `start_col+1`, ..., `end_col` from the model `m`.
 """
@@ -599,7 +599,7 @@ function delete_variables! end
 @deprecate lqs_delcols! delete_variables!
 
 """
-    add_mip_starts!(m, cols::Vector{Int}, x::Vector{Float64})::Void
+    add_mip_starts!(m, cols::Vector{Int}, x::Vector{Float64})::Nothing
 
 Add the MIP start `x` for the variables in the columns `cols` of the model `m`.
 """

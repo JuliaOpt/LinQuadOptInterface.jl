@@ -8,6 +8,10 @@
 __precompile__()
 module LinQuadOptInterface
 
+using Nullables
+using Compat
+using Compat.SparseArrays
+
 using MathOptInterface
 using MathOptInterface.Utilities
 
