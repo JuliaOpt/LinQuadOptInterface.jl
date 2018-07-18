@@ -211,7 +211,7 @@ function MOI.set!(m::LinQuadOptimizer, attr::MOI.ConstraintFunction, CI::LCI{S},
     end
     if !iszero(previous.constant) || !iszero(replacement.constant)
         current_set = MOI.get(m, MOI.ConstraintSet(), CI)
-        MOI.set!(m, MOI.ConstraintSet(), CI, S(_getrhs(current_set) + previous.constant - replacement.constant))
+        MOI.set!(m, MOI.ConstraintSet(), CI, S(_getrhs(current_set) - replacement.constant))
     end
 end
 
