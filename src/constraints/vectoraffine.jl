@@ -92,9 +92,7 @@ function MOI.set!(m::LinQuadOptimizer, attr::MOI.ConstraintFunction, c::VLCI{S},
     end
     for i in eachindex(constraint_indices)
         row = constraint_indices[i]
-        if !iszero(previous.constants[i]) || !iszero(replacement.constants[i])
-            m.constraint_constant[row] = replacement.constants[i]
-        end
+        m.constraint_constant[row] = replacement.constants[i]
     end
 end
 
