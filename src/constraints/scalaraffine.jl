@@ -209,6 +209,7 @@ function MOI.set!(m::LinQuadOptimizer, attr::MOI.ConstraintFunction, CI::LCI{S},
         chg = MOI.ScalarCoefficientChange{Float64}(var, term.coefficient)
         MOI.modify!(m, CI, chg)
     end
+    change_rhs_coefficient!(m, m[CI], -replacement.constant)
     m.constraint_constant[m[CI]] = replacement.constant
     nothing
 end
