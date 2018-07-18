@@ -84,13 +84,25 @@ function MOI.set!(m::LinQuadOptimizer, attr::MOI.ConstraintFunction, c::VLCI{S},
         col = m.variable_mapping[term.scalar_term.variable_index]
         change_matrix_coefficient!(m, row, col, zero(Float64))
     end
+    new_coeffs = spzeros(length(constraint_indices), maximum(values(m.variable_mapping)))
     for term in replacement.terms
-        row = constraint_indices[term.output_index]
+        row = term.output_index
         col = m.variable_mapping[term.scalar_term.variable_index]
-        change_matrix_coefficient!(m, row, col, term.scalar_term.coefficient)
+        if !iszero(term.scalar_term.coefficient)
+            new_coeffs[row, col] += term.scalar_term.coefficient
+        end
+    end
+    c_rows = rowvals(new_coeffs)
+    c_vals = nonzeros(new_coeffs)
+    for i in 1:size(new_coeffs, 2)
+        for j in nzrange(new_coeffs, i)
+            change_matrix_coefficient!(m, constraint_indices[c_rows[j]], i, c_vals[j])
+        end
     end
     for i in eachindex(constraint_indices)
         row = constraint_indices[i]
+        @show get_rhs(m, row)
+        @show replacement.constants[i]
         change_rhs_coefficient!(m, row, -replacement.constants[i])
         m.constraint_constant[row] = replacement.constants[i]
     end

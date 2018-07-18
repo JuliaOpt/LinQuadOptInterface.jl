@@ -196,23 +196,23 @@ function MOI.modify!(model::LinQuadOptimizer, index::LCI{S}, change::MOI.ScalarC
     change_matrix_coefficient!(model, row, column, change.new_coefficient)
 end
 
-MOI.canset(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{LCI{S}}) where {S <: Union{LE, GE, EQ}} = true
-function MOI.set!(m::LinQuadOptimizer, attr::MOI.ConstraintFunction, CI::LCI{S}, replacement::Linear) where {S <: Union{LE, GE, EQ}}
-    previous = MOI.get(m, attr, CI)
-    for term in previous.terms
-        var = term.variable_index
-        chg = MOI.ScalarCoefficientChange{Float64}(var, zero(Float64))
-        MOI.modify!(m, CI, chg)
-    end
-    for term in replacement.terms
-        var = term.variable_index
-        chg = MOI.ScalarCoefficientChange{Float64}(var, term.coefficient)
-        MOI.modify!(m, CI, chg)
-    end
-    change_rhs_coefficient!(m, m[CI], -replacement.constant)
-    m.constraint_constant[m[CI]] = replacement.constant
-    nothing
-end
+# MOI.canset(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{LCI{S}}) where {S <: Union{LE, GE, EQ}} = true
+# function MOI.set!(m::LinQuadOptimizer, attr::MOI.ConstraintFunction, CI::LCI{S}, replacement::Linear) where {S <: Union{LE, GE, EQ}}
+#     previous = MOI.get(m, attr, CI)
+#     for term in previous.terms
+#         var = term.variable_index
+#         chg = MOI.ScalarCoefficientChange{Float64}(var, zero(Float64))
+#         MOI.modify!(m, CI, chg)
+#     end
+#     for term in replacement.terms
+#         var = term.variable_index
+#         chg = MOI.ScalarCoefficientChange{Float64}(var, term.coefficient)
+#         MOI.modify!(m, CI, chg)
+#     end
+#     change_rhs_coefficient!(m, m[CI], get_rhs(m, m[CI]) - replacement.constant)
+#     m.constraint_constant[m[CI]] = replacement.constant
+#     nothing
+# end
 
 #=
     Change RHS of linear constraint without modifying sense
