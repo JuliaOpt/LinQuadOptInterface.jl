@@ -199,14 +199,6 @@ function Base.isempty(map::ConstraintMapping)
     return ret
 end
 
-macro def(name, definition)
-    return quote
-        macro $(esc(name))()
-            esc($(Expr(:quote, definition)))
-        end
-    end
-end
-
 @enum(ObjectiveType,
       SingleVariableObjective,
       AffineObjective,
@@ -214,9 +206,10 @@ end
 
 # Abstract + macro
 abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
-@def LinQuadOptimizerBase begin
 
-    inner#::LinQuadOptInterface.LinQuadOptimizer
+macro LinQuadOptimizerBase(inner_model_type=Any)
+    esc(quote
+    inner::$inner_model_type
 
     name::String
 
@@ -256,7 +249,9 @@ abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
     dual_result_count::Int
 
     solvetime::Float64
+    end)
 end
+
 
 function MOI.isempty(m::LinQuadOptimizer)
 
