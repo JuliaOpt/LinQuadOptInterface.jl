@@ -205,6 +205,24 @@ Set the linear coefficient of the variable in column `col`, constraint `row` to
 function change_matrix_coefficient! end
 
 """
+    change_matrix_coefficients!(m, rows, cols, coefs)
+
+Change multiple linear coefficients simultaneously. Sets the linear coefficient
+of the variable at column `cols[i]` in constraint `rows[i]` to `coefs[i]` for
+`i in 1:length(rows)`. Requires that `length(rows) == length(cols) == length(coefs)`.
+
+By default, this method just calls
+`change_matrix_coefficient!(m, rows[i], cols[i], coefs[i])` repeatedly, but
+some solver interfaces may offer more efficient implementations.
+"""
+function change_matrix_coefficients!(m, rows, cols, coefs)
+    @boundscheck((indices(rows) == indices(cols) == indices(coefs)) || throw(DimensionMismatch()))
+    for i in eachindex(rows)
+        change_matrix_coefficient!(m, rows[i], cols[i], coefs[i])
+    end
+end
+
+"""
 change_objective_coefficient!(m, col, coef)
 
 Set the linear coefficient of the variable in column `col` to `coef` in the objective function.
