@@ -334,6 +334,20 @@ Arguments `(I,J,V)` given in triplet form for the Q matrix in `0.5 x' Q x`.
 function add_quadratic_constraint! end
 
 """
+    set_constant_objective!(m, value)::Nothing
+
+Set the constant (i.e. offset) component of the objective function to the given
+value.
+
+Solver interfaces that overload this behavior (e.g. to pass that constant
+objective to the solver itself) must also overload `get_constant_objective(m)`.
+"""
+function set_constant_objective!(m::LinQuadOptimizer, value)
+    m.objective_constant = value
+    return nothing
+end
+
+"""
     set_quadratic_objective!(m, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Nothing
 
 Set the quadratic component of the objective. Arguments given in triplet form
@@ -374,6 +388,14 @@ Change the optimization sense of the model `m` to `sense`. `sense` must be
 """
 function change_objective_sense! end
 @deprecate lqs_chgobjsen! change_objective_sense!
+
+
+"""
+    get_constant_objective(m)::Float64
+
+Return the constant (i.e. offset) component of the objective.
+"""
+get_constant_objective(m::LinQuadOptimizer) = m.objective_constant
 
 """
     get_linear_objective!(m, x::Vector{Float64})

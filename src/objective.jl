@@ -43,7 +43,7 @@ function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{MOI.SingleVariabl
     m.obj_type = SingleVariableObjective
     m.single_obj_var = var.variable
     set_linear_objective!(m, [getcol(m, var.variable)], [1.0])
-    m.objective_constant = 0
+    set_constant_objective!(m, 0.0)
 end
 
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, objf::Linear) where F
@@ -67,7 +67,7 @@ function unsafe_set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, objf::Line
     columns = [getcol(m, term.variable_index) for term in objf.terms]
     coefficients = [term.coefficient for term in objf.terms]
     set_linear_objective!(m, columns, coefficients)
-    m.objective_constant = objf.constant
+    set_constant_objective!(m, objf.constant)
     nothing
 end
 
@@ -87,7 +87,7 @@ function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction, objf::Quad)
         quadratic_coefficients
     )
     set_quadratic_objective!(m, ri, ci, vi)
-    m.objective_constant = objf.constant
+    set_constant_objective!(m, objf.constant)
     nothing
 end
 
@@ -109,7 +109,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear})
         m.variable_references,
         variable_coefficients
     )
-    Linear(terms, m.objective_constant)
+    Linear(terms, get_constant_objective(m))
 end
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Quad}) = m.obj_type == QuadraticObjective
@@ -134,7 +134,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Quad})
             push!(quadratic_terms, MOI.ScalarQuadraticTerm{Float64}(val, m.variable_references[row], m.variable_references[i]))
         end
     end
-    Quad(affine_terms, quadratic_terms, m.objective_constant)
+    Quad(affine_terms, quadratic_terms, get_constant_objective(m))
 end
 
 #=
@@ -162,5 +162,5 @@ function MOI.canmodify(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, ::Type{M
     return !(F == MOI.SingleVariable)
 end
 function MOI.modify!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, chg::MOI.ScalarConstantChange{Float64}) where F
-    m.objective_constant = chg.new_constant
+    set_constant_objective!(m, chg.new_constant)
 end
