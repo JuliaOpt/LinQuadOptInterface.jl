@@ -10,6 +10,7 @@ constrdict(m::LinQuadOptimizer, ::LCI{EQ})  = cmap(m).equal_to
 constrdict(m::LinQuadOptimizer, ::LCI{IV})  = cmap(m).interval
 
 function MOI.addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <: LinSets
+    _assert_add_constraint(m, Linear, T)
     cfunc = MOIU.canonical(func)
     addlinearconstraint!(m, cfunc, set)
     m.last_constraint_reference += 1
@@ -48,6 +49,7 @@ end
 =#
 
 function MOI.addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: LinSets
+    _assert_add_constraint(m, Linear, S)
     # canonicalize
     cfunc = MOIU.canonical.(func)
 
@@ -130,7 +132,6 @@ end
 #=
     Constraint set of Linear function
 =#
-
 MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{S}}) where S <: Union{LE, GE, EQ} = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{S}) where S <: Union{LE, GE, EQ}
     rhs = get_rhs(m, m[c])
@@ -163,7 +164,6 @@ end
     Scalar Coefficient Change of Linear Constraint
 =#
 
-MOI.canmodify(m::LinQuadOptimizer, ::Type{LCI{S}}, ::Type{MOI.ScalarCoefficientChange{Float64}}) where S <: LinSets = true
 function MOI.modify!(m::LinQuadOptimizer, c::LCI{S}, chg::MOI.ScalarCoefficientChange{Float64}) where S <: LinSets
     col = m.variable_mapping[chg.variable]
     change_matrix_coefficient!(m, m[c], col, chg.new_coefficient)
@@ -172,13 +172,11 @@ end
 #=
     Change RHS of linear constraint without modifying sense
 =#
-
-MOI.canset(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{S}}) where S <: Union{LE, GE, EQ} = true
+MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{S}}) where S <: LinSets = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{S}, newset::S) where S <: Union{LE, GE, EQ}
     change_rhs_coefficient!(m, m[c], _getrhs(newset))
 end
 
-MOI.canset(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{IV}}) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{IV}, set::IV)
     modify_ranged_constraints!(m, [m[c]], [set.lower], [set.upper])
 end
@@ -187,8 +185,8 @@ end
     Delete a linear constraint
 =#
 
-MOI.candelete(m::LinQuadOptimizer, c::LCI{<: LinSets}) = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::LCI{<: LinSets})
+    _assert_valid(m, c)
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     row = dict[c]
@@ -205,16 +203,6 @@ end
     Transform scalar constraint
 =#
 
-function MOI.cantransform(m::LinQuadOptimizer, ref::LCI{S}, newset::S) where S
-    false
-end
-function MOI.transform!(m::LinQuadOptimizer, ::LCI{S}, newset::S) where S
-    error("Cannot transform constraint of same set. use `set!` instead.")
-end
-
-function MOI.cantransform(m::LinQuadOptimizer, ref::LCI{S1}, newset::S2) where S1 where S2 <: Union{LE, GE, EQ}
-    true
-end
 function MOI.transform!(m::LinQuadOptimizer, ref::LCI{S1}, newset::S2) where S1 where S2 <: Union{LE, GE, EQ}
     dict = constrdict(m, ref)
     row = dict[ref]

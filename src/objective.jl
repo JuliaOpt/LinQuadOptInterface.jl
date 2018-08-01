@@ -1,11 +1,9 @@
 #=
     The Objective Sense
 =#
-
+MOI.supports(::LinQuadOptimizer, ::MOI.ObjectiveSense) = true
 MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveSense) = true
 MOI.get(m::LinQuadOptimizer,::MOI.ObjectiveSense) = m.obj_sense
-
-MOI.canset(::LinQuadOptimizer, ::MOI.ObjectiveSense) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveSense, sense::MOI.OptimizationSense)
     if sense == MOI.MinSense
         change_objective_sense!(m, :min)
@@ -28,15 +26,17 @@ end
     The Objective Function
 =#
 
-function MOI.canset(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}) where F<:MOI.AbstractFunction
-    if MOI.get(m, MOI.ObjectiveSense()) == MOI.FeasibilitySense
+function _assert_objective(model::LinQuadOptimizer, attribute::MOI.ObjectiveFunction{F}) where F
+    if MOI.get(model, MOI.ObjectiveSense()) == MOI.FeasibilitySense
         # it doesn't make sense to set an objective for a feasibility problem
-        return false
+        error("Cannot set objective function when MOI.ObjectiveSense is MOI.FeasibilitySense.")
+    elseif !(F in supported_objectives(model))
+        throw(MOI.UnsupportedAttribute(attribute))
     end
-    return F in supported_objectives(m)
 end
 
-function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{MOI.SingleVariable}, var::MOI.SingleVariable)
+function MOI.set!(m::LinQuadOptimizer, attr::MOI.ObjectiveFunction{MOI.SingleVariable}, var::MOI.SingleVariable)
+     _assert_objective(m, attr)
     if m.obj_type == QuadraticObjective
         set_quadratic_objective!(m, Int[], Int[], Float64[])
     end
@@ -46,7 +46,8 @@ function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{MOI.SingleVariabl
     set_constant_objective!(m, 0.0)
 end
 
-function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, objf::Linear) where F
+function MOI.set!(m::LinQuadOptimizer, attr::MOI.ObjectiveFunction{F}, objf::Linear) where F
+    _assert_objective(m, attr)
     cobjf = MOIU.canonical(objf)
     unsafe_set!(m, MOI.ObjectiveFunction{Linear}(), cobjf)
 end
@@ -71,7 +72,8 @@ function unsafe_set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, objf::Line
     nothing
 end
 
-function MOI.set!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction, objf::Quad)
+function MOI.set!(m::LinQuadOptimizer, attr::MOI.ObjectiveFunction, objf::Quad)
+    _assert_objective(m, attr)
     m.obj_type = QuadraticObjective
     m.single_obj_var = nothing
     columns = [getcol(m, term.variable_index) for term in objf.affine_terms]
@@ -94,14 +96,25 @@ end
 #=
     Get the objective function
 =#
+function MOI.supports(model::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}) where F
+    return F in supported_objectives(model)
+end
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{MOI.SingleVariable}) = m.obj_type == SingleVariableObjective
+
 function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{MOI.SingleVariable})
-    SingleVariable(m.single_obj_var::MOI.VariableIndex)
+    if m.obj_type != MOI.SingleVariable
+        error("Cannot get objective function.")
+    end
+    return MOI.SingleVariable(m.single_obj_var::MOI.VariableIndex)
 end
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear}) = m.obj_type != QuadraticObjective
+
 function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear})
+    if m.obj_type == QuadraticObjective
+        error("Cannot get objective function.")
+    end
     variable_coefficients = zeros(length(m.variable_references))
     get_linear_objective!(m, variable_coefficients)
     terms = map(
@@ -113,7 +126,11 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear})
 end
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Quad}) = m.obj_type == QuadraticObjective
+
 function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Quad})
+    if m.obj_type != QuadraticObjective
+        error("Cannot get objective function.")
+    end
     variable_coefficients = zeros(length(m.variable_references))
     get_linear_objective!(m, variable_coefficients)
     affine_terms = map(
@@ -141,15 +158,14 @@ end
     Modify objective function
 =#
 
-function MOI.canmodify(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, ::Type{MOI.ScalarCoefficientChange{Float64}}) where F
-    if F <: MOI.ScalarQuadraticFunction
-        return m.obj_type == QuadraticObjective
-    elseif F <: MOI.ScalarAffineFunction
-        return m.obj_type == AffineObjective
+function MOI.modify!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, chg::MOI.ScalarCoefficientChange{Float64}) where F<:MOI.AbstractScalarFunction
+    if F <: MOI.ScalarQuadraticFunction && m.obj_type != QuadraticObjective
+        # TODO(odow): don't we want a descriptive error?
+        throw(MOI.UnsupportedObjectiveModification(chg))
+    elseif F <: MOI.ScalarAffineFunction && m.obj_type != AffineObjective
+        # TODO(odow): don't we want a descriptive error?
+        throw(MOI.UnsupportedObjectiveModification(chg))
     end
-    return false
-end
-function MOI.modify!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, chg::MOI.ScalarCoefficientChange{Float64}) where F
     if m.obj_type == SingleVariableObjective
         m.obj_type = AffineObjective
         m.single_obj_var = nothing
@@ -158,9 +174,10 @@ function MOI.modify!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, chg::MOI.S
     change_objective_coefficient!(m, col, chg.new_coefficient)
 end
 
-function MOI.canmodify(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, ::Type{MOI.ScalarConstantChange{Float64}}) where F
-    return !(F == MOI.SingleVariable)
-end
-function MOI.modify!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, chg::MOI.ScalarConstantChange{Float64}) where F
+function MOI.modify!(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}, chg::MOI.ScalarConstantChange{Float64}) where F<:MOI.AbstractScalarFunction
+    if F == MOI.SingleVariable
+        # TODO(odow): don't we want a descriptive error?
+        throw(MOI.UnsupportedObjectiveModification(chg))
+    end
     set_constant_objective!(m, chg.new_constant)
 end

@@ -6,6 +6,7 @@ constrdict(m::LinQuadOptimizer, ::VLCI{MOI.Nonpositives}) = cmap(m).nonpositives
 constrdict(m::LinQuadOptimizer, ::VLCI{MOI.Zeros})        = cmap(m).zeros
 
 function MOI.addconstraint!(m::LinQuadOptimizer, func::VecLin, set::S) where S <: VecLinSets
+    _assert_add_constraint(m, VecLin, S)
     @assert MOI.dimension(set) == length(func.constants)
 
     nrows = get_number_linear_constraints(m)
@@ -50,7 +51,6 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::VecLin, sense::Cchar)
     add_linear_constraints!(m, A, fill(sense, length(func.constants)), -func.constants)
 end
 
-MOI.canmodify(m::LinQuadOptimizer, ::Type{VLCI{S}}, ::Type{MOI.VectorConstantChange{Float64}}) where S <: VecLinSets = true
 function MOI.modify!(m::LinQuadOptimizer, ref::VLCI{<: VecLinSets}, chg::MOI.VectorConstantChange{Float64})
     @assert length(chg.new_constant) == length(m[ref])
     for (r, v) in zip(m[ref], chg.new_constant)
@@ -59,7 +59,6 @@ function MOI.modify!(m::LinQuadOptimizer, ref::VLCI{<: VecLinSets}, chg::MOI.Vec
     end
 end
 
-MOI.canmodify(m::LinQuadOptimizer, ::Type{VLCI{S}}, ::Type{MOI.MultirowChange{Float64}}) where S <: VecLinSets = true
 function MOI.modify!(m::LinQuadOptimizer, ref::VLCI{<: VecLinSets}, chg::MOI.MultirowChange{Float64})
     col = m.variable_mapping[chg.variable]
     for (row, coef) in chg.new_coefficients
@@ -67,8 +66,8 @@ function MOI.modify!(m::LinQuadOptimizer, ref::VLCI{<: VecLinSets}, chg::MOI.Mul
     end
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::VLCI{<:VecLinSets}) = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::VLCI{<:VecLinSets})
+    _assert_valid(m, c)
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     # we delete rows from largest to smallest here so that we don't have

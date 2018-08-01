@@ -83,9 +83,8 @@ function reduce_duplicates!(rows::Vector{T}, cols::Vector{T}, vals::Vector{S}) w
     findnz(sparse(rows, cols, vals))
 end
 
-
-MOI.candelete(m::LinQuadOptimizer, c::QCI{<: LinSets}) = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::QCI{<: LinSets})
+    _assert_valid(m, c)
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     row = dict[c]
@@ -106,7 +105,6 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::QCI{S}) where S <:
     rhs = get_quadratic_rhs(m, m[c])
     S(rhs)
 end
-
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{QCI{IV}}) = false
 
 #=

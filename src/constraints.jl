@@ -55,41 +55,63 @@ function MOI.isvalid(m::LinQuadOptimizer, ref::CI{F,S}) where F where S
     return false
 end
 
-#=
-    canaddconstraint
-=#
+"""
+    _assert_valid(model::LinQuadOptimizer, index::MOI.Index)
 
-function MOI.canaddconstraint(m::LinQuadOptimizer, f::Type{F}, s::Type{S}) where {F<:MOI.AbstractFunction, S<:MOI.AbstractSet}
-    return (f,s) in supported_constraints(m)
+Throw an MOI.InvalidIndex error if `MOI.isvalid(model, index) == false`.
+"""
+function _assert_valid(model::LinQuadOptimizer, index::MOI.Index)
+    if !MOI.isvalid(model, index)
+        throw(MOI.InvalidIndex(index))
+    end
+end
+
+"""
+    _assert_add_constraint(model::LinQuadOptimizer, ::Type{F}, ::Type{S})
+
+Throw an `UnsupportedConstraint{F, S}` error if the model cannot add constraints
+of type `F`-in-`S`.
+"""
+function _assert_add_constraint(model::LinQuadOptimizer, ::Type{F}, ::Type{S}) where {F<:MOI.AbstractFunction, S<:MOI.AbstractSet}
+    if !((F,S) in supported_constraints(model))
+        throw(MOI.UnsupportedConstraint{F, S}())
+    end
 end
 
 #=
     Get number of constraints
 =#
-
-function MOI.canget(m::LinQuadOptimizer, ::MOI.NumberOfConstraints{F, S}) where F where S
-    return (F,S) in supported_constraints(m)
+function MOI.canget(model::LinQuadOptimizer, ::MOI.NumberOfConstraints{F, S}) where F where S
+    return (F,S) in supported_constraints(model)
 end
-function MOI.get(m::LinQuadOptimizer, ::MOI.NumberOfConstraints{F, S}) where F where S
-    length(constrdict(m, CI{F,S}(UInt(0))))
+
+function MOI.get(model::LinQuadOptimizer, attribute::MOI.NumberOfConstraints{F, S}) where F where S
+    if !((F,S) in supported_constraints(model))
+        throw(MOI.UnsupportedAttribute(attribute))
+    end
+    length(constrdict(model, CI{F,S}(UInt(0))))
 end
 
 #=
     Get list of constraint references
 =#
-
-function MOI.canget(m::LinQuadOptimizer, ::MOI.ListOfConstraintIndices{F, S}) where F where S
-    return (F,S) in supported_constraints(m)
+function MOI.canget(model::LinQuadOptimizer, ::MOI.ListOfConstraintIndices{F, S}) where F where S
+    return (F,S) in supported_constraints(model)
 end
-function MOI.get(m::LinQuadOptimizer, ::MOI.ListOfConstraintIndices{F, S}) where F where S
-    sort(collect(keys(constrdict(m, CI{F,S}(UInt(0))))), by=x->x.value)
+
+function MOI.get(model::LinQuadOptimizer, attribute::MOI.ListOfConstraintIndices{F, S}) where F where S
+    if !((F,S) in supported_constraints(model))
+        throw(MOI.UnsupportedAttribute(attribute))
+    end
+    sort(collect(keys(constrdict(model, CI{F,S}(UInt(0))))), by=x->x.value)
 end
 
 #=
     Get list of constraint types in model
 =#
-
-MOI.canget(m::LinQuadOptimizer, ::MOI.ListOfConstraints) = true
+function MOI.canget(::LinQuadOptimizer, ::MOI.ListOfConstraints)
+    return true
+end
 function MOI.get(m::LinQuadOptimizer, ::MOI.ListOfConstraints)
     ret = []
     for (F,S) in supported_constraints(m)
@@ -103,8 +125,9 @@ end
 #=
     Get constraint names
 =#
-
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex}) = true
+function MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex})
+    return true
+end
 function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintName, c::MOI.ConstraintIndex)
     if haskey(m.constraint_names, c)
         m.constraint_names[c]
@@ -112,12 +135,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintName, c::MOI.ConstraintInd
         ""
     end
 end
-
-#=
-    Set constraint names
-=#
-
-MOI.canset(m::LinQuadOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex}) = true
+MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex}) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintName, ref::MOI.ConstraintIndex, name::String)
     if haskey(m.constraint_names_rev, name)
         if m.constraint_names_rev[name] != ref
@@ -139,14 +157,16 @@ end
 =#
 
 # this covers the non-type-stable get(m, ConstraintIndex) case
-MOI.canget(m::LinQuadOptimizer, ::Type{MOI.ConstraintIndex}, name::String) = haskey(m.constraint_names_rev, name)
+function MOI.canget(m::LinQuadOptimizer, ::Type{MOI.ConstraintIndex}, name::String)
+    return haskey(m.constraint_names_rev, name)
+end
 function MOI.get(m::LinQuadOptimizer, ::Type{<:MOI.ConstraintIndex}, name::String)
-    m.constraint_names_rev[name]
+    return m.constraint_names_rev[name]
 end
 
 # this covers the type-stable get(m, ConstraintIndex{F,S}, name)::CI{F,S} case
-function MOI.canget(m::LinQuadOptimizer, ::Type{FS}, name::String) where FS <: MOI.ConstraintIndex
-    haskey(m.constraint_names_rev, name) && typeof(m.constraint_names_rev[name]) == FS
+function MOI.canget(model::LinQuadOptimizer, ::Type{FS}, name::String) where FS <: MOI.ConstraintIndex
+    return haskey(model.constraint_names_rev, name) && typeof(model.constraint_names_rev[name]) == FS
 end
 function MOI.get(m::LinQuadOptimizer, ::Type{MOI.ConstraintIndex{F,S}}, name::String) where F where S
     m.constraint_names_rev[name]::MOI.ConstraintIndex{F,S}

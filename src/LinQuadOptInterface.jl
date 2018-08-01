@@ -321,14 +321,15 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     nothing
 end
 
+MOI.canget(::LinQuadOptimizer, ::MOI.Name) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.Name)
     m.name
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.Name) = true
+
+MOI.supports(::LinQuadOptimizer, ::MOI.Name) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.Name, name::String)
     m.name = name
 end
-MOI.canset(m::LinQuadOptimizer, ::MOI.Name) = true
 
 function MOI.supportsconstraint(m::LinQuadOptimizer, ft::Type{F}, st::Type{S}) where F <: MOI.AbstractFunction where S <: MOI.AbstractSet
     (ft,st) in supported_constraints(m)

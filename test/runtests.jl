@@ -63,9 +63,6 @@ const LQOI = LinQuadOptInterface
         @testset "orderedindicestest" begin
             # MOIT.orderedindicestest(solver)
         end
-        @testset "canaddconstrainttest" begin
-            MOIT.canaddconstrainttest(solver, Float64, Complex{Float64})
-        end
         @testset "copytest" begin
             solver2 = LQOI.MockLinQuadOptimizer()
             MOIT.copytest(solver,solver2)

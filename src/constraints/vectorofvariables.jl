@@ -16,6 +16,7 @@ constrdict(m::LinQuadOptimizer, ::VVCI{SOS1}) = cmap(m).sos1
 constrdict(m::LinQuadOptimizer, ::VVCI{SOS2}) = cmap(m).sos2
 
 function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <: VecLinSets
+    _assert_add_constraint(m, VecVar, S)
     @assert length(func.variables) == MOI.dimension(set)
     m.last_constraint_reference += 1
     ref = VVCI{S}(m.last_constraint_reference)
@@ -34,8 +35,8 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <
     return ref
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::VVCI{S}) where S <: VecLinSets = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::VVCI{S}) where S <: VecLinSets
+    _assert_valid(m, c)
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     # we delete rows from largest to smallest here so that we don't have
@@ -85,6 +86,7 @@ end
 =#
 
 function MOI.addconstraint!(m::LinQuadOptimizer, v::VecVar, sos::S) where S <: Union{MOI.SOS1, MOI.SOS2}
+    _assert_add_constraint(m, VecVar, S)
     make_problem_type_integer(m)
     add_sos_constraint!(m, getcol.(Ref(m), v.variables), sos.weights, backend_type(m, sos))
     m.last_constraint_reference += 1
@@ -94,8 +96,8 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::VecVar, sos::S) where S <: U
     ref
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::VVCI{<:Union{SOS1, SOS2}}) = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::VVCI{<:Union{SOS1, SOS2}})
+    _assert_valid(m, c)
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     idx = dict[c]

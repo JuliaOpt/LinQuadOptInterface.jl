@@ -4,17 +4,10 @@
 getcol(m::LinQuadOptimizer, ref::VarInd) = m.variable_mapping[ref]
 getcol(m::LinQuadOptimizer, v::SinVar) = getcol(m, v.variable)
 
-
-#=
-    Can add variable
-=#
-
-MOI.canaddvariable(::LinQuadOptimizer) = true
-
 #=
     Get variable names
 =#
-
+MOI.supports(model::LinQuadOptimizer, ::MOI.VariableName, ::Type{VarInd}) = true
 MOI.canget(m::LinQuadOptimizer, ::MOI.VariableName, ::Type{VarInd}) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.VariableName, ref::VarInd)
     if haskey(m.variable_names, ref)
@@ -24,11 +17,6 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.VariableName, ref::VarInd)
     end
 end
 
-#=
-    Set variable names
-=#
-
-MOI.canset(m::LinQuadOptimizer, ::MOI.VariableName, ::Type{VarInd}) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.VariableName, ref::VarInd, name::String)
     if haskey(m.variable_names_rev, name)
         if m.variable_names_rev[name] != ref
@@ -48,27 +36,25 @@ end
 #=
     Get variable by name
 =#
-
 function MOI.canget(m::LinQuadOptimizer, ::Type{MOI.VariableIndex}, name::String)
     haskey(m.variable_names_rev, name)
 end
 function MOI.get(m::LinQuadOptimizer, ::Type{MOI.VariableIndex}, name::String)
-    m.variable_names_rev[name]
+    return m.variable_names_rev[name]
 end
 
 #=
     Get number of variables
 =#
-
 MOI.canget(m::LinQuadOptimizer, ::MOI.NumberOfVariables) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.NumberOfVariables)
+    # TODO(odow): just return length(m.variable_references)?
     return get_number_variables(m)
 end
 
 #=
     List of Variable References
 =#
-
 MOI.canget(m::LinQuadOptimizer, ::MOI.ListOfVariableIndices) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.ListOfVariableIndices)
     return m.variable_references
@@ -132,8 +118,10 @@ end
     Delete a variable
 =#
 
-MOI.candelete(m::LinQuadOptimizer, ref::VarInd) = MOI.isvalid(m, ref)
 function MOI.delete!(m::LinQuadOptimizer, ref::VarInd)
+    if !MOI.isvalid(m, ref)
+        throw(MOI.InvalidIndex(ref))
+    end
     col = m.variable_mapping[ref]
     delete_variables!(m, col, col)
 
@@ -172,13 +160,12 @@ end
 #=
     MIP starts
 =#
+MOI.supports(model::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::Type{VarInd}) = false
 
-MOI.canset(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::VarInd) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ref::VarInd, val::Float64)
     add_mip_starts!(m, [getcol(m, ref)], [val])
 end
 
-MOI.canset(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::Vector{VarInd}) = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.VariablePrimalStart, refs::Vector{VarInd}, vals::Vector{Float64})
     add_mip_starts!(m, getcol.(Ref(m), refs), vals)
 end

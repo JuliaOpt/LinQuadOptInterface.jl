@@ -182,6 +182,7 @@ function set_dual_status!(inner::MockLinQuadModel,input)
 end
 
 const SUPPORTED_OBJECTIVES = [
+    MOI.SingleVariable,
     LQOI.Linear,
     LQOI.Quad
 ]

@@ -67,6 +67,7 @@ end
 
 # add constraint
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: LinSets
+    _assert_add_constraint(m, SinVar, S)
     checkexisting(m, v, set)
     checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
     checkconflicting(m, v, set, MOI.Semiinteger(0.0, 0.0))
@@ -81,8 +82,8 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: L
 end
 
 # delete constraint
-MOI.candelete(m::LinQuadOptimizer, c::SVCI{S}) where S <: LinSets = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{S}) where S <: LinSets
+    _assert_valid(m, c)
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     vref = dict[c]
@@ -120,7 +121,7 @@ function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{<: LinSe
 end
 
 # modify
-MOI.canset(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S <: LinSets = true
+MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S<:LinSets = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{S}, newset::S) where S <: LinSets
     setvariablebound!(m, SinVar(m[c]), newset)
 end
@@ -135,6 +136,7 @@ we can revert to the old bounds
 Xpress is worse, once binary, the bounds are changed independently of what the user does
 =#
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.ZeroOne)
+    _assert_add_constraint(m, SinVar, MOI.ZeroOne)
     checkexisting(m, v, set)
     checkconflicting(m, v, set, MOI.Integer())
     checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
@@ -153,8 +155,8 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.ZeroOne)
     ref
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::SVCI{MOI.ZeroOne}) = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.ZeroOne})
+    _assert_valid(m, c)
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     (v, lb, ub) = dict[c]
@@ -178,6 +180,7 @@ MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.ZeroOne}) = S
 =#
 
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.Integer)
+    _assert_add_constraint(m, SinVar, MOI.Integer)
     checkexisting(m, v, set)
     checkconflicting(m, v, set, MOI.ZeroOne())
     checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
@@ -192,8 +195,8 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.Integer)
     ref
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::SVCI{MOI.Integer}) = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.Integer})
+    _assert_valid(m, c)
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     v = dict[c]
@@ -215,6 +218,7 @@ MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.Integer}) = S
 =#
 const SEMI_TYPES = Union{MOI.Semicontinuous{Float64}, MOI.Semiinteger{Float64}}
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: SEMI_TYPES
+    _assert_add_constraint(m, SinVar, S)
     checkexisting(m, v, set)
     checkconflicting(m, v, set, MOI.ZeroOne())
     checkconflicting(m, v, set, MOI.Integer())
@@ -235,8 +239,8 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: S
     ref
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::SVCI{<:SEMI_TYPES}) = MOI.isvalid(m, c)
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{<:SEMI_TYPES})
+    _assert_valid(m, c)
     deleteconstraintname!(m, c)
     dict = constrdict(m, c)
     v = dict[c]
