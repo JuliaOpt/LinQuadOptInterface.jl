@@ -1,14 +1,6 @@
-#=
- TODOs:
-
-    - get quadratic objective functions
-
-=#
-
 __precompile__()
 module LinQuadOptInterface
 
-using Nullables
 using Compat
 using Compat.SparseArrays
 
@@ -214,7 +206,7 @@ macro LinQuadOptimizerBase(inner_model_type=Any)
     name::String
 
     obj_type::LinQuadOptInterface.ObjectiveType
-    single_obj_var::Nullable{MOI.VariableIndex}
+    single_obj_var::Union{Nothing, MOI.VariableIndex}
     obj_sense::MOI.OptimizationSense
 
     last_variable_reference::UInt64
@@ -254,11 +246,10 @@ end
 
 
 function MOI.isempty(m::LinQuadOptimizer)
-
     ret = true
     ret = ret && m.name == ""
     ret = ret && m.obj_type == AffineObjective
-    ret = ret && isnull(m.single_obj_var)
+    ret = ret && isa(m.single_obj_var, Nothing)
     ret = ret && m.obj_sense == MOI.MinSense
     ret = ret && m.last_variable_reference == 0
     ret = ret && isempty(m.variable_mapping)

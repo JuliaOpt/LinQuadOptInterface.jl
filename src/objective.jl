@@ -97,7 +97,7 @@ end
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{MOI.SingleVariable}) = m.obj_type == SingleVariableObjective
 function MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{MOI.SingleVariable})
-    SingleVariable(get(m.single_obj_var))
+    SingleVariable(m.single_obj_var::MOI.VariableIndex)
 end
 
 MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear}) = m.obj_type != QuadraticObjective
