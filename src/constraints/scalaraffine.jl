@@ -28,7 +28,7 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::S) where S
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::IV)
-    columns = [getcol(m, term.variable_index) for term in func.terms]
+    columns = [get_column(m, term.variable_index) for term in func.terms]
     coefficients = [term.coefficient for term in func.terms]
     A = CSRMatrix{Float64}([1], columns, coefficients)
     add_ranged_constraints!(m, A, [set.lower], [set.upper])
@@ -38,7 +38,7 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, sense::Cchar, r
     if abs(func.constant) > eps(Float64)
         Compat.@warn("Constant in scalar function moved into set.")
     end
-    columns = [getcol(m, term.variable_index) for term in func.terms]
+    columns = [get_column(m, term.variable_index) for term in func.terms]
     coefficients = [term.coefficient for term in func.terms]
     A = CSRMatrix{Float64}([1], columns, coefficients)
     add_linear_constraints!(m, A, [sense], [rhs - func.constant])
@@ -94,7 +94,7 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::V
     for (fi, f) in enumerate(func)
         row_pointers[fi] = i
         for term in f.terms
-            columns[i] = getcol(m, term.variable_index)
+            columns[i] = get_column(m, term.variable_index)
             coefficients[i] = term.coefficient
             i += 1
         end
@@ -120,7 +120,7 @@ function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, sense:
     for (row, f) in enumerate(func)
         row_pointers[row] = i
         for term in f.terms
-            columns[i] = getcol(m, term.variable_index)
+            columns[i] = get_column(m, term.variable_index)
             coefficients[i] = term.coefficient
             i += 1
         end

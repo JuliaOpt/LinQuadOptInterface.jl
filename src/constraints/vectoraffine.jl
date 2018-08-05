@@ -28,7 +28,7 @@ end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::VecLin, sense::Cchar)
     outputindex   = [term.output_index for term in func.terms]
-    columns       = [getcol(m, term.scalar_term.variable_index) for term in func.terms]
+    columns       = [get_column(m, term.scalar_term.variable_index) for term in func.terms]
     coefficients  = [term.scalar_term.coefficient for term in func.terms]
     # sort into row order
     pidx = sortperm(outputindex)

@@ -23,7 +23,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <
     rows = get_number_linear_constraints(m)
     n = MOI.dimension(set)
     add_linear_constraints!(m,
-        CSRMatrix{Float64}(collect(1:n), getcol.(Ref(m), func.variables), ones(n)),
+        CSRMatrix{Float64}(collect(1:n), get_column.(Ref(m), func.variables), ones(n)),
         fill(backend_type(m, set),n),
         zeros(n)
     )
@@ -88,7 +88,7 @@ end
 function MOI.addconstraint!(m::LinQuadOptimizer, v::VecVar, sos::S) where S <: Union{MOI.SOS1, MOI.SOS2}
     __assert_supported_constraint__(m, VecVar, S)
     make_problem_type_integer(m)
-    add_sos_constraint!(m, getcol.(Ref(m), v.variables), sos.weights, backend_type(m, sos))
+    add_sos_constraint!(m, get_column.(Ref(m), v.variables), sos.weights, backend_type(m, sos))
     m.last_constraint_reference += 1
     ref = VVCI{S}(m.last_constraint_reference)
     dict = constrdict(m, ref)

@@ -51,7 +51,7 @@ function MOI.set!(model::LinQuadOptimizer,
     end
     model.obj_type = SingleVariableObjective
     model.single_obj_var = objective.variable
-    set_linear_objective!(model, [getcol(model, objective.variable)], [1.0])
+    set_linear_objective!(model, [get_column(model, objective.variable)], [1.0])
     set_constant_objective!(model, 0.0)
 end
 
@@ -75,7 +75,7 @@ function unsafe_set!(model::LinQuadOptimizer, ::MOI.ObjectiveFunction{F},
     model.obj_type = AffineObjective
     model.single_obj_var = nothing
     set_linear_objective!(model,
-        map(term -> getcol(model, term.variable_index), objective.terms),
+        map(term -> get_column(model, term.variable_index), objective.terms),
         map(term -> term.coefficient, objective.terms)
     )
     set_constant_objective!(model, objective.constant)
@@ -87,12 +87,12 @@ function MOI.set!(model::LinQuadOptimizer, attribute::MOI.ObjectiveFunction,
     model.obj_type = QuadraticObjective
     model.single_obj_var = nothing
     set_linear_objective!(model,
-        map(term -> getcol(model, term.variable_index), objective.affine_terms),
+        map(term -> get_column(model, term.variable_index), objective.affine_terms),
         map(term -> term.coefficient, objective.affine_terms)
     )
     columns_1, columns_2, coefficients = reduce_duplicates!(
-        map(term -> getcol(model, term.variable_index_1), objective.quadratic_terms),
-        map(term -> getcol(model, term.variable_index_2), objective.quadratic_terms),
+        map(term -> get_column(model, term.variable_index_1), objective.quadratic_terms),
+        map(term -> get_column(model, term.variable_index_2), objective.quadratic_terms),
         map(term -> term.coefficient, objective.quadratic_terms)
     )
     set_quadratic_objective!(model, columns_1, columns_2, coefficients)
@@ -189,7 +189,7 @@ function MOI.modify!(model::LinQuadOptimizer, ::MOI.ObjectiveFunction{F},
         model.obj_type = AffineObjective
         model.single_obj_var = nothing
     end
-    change_objective_coefficient!(model, getcol(model, change.variable),
+    change_objective_coefficient!(model, get_column(model, change.variable),
                                   change.new_coefficient)
 end
 
