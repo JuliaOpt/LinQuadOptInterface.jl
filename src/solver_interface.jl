@@ -82,7 +82,6 @@ Initializes a model given a model type `M` and an `env` that might be a `nothing
 for some solvers.
 """
 function LinearQuadraticModel end
-@deprecate LinQuadModel LinearQuadraticModel
 
 """
     supported_constraints(m)::Vector{
@@ -94,7 +93,6 @@ Get a list of supported constraint types in the model `m`.
 For example, `[(LQOI.Linear, LQOI.EQ)]`
 """
 function supported_constraints end
-@deprecate lqs_supported_constraints supported_constraints
 
 """
     supported_objectives(m)::Vector{MOI.AbstractScalarFunction}
@@ -104,7 +102,6 @@ Get a list of supported objective types in the model `m`.
 For example, `[LQOI.Linear, LQOI.Quad]`
 """
 function supported_objectives end
-@deprecate lqs_supported_objectives supported_objectives
 
 # Constraints
 
@@ -116,7 +113,6 @@ is given by `backend_type(m, Val{:Upperbound}())`. The sense
 of the lowerbound is given by `backend_type(m, Val{:Lowerbound}())`
 """
 function change_variable_bounds! end
-@deprecate lqs_chgbds! change_variable_bounds!
 
 """
     get_variable_lowerbound(m, col::Int)::Float64
@@ -124,7 +120,6 @@ function change_variable_bounds! end
 Get the lower bound of the variable in 1-indexed column `col` of the model `m`.
 """
 function get_variable_lowerbound end
-@deprecate lqs_getlb get_variable_lowerbound
 
 """
     get_variable_upperbound(m, col::Int)::Float64
@@ -132,7 +127,6 @@ function get_variable_lowerbound end
 Get the upper bound of the variable in 1-indexed column `col` of the model `m`.
 """
 function get_variable_upperbound end
-@deprecate lqs_getub get_variable_upperbound
 
 """
     get_number_linear_constraints(m)::Int
@@ -140,7 +134,6 @@ function get_variable_upperbound end
 Get the number of linear constraints in the model `m`.
 """
 function get_number_linear_constraints end
-@deprecate lqs_getnumrows get_number_linear_constraints
 
 """
     add_linear_constraints!(m, A::CSRMatrix{Float64},
@@ -157,7 +150,6 @@ instead.
 See also: `LinQuadOptInterface.CSRMatrix`.
 """
 function add_linear_constraints! end
-@deprecate lqs_addrows! add_linear_constraints!
 
 """
     add_ranged_constraints!(m, A::CSRMatrix{Float64},
@@ -188,7 +180,6 @@ Get the right-hand side of the linear constraint in the 1-indexed row `row` in
 the model `m`.
 """
 function get_rhs end
-@deprecate lqs_getrhs get_rhs
 
 """
     get_range(m, row::Int)::Tuple{Float64,Float64}
@@ -204,7 +195,6 @@ Get the linear component of the constraint in the 1-indexed row `row` in
 the model `m`. Returns a tuple of `(cols, vals)`.
 """
 function get_linear_constraint end
-@deprecate lqs_getrows get_linear_constraint
 
 """
     change_matrix_coefficient!(m, row, col, coef)
@@ -213,7 +203,6 @@ Set the linear coefficient of the variable in column `col`, constraint `row` to
 `coef`.
 """
 function change_matrix_coefficient! end
-@deprecate lqs_chgcoef! change_matrix_coefficient!
 
 """
 change_objective_coefficient!(m, col, coef)
@@ -236,7 +225,6 @@ Delete the linear constraints `start_row`, `start_row+1`, ..., `end_row` from
 the model `m`.
 """
 function delete_linear_constraints! end
-@deprecate lqs_delrows! delete_linear_constraints!
 
 """
     delete_quadratic_constraints!(m, start_row::Int, end_row::Int)::Nothing
@@ -255,7 +243,6 @@ Change the variable types. Type is the output of one of:
  - `backend_type(m, Val{:Continuous}())`, for continuous variables.
 """
 function change_variable_types! end
-@deprecate lqs_chgctype! change_variable_types!
 
 """
     change_linear_constraint_sense!(m, rows::Vector{Int}, sense::Vector{Symbol})::Nothing
@@ -268,7 +255,6 @@ is the corresponding set for the row `rows[i]`.
 `Interval` constraints require a call to `change_range_value!`.
 """
 function change_linear_constraint_sense! end
-@deprecate lqs_chgsense! change_linear_constraint_sense!
 
 """
     make_problem_type_integer(m)::Nothing
@@ -278,7 +264,6 @@ If an explicit call is needed to change the problem type integer (e.g., CPLEX).
 function make_problem_type_integer(m::LinQuadOptimizer)
     nothing  # default
 end
-@deprecate lqs_make_problem_type_integer make_problem_type_integer
 
 """
     make_problem_type_continuous(m)::Nothing
@@ -288,7 +273,6 @@ If an explicit call is needed to change the problem type continuous (e.g., CPLEX
 function make_problem_type_continuous(m::LinQuadOptimizer)
     nothing  # default
 end
-@deprecate lqs_make_problem_type_continuous make_problem_type_continuous
 
 """
     add_sos_constraint!(m, cols::Vector{Int}, vals::Vector{Float64}, typ::Symbol)::Nothing
@@ -296,7 +280,6 @@ end
 Add the SOS constraint to the model `m`. `typ` is either `:SOS1` or `:SOS2`.
 """
 function add_sos_constraint! end
-@deprecate lqs_addsos! add_sos_constraint!
 
 """
     delete_sos!(m, start_idx::Int, end_idx::Int)::Nothing
@@ -305,7 +288,6 @@ Delete the SOS constraints `start_idx`, `start_idx+1`, ..., `end_idx` from
 the model `m`.
 """
 function delete_sos! end
-@deprecate lqs_delsos! delete_sos!
 
 """
     get_sos_constraint(m, idx::Int)::Tuple{Vector{Int}, Vector{Float64}, Symbol}
@@ -321,7 +303,6 @@ function get_sos_constraint end
 Get the number of quadratic constraints in the model `m`.
 """
 function get_number_quadratic_constraints end
-@deprecate lqs_getnumqcosntrs get_number_quadratic_constraints
 
 """
     add_quadratic_constraint!(m, cols::Vector{Int}, coefs::Vector{Float64}, rhs::Float64,
@@ -354,7 +335,6 @@ Set the quadratic component of the objective. Arguments given in triplet form
 for the Q matrix in `0.5 x' Q x`.
 """
 function set_quadratic_objective! end
-@deprecate lqs_copyquad! set_quadratic_objective!
 
 """
     get_quadratic_constraint(m, row::Int)::Tuple{Vector{Int}, Vector{Float64}, SparseMatrixCSC{Float64,Int64}}
@@ -378,7 +358,6 @@ function get_quadratic_rhs end
 Set the linear component of the objective.
 """
 function set_linear_objective! end
-@deprecate lqs_chgobj! set_linear_objective!
 
 """
     change_objective_sense!(m, sense::Symbol)::Nothing
@@ -387,8 +366,6 @@ Change the optimization sense of the model `m` to `sense`. `sense` must be
 `:min` or `:max`.
 """
 function change_objective_sense! end
-@deprecate lqs_chgobjsen! change_objective_sense!
-
 
 """
     get_constant_objective(m)::Float64
@@ -404,7 +381,6 @@ Get the linear coefficients of the objective and store
 in `x`.
 """
 function get_linear_objective! end
-@deprecate lqs_getobj get_linear_objective!
 
 """
     get_quadratic_terms_objective(m)::SparseMatrixCSC{Float64,Int64}
@@ -419,7 +395,6 @@ function get_quadratic_terms_objective end
 Get the optimization sense of the model `m`.
 """
 function get_objectivesense end
-@deprecate lqs_getobjsen get_objectivesense
 
 """
     solve_mip_problem!(m)::Nothing
@@ -427,7 +402,6 @@ function get_objectivesense end
 Solve a mixed-integer model `m`.
 """
 function solve_mip_problem! end
-@deprecate lqs_mipopt! solve_mip_problem!
 
 """
     solve_quadratic_problem!(m)::Nothing
@@ -435,7 +409,6 @@ function solve_mip_problem! end
 Solve a model `m` with quadratic components.
 """
 function solve_quadratic_problem! end
-@deprecate lqs_qpopt! solve_quadratic_problem!
 
 """
     solve_linear_problem!(m)::Nothing
@@ -443,7 +416,6 @@ function solve_quadratic_problem! end
 Solve a linear program `m`.
 """
 function solve_linear_problem! end
-@deprecate lqs_lpopt! solve_linear_problem!
 
 """
     get_variable_primal_solution!(m, x::Vector{Float64})
@@ -452,7 +424,6 @@ Get the primal solution for the variables in the model `m`, and
 store in `x`. `x`must have one element for each variable.
 """
 function get_variable_primal_solution! end
-@deprecate lqs_getx! get_variable_primal_solution!
 
 """
     get_linear_primal_solution!(m, x::Vector{Float64})
@@ -462,7 +433,6 @@ constraint primal `a'x` for each constraint, and store in `x`.
 `x` must have one element for each linear constraint.
 """
 function get_linear_primal_solution! end
-@deprecate lqs_getax! get_linear_primal_solution!
 
 """
     get_quadratic_primal_solution!(m, x::Vector{Float64})
@@ -472,7 +442,6 @@ get the constraint primal `a'x + x'Qx` for each constraint, and store in `x`.
 `x` must have one element for each quadratic constraint.
 """
 function get_quadratic_primal_solution! end
-@deprecate lqs_getqcax! get_quadratic_primal_solution!
 
 """
     get_variable_dual_solution!(m, x::Vector{Float64})
@@ -481,7 +450,6 @@ Get the dual solution (reduced-costs) for the variables in the model `m`, and
 store in `x`. `x`must have one element for each variable.
 """
 function get_variable_dual_solution! end
-@deprecate lqs_getdj! get_variable_dual_solution!
 
 """
     get_linear_dual_solution!(m, x::Vector{Float64})
@@ -490,7 +458,6 @@ Get the dual solution for the linear constraints in the model `m`, and
 store in `x`. `x`must have one element for each linear constraint.
 """
 function get_linear_dual_solution! end
-@deprecate lqs_getpi! get_linear_dual_solution!
 
 """
     get_quadratic_dual_solution!(m, x::Vector{Float64})
@@ -499,7 +466,6 @@ Get the dual solution for the quadratic constraints in the model `m`, and
 store in `x`. `x`must have one element for each quadratic constraint.
 """
 function get_quadratic_dual_solution! end
-@deprecate lqs_getqcpi! get_quadratic_dual_solution!
 
 """
     get_objective_value(m)
@@ -507,7 +473,6 @@ function get_quadratic_dual_solution! end
 Get the objective value of the solved model `m`.
 """
 function get_objective_value end
-@deprecate lqs_getobjval get_objective_value
 
 """
     get_objective_bound(m)
@@ -515,7 +480,6 @@ function get_objective_value end
 Get the objective bound of the model `m`.
 """
 function get_objective_bound end
-@deprecate lqs_getbestobjval get_objective_bound
 
 """
     get_relative_mip_gap(m)
@@ -523,7 +487,6 @@ function get_objective_bound end
 Get the relative MIP gap of the solved model `m`.
 """
 function get_relative_mip_gap end
-@deprecate lqs_getmiprelgap get_relative_mip_gap
 
 """
     get_iteration_count(m)
@@ -532,7 +495,6 @@ Get the number of simplex iterations performed during the most recent
 optimization of the model `m`.
 """
 function get_iteration_count end
-@deprecate lqs_getitcnt get_iteration_count
 
 """
     get_barrier_iterations(m)
@@ -541,7 +503,6 @@ Get the number of barrier iterations performed during the most recent
 optimization of the model `m`.
 """
 function get_barrier_iterations end
-@deprecate lqs_getbaritcnt get_barrier_iterations
 
 """
     get_node_count(m)
@@ -550,7 +511,6 @@ Get the number of branch-and-cut nodes expolored during the most recent
 optimization of the model `m`.
 """
 function get_node_count end
-@deprecate lqs_getnodecnt get_node_count
 
 """
     get_farkas_dual!(m, x::Vector{Float64})
@@ -560,7 +520,6 @@ constraints in the model `m`, and store in `x`. `x`must have one element for
 each linear constraint.
 """
 function get_farkas_dual! end
-@deprecate lqs_dualfarkas! get_farkas_dual!
 
 """
     get_unbounded_ray!(m, x::Vector{Float64})
@@ -570,7 +529,6 @@ constraints in the model `m`, and store in `x`. `x`must have one element for
 each variable.
 """
 function get_unbounded_ray! end
-@deprecate lqs_getray! get_unbounded_ray!
 
 """
     get_termination_status(m)
@@ -578,7 +536,6 @@ function get_unbounded_ray! end
 Get the termination status of the model `m`.
 """
 function get_termination_status end
-@deprecate lqs_terminationstatus get_termination_status
 
 """
     get_primal_status(m)
@@ -586,7 +543,6 @@ function get_termination_status end
 Get the primal status of the model `m`.
 """
 function get_primal_status end
-@deprecate lqs_primalstatus get_primal_status
 
 """
     get_dual_status(m)
@@ -594,7 +550,6 @@ function get_primal_status end
 Get the dual status of the model `m`.
 """
 function get_dual_status end
-@deprecate lqs_dualstatus get_dual_status
 
 """
     get_number_variables(m)::Int
@@ -602,7 +557,6 @@ function get_dual_status end
 Get the number of variables in the model `m`.
 """
 function get_number_variables end
-@deprecate lqs_getnumcols get_number_variables
 
 """
     add_variables!(m, n::Int)::Nothing
@@ -610,7 +564,6 @@ function get_number_variables end
 Add `n` new variables to the model `m`.
 """
 function add_variables! end
-@deprecate lqs_newcols! add_variables!
 
 """
     delete_variables!(m, start_col::Int, end_col::Int)::Nothing
@@ -618,7 +571,6 @@ function add_variables! end
 Delete the columns `start_col`, `start_col+1`, ..., `end_col` from the model `m`.
 """
 function delete_variables! end
-@deprecate lqs_delcols! delete_variables!
 
 """
     add_mip_starts!(m, cols::Vector{Int}, x::Vector{Float64})::Nothing
@@ -626,4 +578,3 @@ function delete_variables! end
 Add the MIP start `x` for the variables in the columns `cols` of the model `m`.
 """
 function add_mip_starts! end
-@deprecate lqs_addmipstarts! add_mip_starts!
