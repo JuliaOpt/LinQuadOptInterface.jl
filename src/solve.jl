@@ -18,7 +18,7 @@ function MOI.optimize!(m::LinQuadOptimizer)
     m.dual_result_count = 0
 
     t = time()
-    if hasinteger(m)
+    if has_integer(m)
         solve_mip_problem!(m)
     elseif hasquadratic(m)
         solve_quadratic_problem!(m)

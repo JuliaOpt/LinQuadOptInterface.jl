@@ -25,7 +25,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::Quad, set::S) where S <: 
 end
 
 function addquadraticconstraint!(m::LinQuadOptimizer, func::Quad, set::S) where S<: Union{LE, GE, EQ}
-    addquadraticconstraint!(m, func, backend_type(m,set), _getrhs(set))
+    addquadraticconstraint!(m, func, backend_type(m,set), MOIU.getconstant(set))
 end
 
 function addquadraticconstraint!(m::LinQuadOptimizer, f::Quad, sense::Cchar, rhs::Float64)
@@ -84,8 +84,8 @@ function reduce_duplicates!(rows::Vector{T}, cols::Vector{T}, vals::Vector{S}) w
 end
 
 function MOI.delete!(m::LinQuadOptimizer, c::QCI{<: LinSets})
-    _assert_valid(m, c)
-    deleteconstraintname!(m, c)
+    __assert_valid__(m, c)
+    delete_constraint_name(m, c)
     dict = constrdict(m, c)
     row = dict[c]
     delete_quadratic_constraints!(m, row, row)

@@ -6,7 +6,7 @@ constrdict(m::LinQuadOptimizer, ::VLCI{MOI.Nonpositives}) = cmap(m).nonpositives
 constrdict(m::LinQuadOptimizer, ::VLCI{MOI.Zeros})        = cmap(m).zeros
 
 function MOI.addconstraint!(m::LinQuadOptimizer, func::VecLin, set::S) where S <: VecLinSets
-    _assert_add_constraint(m, VecLin, S)
+    __assert_supported_constraint__(m, VecLin, S)
     @assert MOI.dimension(set) == length(func.constants)
 
     nrows = get_number_linear_constraints(m)
@@ -67,8 +67,8 @@ function MOI.modify!(m::LinQuadOptimizer, ref::VLCI{<: VecLinSets}, chg::MOI.Mul
 end
 
 function MOI.delete!(m::LinQuadOptimizer, c::VLCI{<:VecLinSets})
-    _assert_valid(m, c)
-    deleteconstraintname!(m, c)
+    __assert_valid__(m, c)
+    delete_constraint_name(m, c)
     dict = constrdict(m, c)
     # we delete rows from largest to smallest here so that we don't have
     # to worry about updating references in a greater numbered row, only to

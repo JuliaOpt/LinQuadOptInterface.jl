@@ -67,7 +67,7 @@ end
 
 # add constraint
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: LinSets
-    _assert_add_constraint(m, SinVar, S)
+    __assert_supported_constraint__(m, SinVar, S)
     checkexisting(m, v, set)
     checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
     checkconflicting(m, v, set, MOI.Semiinteger(0.0, 0.0))
@@ -83,8 +83,8 @@ end
 
 # delete constraint
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{S}) where S <: LinSets
-    _assert_valid(m, c)
-    deleteconstraintname!(m, c)
+    __assert_valid__(m, c)
+    delete_constraint_name(m, c)
     dict = constrdict(m, c)
     vref = dict[c]
     setvariablebound!(m, SinVar(vref), IV(-Inf, Inf))
@@ -136,7 +136,7 @@ we can revert to the old bounds
 Xpress is worse, once binary, the bounds are changed independently of what the user does
 =#
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.ZeroOne)
-    _assert_add_constraint(m, SinVar, MOI.ZeroOne)
+    __assert_supported_constraint__(m, SinVar, MOI.ZeroOne)
     checkexisting(m, v, set)
     checkconflicting(m, v, set, MOI.Integer())
     checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
@@ -156,15 +156,15 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.ZeroOne)
 end
 
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.ZeroOne})
-    _assert_valid(m, c)
-    deleteconstraintname!(m, c)
+    __assert_valid__(m, c)
+    delete_constraint_name(m, c)
     dict = constrdict(m, c)
     (v, lb, ub) = dict[c]
     change_variable_types!(m, [getcol(m, v)], [backend_type(m, Val{:Continuous}())])
     setvariablebound!(m, getcol(m, v), ub, backend_type(m, Val{:Upperbound}()))
     setvariablebound!(m, getcol(m, v), lb, backend_type(m, Val{:Lowerbound}()))
     delete!(dict, c)
-    if !hasinteger(m)
+    if !has_integer(m)
         make_problem_type_continuous(m)
     end
 end
@@ -180,7 +180,7 @@ MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.ZeroOne}) = S
 =#
 
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.Integer)
-    _assert_add_constraint(m, SinVar, MOI.Integer)
+    __assert_supported_constraint__(m, SinVar, MOI.Integer)
     checkexisting(m, v, set)
     checkconflicting(m, v, set, MOI.ZeroOne())
     checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
@@ -196,13 +196,13 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.Integer)
 end
 
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.Integer})
-    _assert_valid(m, c)
-    deleteconstraintname!(m, c)
+    __assert_valid__(m, c)
+    delete_constraint_name(m, c)
     dict = constrdict(m, c)
     v = dict[c]
     change_variable_types!(m, [getcol(m, v)], [backend_type(m, Val{:Continuous}())])
     delete!(dict, c)
-    if !hasinteger(m)
+    if !has_integer(m)
         make_problem_type_continuous(m)
     end
 end
@@ -218,7 +218,7 @@ MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.Integer}) = S
 =#
 const SEMI_TYPES = Union{MOI.Semicontinuous{Float64}, MOI.Semiinteger{Float64}}
 function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: SEMI_TYPES
-    _assert_add_constraint(m, SinVar, S)
+    __assert_supported_constraint__(m, SinVar, S)
     checkexisting(m, v, set)
     checkconflicting(m, v, set, MOI.ZeroOne())
     checkconflicting(m, v, set, MOI.Integer())
@@ -240,15 +240,15 @@ function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: S
 end
 
 function MOI.delete!(m::LinQuadOptimizer, c::SVCI{<:SEMI_TYPES})
-    _assert_valid(m, c)
-    deleteconstraintname!(m, c)
+    __assert_valid__(m, c)
+    delete_constraint_name(m, c)
     dict = constrdict(m, c)
     v = dict[c]
     change_variable_types!(m, [getcol(m, v)], [backend_type(m, Val{:Continuous}())])
     setvariablebound!(m, getcol(m, v), Inf, backend_type(m, Val{:Upperbound}()))
     setvariablebound!(m, getcol(m, v), -Inf, backend_type(m, Val{:Lowerbound}()))
     delete!(dict, c)
-    if !hasinteger(m)
+    if !has_integer(m)
         make_problem_type_continuous(m)
     end
 end

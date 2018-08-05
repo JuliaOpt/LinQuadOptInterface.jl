@@ -10,7 +10,7 @@ constrdict(m::LinQuadOptimizer, ::LCI{EQ})  = cmap(m).equal_to
 constrdict(m::LinQuadOptimizer, ::LCI{IV})  = cmap(m).interval
 
 function MOI.addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <: LinSets
-    _assert_add_constraint(m, Linear, T)
+    __assert_supported_constraint__(m, Linear, T)
     cfunc = MOIU.canonical(func)
     addlinearconstraint!(m, cfunc, set)
     m.last_constraint_reference += 1
@@ -24,7 +24,7 @@ function MOI.addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::S) where S <: Union{LE, GE, EQ}
-    addlinearconstraint!(m, func, backend_type(m,set), _getrhs(set))
+    addlinearconstraint!(m, func, backend_type(m,set), MOIU.getconstant(set))
 end
 
 function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::IV)
@@ -49,7 +49,7 @@ end
 =#
 
 function MOI.addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: LinSets
-    _assert_add_constraint(m, Linear, S)
+    __assert_supported_constraint__(m, Linear, S)
     # canonicalize
     cfunc = MOIU.canonical.(func)
 
@@ -71,7 +71,7 @@ function MOI.addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vec
 end
 
 function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: LinSets
-    addlinearconstraints!(m, func, backend_type.(Ref(m),set), [_getrhs(s) for s in set])
+    addlinearconstraints!(m, func, backend_type.(Ref(m),set), [MOIU.getconstant(s) for s in set])
 end
 
 function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{IV})
@@ -174,7 +174,7 @@ end
 =#
 MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{S}}) where S <: LinSets = true
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{S}, newset::S) where S <: Union{LE, GE, EQ}
-    change_rhs_coefficient!(m, m[c], _getrhs(newset))
+    change_rhs_coefficient!(m, m[c], MOIU.getconstant(newset))
 end
 
 function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{IV}, set::IV)
@@ -186,8 +186,8 @@ end
 =#
 
 function MOI.delete!(m::LinQuadOptimizer, c::LCI{<: LinSets})
-    _assert_valid(m, c)
-    deleteconstraintname!(m, c)
+    __assert_valid__(m, c)
+    delete_constraint_name(m, c)
     dict = constrdict(m, c)
     row = dict[c]
     delete_linear_constraints!(m, row, row)
@@ -212,6 +212,6 @@ function MOI.transform!(m::LinQuadOptimizer, ref::LCI{S1}, newset::S2) where S1 
     dict2 = constrdict(m, ref2)
     dict2[ref2] = row
     delete!(dict, ref)
-    deleteconstraintname!(m, ref)
+    delete_constraint_name(m, ref)
     return ref2
 end
