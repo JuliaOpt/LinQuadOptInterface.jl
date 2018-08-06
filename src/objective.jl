@@ -86,16 +86,9 @@ function MOI.set!(model::LinQuadOptimizer, attribute::MOI.ObjectiveFunction,
     __assert_objective__(model, attribute)
     model.obj_type = QuadraticObjective
     model.single_obj_var = nothing
-    set_linear_objective!(model,
-        map(term -> get_column(model, term.variable_index), objective.affine_terms),
-        map(term -> term.coefficient, objective.affine_terms)
-    )
-    columns_1, columns_2, coefficients = reduce_duplicates!(
-        map(term -> get_column(model, term.variable_index_1), objective.quadratic_terms),
-        map(term -> get_column(model, term.variable_index_2), objective.quadratic_terms),
-        map(term -> term.coefficient, objective.quadratic_terms)
-    )
-    set_quadratic_objective!(model, columns_1, columns_2, coefficients)
+    aff_cols, aff_coefs, quad_rows, quad_cols, quad_coefs = canonical_reduction(model, objective)
+    set_linear_objective!(model, aff_cols, aff_coefs)
+    set_quadratic_objective!(model, quad_rows, quad_cols, quad_coefs)
     set_constant_objective!(model, objective.constant)
 end
 
