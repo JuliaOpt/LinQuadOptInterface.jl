@@ -142,7 +142,7 @@ end
 
 MOI.canget(::LinQuadOptimizer, ::MOI.VariablePrimal, ::Type{Vector{VarInd}}) = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.VariablePrimal, indices::Vector{VarInd})
-    MOI.get.(Ref(model), MOI.VariablePrimal(), indices)
+    MOI.get.(Ref(model), Ref(MOI.VariablePrimal()), indices)
 end
 
 #=
