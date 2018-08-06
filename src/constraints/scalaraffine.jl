@@ -4,214 +4,227 @@
         ScalarAffineFunction -in- EqualTo
         ScalarAffineFunction -in- Interval
 =#
-constrdict(m::LinQuadOptimizer, ::LCI{LE})  = cmap(m).less_than
-constrdict(m::LinQuadOptimizer, ::LCI{GE})  = cmap(m).greater_than
-constrdict(m::LinQuadOptimizer, ::LCI{EQ})  = cmap(m).equal_to
-constrdict(m::LinQuadOptimizer, ::LCI{IV})  = cmap(m).interval
+constrdict(model::LinQuadOptimizer, ::LCI{LE})  = cmap(model).less_than
+constrdict(model::LinQuadOptimizer, ::LCI{GE})  = cmap(model).greater_than
+constrdict(model::LinQuadOptimizer, ::LCI{EQ})  = cmap(model).equal_to
+constrdict(model::LinQuadOptimizer, ::LCI{IV})  = cmap(model).interval
 
-function MOI.addconstraint!(m::LinQuadOptimizer, func::Linear, set::T) where T <: LinSets
-    __assert_supported_constraint__(m, Linear, T)
-    cfunc = MOIU.canonical(func)
-    addlinearconstraint!(m, cfunc, set)
-    m.last_constraint_reference += 1
-    ref = LCI{T}(m.last_constraint_reference)
-    dict = constrdict(m, ref)
-    dict[ref] = get_number_linear_constraints(m)
-    push!(m.constraint_primal_solution, NaN)
-    push!(m.constraint_dual_solution, NaN)
-    push!(m.constraint_constant, func.constant)
-    return ref
+function MOI.addconstraint!(model::LinQuadOptimizer, func::Linear, set::T) where T <: LinSets
+    __assert_supported_constraint__(model, Linear, T)
+    canonicalized_func = MOIU.canonical(func)
+    add_linear_constraint(model, canonicalized_func, set)
+    model.last_constraint_reference += 1
+    index = LCI{T}(model.last_constraint_reference)
+    dict = constrdict(model, index)
+    dict[index] = get_number_linear_constraints(model)
+    push!(model.constraint_primal_solution, NaN)
+    push!(model.constraint_dual_solution, NaN)
+    push!(model.constraint_constant, func.constant)
+    return index
 end
 
-function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::S) where S <: Union{LE, GE, EQ}
-    addlinearconstraint!(m, func, backend_type(m,set), MOIU.getconstant(set))
+"""
+    add_linear_constraint(model::LinQuadOptimizer, func::Linear, set::S)
+
+Add a constraint of type `func`-in-`set` to `model`.
+"""
+function add_linear_constraint(model::LinQuadOptimizer, func::Linear, set::S) where S <: Union{LE, GE, EQ}
+    add_linear_constraint(model, func, backend_type(model, set), MOIU.getconstant(set))
 end
 
-function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, set::IV)
-    columns = [get_column(m, term.variable_index) for term in func.terms]
+function add_linear_constraint(model::LinQuadOptimizer, func::Linear, set::IV)
+    columns = [get_column(model, term.variable_index) for term in func.terms]
     coefficients = [term.coefficient for term in func.terms]
     A = CSRMatrix{Float64}([1], columns, coefficients)
-    add_ranged_constraints!(m, A, [set.lower], [set.upper])
+    add_ranged_constraints!(model, A, [set.lower], [set.upper])
 end
 
-function addlinearconstraint!(m::LinQuadOptimizer, func::Linear, sense::Cchar, rhs)
+function add_linear_constraint(model::LinQuadOptimizer, func::Linear, sense, rhs::Float64)
     if abs(func.constant) > eps(Float64)
         Compat.@warn("Constant in scalar function moved into set.")
     end
-    columns = [get_column(m, term.variable_index) for term in func.terms]
+    columns = [get_column(model, term.variable_index) for term in func.terms]
     coefficients = [term.coefficient for term in func.terms]
     A = CSRMatrix{Float64}([1], columns, coefficients)
-    add_linear_constraints!(m, A, [sense], [rhs - func.constant])
+    add_linear_constraints!(model, A, [sense], [rhs - func.constant])
 end
 
 #=
     Add linear constraints (plural)
 =#
 
-function MOI.addconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: LinSets
-    __assert_supported_constraint__(m, Linear, S)
-    # canonicalize
-    cfunc = MOIU.canonical.(func)
-
-    @assert length(cfunc) == length(set)
-    numrows = get_number_linear_constraints(m)
-    addlinearconstraints!(m, cfunc, set)
-    crefs = Vector{LCI{S}}(undef, length(cfunc))
-    for i in 1:length(cfunc)
-        m.last_constraint_reference += 1
-        ref = LCI{S}(m.last_constraint_reference)
-        dict = constrdict(m, ref)
-        dict[ref] = numrows + i
-        push!(m.constraint_primal_solution, NaN)
-        push!(m.constraint_dual_solution, NaN)
-        push!(m.constraint_constant, cfunc[i].constant)
-        crefs[i] = ref
+function MOI.addconstraints!(model::LinQuadOptimizer, func::Vector{Linear},
+                             set::Vector{S}) where S <: LinSets
+    __assert_supported_constraint__(model, Linear, S)
+    @assert length(func) == length(set)
+    canonicalized_functions = MOIU.canonical.(func)
+    num_existing_constraints = get_number_linear_constraints(model)
+    add_linear_constraints(model, canonicalized_functions, set)
+    indices = Vector{LCI{S}}(undef, length(canonicalized_functions))
+    for (i, foo) in enumerate(canonicalized_functions)
+        model.last_constraint_reference += 1
+        index = LCI{S}(model.last_constraint_reference)
+        dict = constrdict(model, index)
+        dict[index] = num_existing_constraints + i
+        push!(model.constraint_primal_solution, NaN)
+        push!(model.constraint_dual_solution, NaN)
+        push!(model.constraint_constant, foo.constant)
+        indices[i] = index
     end
-    return crefs
+    return indices
 end
 
-function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{S}) where S <: LinSets
-    addlinearconstraints!(m, func, backend_type.(Ref(m),set), [MOIU.getconstant(s) for s in set])
+function add_linear_constraints(model::LinQuadOptimizer, functions::Vector{Linear},
+                                sets::Vector{S}) where S <: LinSets
+    return add_linear_constraints(model, functions,
+                                  backend_type.(Ref(model), sets),
+                                  MOIU.getconstant.(sets))
 end
 
-function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, set::Vector{IV})
+"""
+    functions_to_CSRMatrix(model::LinQuadOptimizer, functions::Vector{Linear}, num_non_zeros::Int)
+
+Convert a vector of ScalarAffineFunctions into a CSRMatrix with `num_non_zeros`
+non-zero coefficients.
+"""
+function functions_to_CSRMatrix(model::LinQuadOptimizer, functions::Vector{Linear}, num_non_zeros::Int)
+    row_pointers = Vector{Int}(undef, length(functions))
+    columns = Vector{Int}(undef, num_non_zeros)
+    coefficients  = Vector{Float64}(undef, num_non_zeros)
+    non_zero_index = 1
+    for (row, func) in enumerate(functions)
+        row_pointers[row] = non_zero_index
+        for term in func.terms
+            columns[non_zero_index] = get_column(model, term.variable_index)
+            coefficients[non_zero_index] = term.coefficient
+            non_zero_index += 1
+        end
+    end
+    return CSRMatrix{Float64}(row_pointers, columns, coefficients)
+end
+
+function add_linear_constraints(model::LinQuadOptimizer, functions::Vector{Linear}, sets::Vector{IV})
     # loop through once to get number of non-zeros and to move rhs across
-    lowerbounds = [s.lower for s in set]
-    upperbounds = [s.upper for s in set]
-    nnz = 0
-    for (i, f) in enumerate(func)
-        if abs(f.constant) > eps(Float64)
+    lower_bounds = [set.lower for set in sets]
+    upper_bounds = [set.upper for set in sets]
+    num_non_zeros = 0
+    for (i, func) in enumerate(functions)
+        if abs(func.constant) > eps(Float64)
             Compat.@warn("Constant in scalar function moved into set.")
-            lowerbounds[i] -= f.constant
-            upperbounds[i] -= f.constant
+            lower_bounds[i] -= func.constant
+            upper_bounds[i] -= func.constant
         end
-        nnz += length(f.terms)
+        num_non_zeros += length(func.terms)
     end
-    row_pointers = Vector{Int}(undef, length(func))  # index of start of each row
-    columns = Vector{Int}(undef, nnz)                # flattened columns for each function
-    coefficients  = Vector{Float64}(undef, nnz)      # corresponding non-zeros
-    i = 1
-    for (fi, f) in enumerate(func)
-        row_pointers[fi] = i
-        for term in f.terms
-            columns[i] = get_column(m, term.variable_index)
-            coefficients[i] = term.coefficient
-            i += 1
-        end
-    end
-    A = CSRMatrix{Float64}(row_pointers, columns, coefficients)
-    add_ranged_constraints!(m, A, lowerbounds, upperbounds)
+    A = functions_to_CSRMatrix(model, functions, num_non_zeros)
+    add_ranged_constraints!(model, A, lower_bounds, upper_bounds)
 end
 
-function addlinearconstraints!(m::LinQuadOptimizer, func::Vector{Linear}, sense::Vector{Cchar}, rhs::Vector{Float64})
+function add_linear_constraints(model::LinQuadOptimizer, functions::Vector{Linear},
+                                senses::Vector, right_hand_sides::Vector{Float64})
     # loop through once to get number of non-zeros and to move rhs across
     nnz = 0
-    for (i, f) in enumerate(func)
-        if abs(f.constant) > eps(Float64)
+    for (i, func) in enumerate(functions)
+        if abs(func.constant) > eps(Float64)
             Compat.@warn("Constant in scalar function moved into set.")
-            rhs[i] -= f.constant
+            right_hand_sides[i] -= func.constant
         end
-        nnz += length(f.terms)
+        nnz += length(func.terms)
     end
-    row_pointers = Vector{Int}(undef, length(func))  # index of start of each row
-    columns = Vector{Int}(undef, nnz)                # flattened columns for each function
-    coefficients = Vector{Float64}(undef, nnz)       # corresponding non-zeros
-    i = 1
-    for (row, f) in enumerate(func)
-        row_pointers[row] = i
-        for term in f.terms
-            columns[i] = get_column(m, term.variable_index)
-            coefficients[i] = term.coefficient
-            i += 1
-        end
-    end
-    A = CSRMatrix{Float64}(row_pointers, columns, coefficients)
-    add_linear_constraints!(m, A, sense, rhs)
+    A = functions_to_CSRMatrix(model, functions, nnz)
+    add_linear_constraints!(model, A, senses, right_hand_sides)
 end
 
 #=
     Constraint set of Linear function
 =#
 MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{S}}) where S <: Union{LE, GE, EQ} = true
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{S}) where S <: Union{LE, GE, EQ}
-    rhs = get_rhs(m, m[c])
-    S(rhs+m.constraint_constant[m[c]])
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::LCI{S}) where S <: Union{LE, GE, EQ}
+    row = model[index]
+    rhs = get_rhs(model, row)
+    S(rhs + model.constraint_constant[row])
 end
 
 MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{IV}}) = true
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{IV})
-    lowerbound, upperbound = get_range(m, m[c])
-    IV(lowerbound+m.constraint_constant[m[c]], upperbound + m.constraint_constant[m[c]])
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::LCI{IV})
+    row = model[index]
+    lowerbound, upperbound = get_range(model, row)
+    return IV(lowerbound + model.constraint_constant[row],
+              upperbound + model.constraint_constant[row])
 end
 
 #=
     Constraint function of Linear function
 =#
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:LCI{<: LinSets}}) = true
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::LCI{<: LinSets})
-    # TODO more efficiently
-    colidx, coefs = get_linear_constraint(m, m[c])
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:LCI{<: LinSets}}) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::LCI{<: LinSets})
+    row = model[index]
+    columns, coefficients = get_linear_constraint(model, row)
     terms = map(
-        (v,c)->MOI.ScalarAffineTerm{Float64}(c,v),
-        m.variable_references[colidx],
-        coefs
+        (variable, coefficient)->MOI.ScalarAffineTerm{Float64}(coefficient, variable),
+        model.variable_references[columns],
+        coefficients
     )
-    Linear(terms, -m.constraint_constant[m[c]])
+    Linear(terms, -model.constraint_constant[row])
 end
 
 #=
     Scalar Coefficient Change of Linear Constraint
 =#
 
-function MOI.modify!(m::LinQuadOptimizer, c::LCI{S}, chg::MOI.ScalarCoefficientChange{Float64}) where S <: LinSets
-    col = m.variable_mapping[chg.variable]
-    change_matrix_coefficient!(m, m[c], col, chg.new_coefficient)
+function MOI.modify!(model::LinQuadOptimizer, index::LCI{S}, change::MOI.ScalarCoefficientChange{Float64}) where S <: LinSets
+    row = model[index]
+    column = get_column(model, change.variable)
+    change_matrix_coefficient!(model, row, column, change.new_coefficient)
 end
 
 #=
     Change RHS of linear constraint without modifying sense
 =#
 MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{S}}) where S <: LinSets = true
-function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{S}, newset::S) where S <: Union{LE, GE, EQ}
-    change_rhs_coefficient!(m, m[c], MOIU.getconstant(newset))
+function MOI.set!(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::LCI{S},
+                  new_set::S) where S <: Union{LE, GE, EQ}
+    change_rhs_coefficient!(model, model[index], MOIU.getconstant(new_set))
 end
 
-function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::LCI{IV}, set::IV)
-    modify_ranged_constraints!(m, [m[c]], [set.lower], [set.upper])
+function MOI.set!(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::LCI{IV},
+                  new_set::IV)
+    modify_ranged_constraints!(model, [model[index]], [new_set.lower], [new_set.upper])
 end
 
 #=
     Delete a linear constraint
 =#
 
-function MOI.delete!(m::LinQuadOptimizer, c::LCI{<: LinSets})
-    __assert_valid__(m, c)
-    delete_constraint_name(m, c)
-    dict = constrdict(m, c)
-    row = dict[c]
-    delete_linear_constraints!(m, row, row)
-    deleteat!(m.constraint_primal_solution, row)
-    deleteat!(m.constraint_dual_solution, row)
-    deleteat!(m.constraint_constant, row)
+function MOI.delete!(model::LinQuadOptimizer, index::LCI{<: LinSets})
+    __assert_valid__(model, index)
+    delete_constraint_name(model, index)
+    dict = constrdict(model, index)
+    row = dict[index]
+    delete_linear_constraints!(model, row, row)
+    deleteat!(model.constraint_primal_solution, row)
+    deleteat!(model.constraint_dual_solution, row)
+    deleteat!(model.constraint_constant, row)
     # shift all the other references
-    shift_references_after_delete_affine!(m, row)
-    delete!(dict, c)
+    shift_references_after_delete_affine!(model, row)
+    delete!(dict, index)
 end
 
 #=
     Transform scalar constraint
 =#
 
-function MOI.transform!(m::LinQuadOptimizer, ref::LCI{S1}, newset::S2) where S1 where S2 <: Union{LE, GE, EQ}
-    dict = constrdict(m, ref)
-    row = dict[ref]
-    change_linear_constraint_sense!(m, [row], [backend_type(m,newset)])
-    m.last_constraint_reference += 1
-    ref2 = LCI{S2}(m.last_constraint_reference)
-    dict2 = constrdict(m, ref2)
-    dict2[ref2] = row
-    delete!(dict, ref)
-    delete_constraint_name(m, ref)
-    return ref2
+function MOI.transform!(model::LinQuadOptimizer, index::LCI{S1}, new_set::S2) where S1 where S2 <: Union{LE, GE, EQ}
+    __assert_supported_constraint__(model, Linear, S2)
+    dict = constrdict(model, index)
+    row = dict[index]
+    change_linear_constraint_sense!(model, [row], [backend_type(model, new_set)])
+    model.last_constraint_reference += 1
+    index_2 = LCI{S2}(model.last_constraint_reference)
+    dict_2 = constrdict(model, index_2)
+    dict_2[index_2] = row
+    delete!(dict, index)
+    delete_constraint_name(model, index)
+    return index_2
 end
