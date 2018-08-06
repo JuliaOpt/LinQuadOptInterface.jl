@@ -1,33 +1,31 @@
 #=
     Vector valued constraints
 =#
-constrdict(m::LinQuadOptimizer, ::VLCI{MOI.Nonnegatives}) = cmap(m).nonnegatives
-constrdict(m::LinQuadOptimizer, ::VLCI{MOI.Nonpositives}) = cmap(m).nonpositives
-constrdict(m::LinQuadOptimizer, ::VLCI{MOI.Zeros})        = cmap(m).zeros
+constrdict(model::LinQuadOptimizer, ::VLCI{MOI.Nonnegatives}) = cmap(model).nonnegatives
+constrdict(model::LinQuadOptimizer, ::VLCI{MOI.Nonpositives}) = cmap(model).nonpositives
+constrdict(model::LinQuadOptimizer, ::VLCI{MOI.Zeros})        = cmap(model).zeros
 
-function MOI.addconstraint!(m::LinQuadOptimizer, func::VecLin, set::S) where S <: VecLinSets
+function MOI.addconstraint!(model::LinQuadOptimizer, func::VecLin, set::S) where S <: VecLinSets
+    __assert_supported_constraint__(model, VecLin, S)
     @assert MOI.dimension(set) == length(func.constants)
-
-    nrows = get_number_linear_constraints(m)
-    addlinearconstraint!(m, func, backend_type(m,set))
-    nrows2 = get_number_linear_constraints(m)
-
-    m.last_constraint_reference += 1
-    ref = VLCI{S}(m.last_constraint_reference)
-
-    dict = constrdict(m, ref)
-    dict[ref] = collect(nrows+1:nrows2)
+    nrows = get_number_linear_constraints(model)
+    add_linear_constraint(model, func, backend_type(model, set))
+    nrows2 = get_number_linear_constraints(model)
+    model.last_constraint_reference += 1
+    index = VLCI{S}(model.last_constraint_reference)
+    dict = constrdict(model, index)
+    dict[index] = collect(nrows+1:nrows2)
     for i in 1:MOI.dimension(set)
-        push!(m.constraint_primal_solution, NaN)
-        push!(m.constraint_dual_solution, NaN)
-        push!(m.constraint_constant, func.constants[i])
+        push!(model.constraint_primal_solution, NaN)
+        push!(model.constraint_dual_solution, NaN)
+        push!(model.constraint_constant, func.constants[i])
     end
-    ref
+    return index
 end
 
-function addlinearconstraint!(m::LinQuadOptimizer, func::VecLin, sense::Cchar)
+function add_linear_constraint(model::LinQuadOptimizer, func::VecLin, sense::Cchar)
     outputindex   = [term.output_index for term in func.terms]
-    columns       = [getcol(m, term.scalar_term.variable_index) for term in func.terms]
+    columns       = [get_column(model, term.scalar_term.variable_index) for term in func.terms]
     coefficients  = [term.scalar_term.coefficient for term in func.terms]
     # sort into row order
     pidx = sortperm(outputindex)
@@ -47,42 +45,43 @@ function addlinearconstraint!(m::LinQuadOptimizer, func::VecLin, sense::Cchar)
         end
     end
     A = CSRMatrix{Float64}(row_pointers, columns, coefficients)
-    add_linear_constraints!(m, A, fill(sense, length(func.constants)), -func.constants)
+    add_linear_constraints!(model, A, fill(sense, length(func.constants)), -func.constants)
 end
 
-MOI.canmodify(m::LinQuadOptimizer, ::Type{VLCI{S}}, ::Type{MOI.VectorConstantChange{Float64}}) where S <: VecLinSets = true
-function MOI.modify!(m::LinQuadOptimizer, ref::VLCI{<: VecLinSets}, chg::MOI.VectorConstantChange{Float64})
-    @assert length(chg.new_constant) == length(m[ref])
-    for (r, v) in zip(m[ref], chg.new_constant)
-        change_rhs_coefficient!(m, r, -v)
-        m.constraint_constant[r] = v
+function MOI.modify!(model::LinQuadOptimizer, index::VLCI{<: VecLinSets},
+                     change::MOI.VectorConstantChange{Float64})
+    rows = model[index]
+    @assert length(change.new_constant) == length(rows)
+    for (row, constant) in zip(rows, change.new_constant)
+        change_rhs_coefficient!(model, row, -constant)
+        model.constraint_constant[row] = constant
     end
 end
 
-MOI.canmodify(m::LinQuadOptimizer, ::Type{VLCI{S}}, ::Type{MOI.MultirowChange{Float64}}) where S <: VecLinSets = true
-function MOI.modify!(m::LinQuadOptimizer, ref::VLCI{<: VecLinSets}, chg::MOI.MultirowChange{Float64})
-    col = m.variable_mapping[chg.variable]
-    for (row, coef) in chg.new_coefficients
-        change_matrix_coefficient!(m, row, col, coef)
+function MOI.modify!(model::LinQuadOptimizer, index::VLCI{<: VecLinSets},
+                     change::MOI.MultirowChange{Float64})
+    column = get_column(model, change.variable)
+    for (row, coef) in change.new_coefficients
+        change_matrix_coefficient!(model, row, column, coef)
     end
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::VLCI{<:VecLinSets}) = MOI.isvalid(m, c)
-function MOI.delete!(m::LinQuadOptimizer, c::VLCI{<:VecLinSets})
-    deleteconstraintname!(m, c)
-    dict = constrdict(m, c)
+function MOI.delete!(model::LinQuadOptimizer, index::VLCI{<:VecLinSets})
+    __assert_valid__(model, index)
+    delete_constraint_name(model, index)
+    dict = constrdict(model, index)
     # we delete rows from largest to smallest here so that we don't have
     # to worry about updating references in a greater numbered row, only to
     # modify it later.
-    for row in sort(dict[c], rev=true)
-        delete_linear_constraints!(m, row, row)
-        deleteat!(m.constraint_primal_solution, row)
-        deleteat!(m.constraint_dual_solution, row)
-        deleteat!(m.constraint_constant, row)
+    for row in sort(dict[index], rev=true)
+        delete_linear_constraints!(model, row, row)
+        deleteat!(model.constraint_primal_solution, row)
+        deleteat!(model.constraint_dual_solution, row)
+        deleteat!(model.constraint_constant, row)
         # shift all the other references
-        shift_references_after_delete_affine!(m, row)
+        shift_references_after_delete_affine!(model, row)
     end
-    delete!(dict, c)
+    delete!(dict, index)
 end
 
 
@@ -90,9 +89,9 @@ end
     Constraint set of Linear function
 =#
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{VLCI{S}}) where S <: VecLinSets = true
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::VLCI{S}) where S <: VecLinSets
-    constraint_indices = m[c]
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{VLCI{S}}) where S <: VecLinSets = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::VLCI{S}) where S <: VecLinSets
+    constraint_indices = model[index]
     S(length(constraint_indices))
 end
 
@@ -100,22 +99,20 @@ end
     Constraint function of Linear function
 =#
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{VLCI{S}}) where S <: VecLinSets = true
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VLCI{<: VecLinSets})
-    ctrs = m[c]
-    n = length(ctrs)
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{VLCI{S}}) where S <: VecLinSets = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::VLCI{<: VecLinSets})
+    rows = model[index]
     constants = Float64[]
     terms = MOI.VectorAffineTerm{Float64}[]
-    for i in 1:n
-        rhs = get_rhs(m, ctrs[i])
+    for (i, row) in enumerate(rows)
+        rhs = get_rhs(model, row)
         push!(constants, -rhs)
-        # TODO more efficiently
-        colidx, coefs = get_linear_constraint(m, ctrs[i])
-        for (column, coefficient) in zip(colidx, coefs)
+        columns, coefficients = get_linear_constraint(model, row)
+        for (column, coefficient) in zip(columns, coefficients)
             push!(terms, MOI.VectorAffineTerm{Float64}(
                     i,
                     MOI.ScalarAffineTerm{Float64}(
-                        coefficient, m.variable_references[column]
+                        coefficient, model.variable_references[column]
                     )
                 )
             )

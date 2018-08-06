@@ -10,119 +10,146 @@
         SingleVariable -in- Semiinteger
         SingleVariable -in- Semicontinuous
 =#
-constrdict(m::LinQuadOptimizer, ::SVCI{LE}) = cmap(m).upper_bound
-constrdict(m::LinQuadOptimizer, ::SVCI{GE}) = cmap(m).lower_bound
-constrdict(m::LinQuadOptimizer, ::SVCI{EQ}) = cmap(m).fixed_bound
-constrdict(m::LinQuadOptimizer, ::SVCI{IV}) = cmap(m).interval_bound
+constrdict(model::LinQuadOptimizer, ::SVCI{LE}) = cmap(model).upper_bound
+constrdict(model::LinQuadOptimizer, ::SVCI{GE}) = cmap(model).lower_bound
+constrdict(model::LinQuadOptimizer, ::SVCI{EQ}) = cmap(model).fixed_bound
+constrdict(model::LinQuadOptimizer, ::SVCI{IV}) = cmap(model).interval_bound
 
-constrdict(m::LinQuadOptimizer, ::SVCI{MOI.ZeroOne}) = cmap(m).binary
-constrdict(m::LinQuadOptimizer, ::SVCI{MOI.Integer}) = cmap(m).integer
+constrdict(model::LinQuadOptimizer, ::SVCI{MOI.ZeroOne}) = cmap(model).binary
+constrdict(model::LinQuadOptimizer, ::SVCI{MOI.Integer}) = cmap(model).integer
 
-constrdict(m::LinQuadOptimizer, ::SVCI{MOI.Semicontinuous{Float64}}) = cmap(m).semicontinuous
-constrdict(m::LinQuadOptimizer, ::SVCI{MOI.Semiinteger{Float64}}) = cmap(m).semiinteger
+constrdict(model::LinQuadOptimizer, ::SVCI{MOI.Semicontinuous{Float64}}) = cmap(model).semicontinuous
+constrdict(model::LinQuadOptimizer, ::SVCI{MOI.Semiinteger{Float64}}) = cmap(model).semiinteger
 
-function setvariablebound!(m::LinQuadOptimizer, col::Int, bound::Float64, sense::Cchar)
-    change_variable_bounds!(m, [col], [bound], [sense])
+function set_variable_bound(model::LinQuadOptimizer, column::Int,
+                            bound::Float64, sense)
+    change_variable_bounds!(model, [column], [bound], [sense])
 end
 
-function setvariablebound!(m::LinQuadOptimizer, v::SinVar, set::LE)
-    setvariablebound!(m, getcol(m, v), set.upper, backend_type(m, Val{:Upperbound}()))
+function set_variable_bound(model::LinQuadOptimizer, v::SinVar, set::LE)
+    set_variable_bound(model, get_column(model, v), set.upper,
+                      backend_type(model, Val{:Upperbound}()))
 end
-function setvariablebound!(m::LinQuadOptimizer, v::SinVar, set::GE)
-    setvariablebound!(m, getcol(m, v), set.lower, backend_type(m, Val{:Lowerbound}()))
+function set_variable_bound(model::LinQuadOptimizer, v::SinVar, set::GE)
+    set_variable_bound(model, get_column(model, v), set.lower,
+                      backend_type(model, Val{:Lowerbound}()))
 end
-function setvariablebound!(m::LinQuadOptimizer, v::SinVar, set::EQ)
-    setvariablebound!(m, getcol(m, v), set.value, backend_type(m, Val{:Upperbound}()))
-    setvariablebound!(m, getcol(m, v), set.value, backend_type(m, Val{:Lowerbound}()))
+function set_variable_bound(model::LinQuadOptimizer, v::SinVar, set::EQ)
+    set_variable_bound(model, get_column(model, v), set.value,
+                      backend_type(model, Val{:Upperbound}()))
+    set_variable_bound(model, get_column(model, v), set.value,
+                      backend_type(model, Val{:Lowerbound}()))
 end
-function setvariablebound!(m::LinQuadOptimizer, v::SinVar, set::IV)
-    setvariablebound!(m, getcol(m, v), set.upper, backend_type(m, Val{:Upperbound}()))
-    setvariablebound!(m, getcol(m, v), set.lower, backend_type(m, Val{:Lowerbound}()))
+function set_variable_bound(model::LinQuadOptimizer, v::SinVar, set::IV)
+    set_variable_bound(model, get_column(model, v), set.upper,
+                      backend_type(model, Val{:Upperbound}()))
+    set_variable_bound(model, get_column(model, v), set.lower,
+                      backend_type(model, Val{:Lowerbound}()))
 end
 
-SVCI(v::SinVar, ::S) where S = SVCI{S}(v.variable.value)
+"""
+    has_value(dict::Dict{K, V}, value::V) where {K, V}
 
-function hasvalue(d::Dict, val)
-    for v in values(d)
-        if v == val
-            return true
+Return true if `dict` has a `key=>value` pair with `value`.
+"""
+function has_value(dict::Dict{K, V}, value::V) where {K, V}
+    return value in values(dict)
+end
+
+"""
+    __check_for_conflicting__(model::LinQuadOptimizer, variable::SinVar, set,
+                              conflicting_type::Type{<:AbstractSet})
+
+Throw an error if `variable` is already constrained to be in a set of type
+`conflicting_type`.
+"""
+function __check_for_conflicting__(model::LinQuadOptimizer, variable::SinVar, set,
+                                   conflict_type::Type{<:MOI.AbstractSet})
+    if has_value(constrdict(model, SVCI{conflict_type}(0)), variable.variable)
+        error("Cannot add constraint $(variable)-in-$(set) as it is already " *
+              "constrained by a set of type $(conflict_type).")
+    end
+end
+
+function __check_for_conflicting__(model::LinQuadOptimizer, variable::SinVar, set,
+                                   conflict_type::Type{MOI.ZeroOne})
+    for (index, lower, upper) in values(constrdict(model, SVCI{conflict_type}(0)))
+        if index == variable.variable
+            error("Cannot add constraint $(variable)-in-$(set) as it is already " *
+                  "constrained by a set of type $(conflict_type).")
         end
     end
-    return false
 end
 
-function checkexisting(m::LinQuadOptimizer, v::SinVar, set::S) where S
-    ref = SVCI(v, set)
-    if hasvalue(constrdict(m, ref), v.variable)
-        error("Adding the same constraint type: $(S) is not allowed for SingleVariable function")
+
+"""
+    __check_for_conflicting__(model::LinQuadOptimizer, variable::SinVar, set,
+                              conflicting_types::AbstractSet...)
+
+Throw an error if `variable` is constrained to be in a set whose type is one of
+`conflicting_types`.
+"""
+function __check_for_conflicting__(model::LinQuadOptimizer, variable::SinVar, set,
+                                   conflicting_types...)
+    for conflict_type in conflicting_types
+        __check_for_conflicting__(model, variable, set, conflict_type)
     end
 end
 
-function checkconflicting(m::LinQuadOptimizer, v::SinVar, set_to_add::S0, set_to_test::S) where S where S0
-    ref = SVCI(v, set_to_test)
-    if hasvalue(constrdict(m, ref), v.variable)
-        error("Adding the same constraint type: $(S0) is not allowed for SingleVariable function because there is constraint of type $(S) tied to the respective variable")
-    end
+function MOI.addconstraint!(model::LinQuadOptimizer, variable::SinVar, set::S) where S <: LinSets
+    __assert_supported_constraint__(model, SinVar, S)
+    __check_for_conflicting__(model, variable, set,
+        S, MOI.Semicontinuous{Float64}, MOI.Semiinteger{Float64}, MOI.ZeroOne)
+    set_variable_bound(model, variable, set)
+    model.last_constraint_reference += 1
+    index = SVCI{S}(model.last_constraint_reference)
+    dict = constrdict(model, index)
+    dict[index] = variable.variable
+    return index
 end
 
-# add constraint
-function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: LinSets
-    checkexisting(m, v, set)
-    checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
-    checkconflicting(m, v, set, MOI.Semiinteger(0.0, 0.0))
-    checkconflicting(m, v, set, MOI.ZeroOne())
-    setvariablebound!(m, v, set)
-    m.last_constraint_reference += 1
-    ref = SVCI{S}(m.last_constraint_reference)
-    # ref = SVCI(v, set)
-    dict = constrdict(m, ref)
-    dict[ref] = v.variable
-    ref
-end
-
-# delete constraint
-MOI.candelete(m::LinQuadOptimizer, c::SVCI{S}) where S <: LinSets = MOI.isvalid(m, c)
-function MOI.delete!(m::LinQuadOptimizer, c::SVCI{S}) where S <: LinSets
-    deleteconstraintname!(m, c)
-    dict = constrdict(m, c)
-    vref = dict[c]
-    setvariablebound!(m, SinVar(vref), IV(-Inf, Inf))
-    delete!(dict, c)
+function MOI.delete!(model::LinQuadOptimizer, index::SVCI{S}) where S <: LinSets
+    __assert_valid__(model, index)
+    delete_constraint_name(model, index)
+    dict = constrdict(model, index)
+    variable_index = dict[index]
+    set_variable_bound(model, SinVar(variable_index), IV(-Inf, Inf))
+    delete!(dict, index)
 end
 
 # constraint set
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S <: LinSets = true
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{LE})
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S <: LinSets = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::SVCI{LE})
     MOI.LessThan{Float64}(
-        get_variable_upperbound(m, getcol(m, m[c]))
+        get_variable_upperbound(model, get_column(model, model[index]))
     )
 end
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{GE})
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::SVCI{GE})
     MOI.GreaterThan{Float64}(
-        get_variable_lowerbound(m, getcol(m, m[c]))
+        get_variable_lowerbound(model, get_column(model, model[index]))
     )
 end
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{EQ})
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::SVCI{EQ})
     MOI.EqualTo{Float64}(
-        get_variable_lowerbound(m, getcol(m, m[c]))
+        get_variable_lowerbound(model, get_column(model, model[index]))
     )
 end
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{IV})
-    lb = get_variable_lowerbound(m, getcol(m, m[c]))
-    ub = get_variable_upperbound(m, getcol(m, m[c]))
-    return MOI.Interval{Float64}(lb, ub)
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::SVCI{IV})
+    column = get_column(model, model[index])
+    return MOI.Interval{Float64}(get_variable_lowerbound(model, column),
+                                 get_variable_upperbound(model, column))
 end
 
 # constraint function
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{S}}) where S <: LinSets = true
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{<: LinSets})
-    return SinVar(m[c])
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{S}}) where S <: LinSets = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::SVCI{<: LinSets})
+    return SinVar(model[index])
 end
 
 # modify
-MOI.canset(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S <: LinSets = true
-function MOI.set!(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{S}, newset::S) where S <: LinSets
-    setvariablebound!(m, SinVar(m[c]), newset)
+MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S<:LinSets = true
+function MOI.set!(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::SVCI{S}, newset::S) where S <: LinSets
+    set_variable_bound(model, SinVar(model[index]), newset)
 end
 
 #=
@@ -134,129 +161,146 @@ we can revert to the old bounds
 
 Xpress is worse, once binary, the bounds are changed independently of what the user does
 =#
-function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.ZeroOne)
-    checkexisting(m, v, set)
-    checkconflicting(m, v, set, MOI.Integer())
-    checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
-    checkconflicting(m, v, set, MOI.Semiinteger(0.0, 0.0))
-    m.last_constraint_reference += 1
-    ref = SVCI{MOI.ZeroOne}(m.last_constraint_reference)
-    # ref = SVCI(v, set)
-    dict = constrdict(m, ref)
-    ub = get_variable_upperbound(m, getcol(m, v))
-    lb = get_variable_lowerbound(m, getcol(m, v))
-    dict[ref] = (v.variable, lb, ub)
-    change_variable_types!(m, [getcol(m, v)], [backend_type(m, set)])
-    setvariablebound!(m, getcol(m, v), 1.0, backend_type(m, Val{:Upperbound}()))
-    setvariablebound!(m, getcol(m, v), 0.0, backend_type(m, Val{:Lowerbound}()))
-    make_problem_type_integer(m)
-    ref
+function MOI.addconstraint!(model::LinQuadOptimizer, variable::SinVar, set::MOI.ZeroOne)
+    __assert_supported_constraint__(model, SinVar, MOI.ZeroOne)
+    __check_for_conflicting__(model, variable, set, MOI.ZeroOne, MOI.Integer,
+        MOI.Semicontinuous{Float64}, MOI.Semiinteger{Float64})
+    model.last_constraint_reference += 1
+    index = SVCI{MOI.ZeroOne}(model.last_constraint_reference)
+    column = get_column(model, variable)
+    dict = constrdict(model, index)
+    dict[index] = (variable.variable, get_variable_lowerbound(model, column),
+                    get_variable_upperbound(model, column))
+    change_variable_types!(model, [column], [backend_type(model, set)])
+    set_variable_bound(model, column, 1.0,
+                       backend_type(model, Val{:Upperbound}()))
+    set_variable_bound(model, column, 0.0,
+                       backend_type(model, Val{:Lowerbound}()))
+    make_problem_type_integer(model)
+    return index
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::SVCI{MOI.ZeroOne}) = MOI.isvalid(m, c)
-function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.ZeroOne})
-    deleteconstraintname!(m, c)
-    dict = constrdict(m, c)
-    (v, lb, ub) = dict[c]
-    change_variable_types!(m, [getcol(m, v)], [backend_type(m, Val{:Continuous}())])
-    setvariablebound!(m, getcol(m, v), ub, backend_type(m, Val{:Upperbound}()))
-    setvariablebound!(m, getcol(m, v), lb, backend_type(m, Val{:Lowerbound}()))
-    delete!(dict, c)
-    if !hasinteger(m)
-        make_problem_type_continuous(m)
+function MOI.delete!(model::LinQuadOptimizer, index::SVCI{MOI.ZeroOne})
+    __assert_valid__(model, index)
+    delete_constraint_name(model, index)
+    dict = constrdict(model, index)
+    (variable, lower, upper) = dict[index]
+    column = get_column(model, variable)
+    change_variable_types!(model, [column],
+                           [backend_type(model, Val{:Continuous}())])
+    set_variable_bound(model, column, upper,
+                       backend_type(model, Val{:Upperbound}()))
+    set_variable_bound(model, column, lower,
+                       backend_type(model, Val{:Lowerbound}()))
+    delete!(dict, index)
+    if !has_integer(model)
+        make_problem_type_continuous(model)
     end
 end
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{MOI.ZeroOne}}) = true
-MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{MOI.ZeroOne}) = MOI.ZeroOne()
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{MOI.ZeroOne}}) = true
+function MOI.get(::LinQuadOptimizer, ::MOI.ConstraintSet, ::SVCI{MOI.ZeroOne})
+    return MOI.ZeroOne()
+end
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{MOI.ZeroOne}}) = true
-MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.ZeroOne}) = SinVar(m[c][1])
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{MOI.ZeroOne}}) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::SVCI{MOI.ZeroOne})
+    return SinVar(model[index][1])
+end
 
 #=
     Integer constraints
 =#
 
-function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::MOI.Integer)
-    checkexisting(m, v, set)
-    checkconflicting(m, v, set, MOI.ZeroOne())
-    checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
-    checkconflicting(m, v, set, MOI.Semiinteger(0.0, 0.0))
-    change_variable_types!(m, [getcol(m, v)], [backend_type(m, set)])
-    m.last_constraint_reference += 1
-    ref = SVCI{MOI.Integer}(m.last_constraint_reference)
-    # ref = SVCI(v, set)
-    dict = constrdict(m, ref)
-    dict[ref] = v.variable
-    make_problem_type_integer(m)
-    ref
+function MOI.addconstraint!(model::LinQuadOptimizer, variable::SinVar, set::MOI.Integer)
+    __assert_supported_constraint__(model, SinVar, MOI.Integer)
+    __check_for_conflicting__(model, variable, set, MOI.ZeroOne,
+        MOI.Semicontinuous{Float64}, MOI.Semiinteger{Float64})
+    change_variable_types!(model, [get_column(model, variable)],
+                           [backend_type(model, set)])
+    model.last_constraint_reference += 1
+    index = SVCI{MOI.Integer}(model.last_constraint_reference)
+    dict = constrdict(model, index)
+    dict[index] = variable.variable
+    make_problem_type_integer(model)
+    return index
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::SVCI{MOI.Integer}) = MOI.isvalid(m, c)
-function MOI.delete!(m::LinQuadOptimizer, c::SVCI{MOI.Integer})
-    deleteconstraintname!(m, c)
-    dict = constrdict(m, c)
-    v = dict[c]
-    change_variable_types!(m, [getcol(m, v)], [backend_type(m, Val{:Continuous}())])
-    delete!(dict, c)
-    if !hasinteger(m)
-        make_problem_type_continuous(m)
+function MOI.delete!(model::LinQuadOptimizer, index::SVCI{MOI.Integer})
+    __assert_valid__(model, index)
+    delete_constraint_name(model, index)
+    dict = constrdict(model, index)
+    variable = dict[index]
+    change_variable_types!(model, [get_column(model, variable)],
+                           [backend_type(model, Val{:Continuous}())])
+    delete!(dict, index)
+    if !has_integer(model)
+        make_problem_type_continuous(model)
     end
 end
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{MOI.Integer}}) = true
-MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{MOI.Integer}) = MOI.Integer()
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{MOI.Integer}}) = true
+function MOI.get(::LinQuadOptimizer, ::MOI.ConstraintSet, ::SVCI{MOI.Integer})
+    return MOI.Integer()
+end
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{MOI.Integer}}) = true
-MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{MOI.Integer}) = SinVar(m[c])
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{MOI.Integer}}) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction,
+                 index::SVCI{MOI.Integer})
+    return SinVar(model[index])
+end
 
 #=
     Semicontinuous / Semiinteger constraints
 =#
 const SEMI_TYPES = Union{MOI.Semicontinuous{Float64}, MOI.Semiinteger{Float64}}
-function MOI.addconstraint!(m::LinQuadOptimizer, v::SinVar, set::S) where S <: SEMI_TYPES
-    checkexisting(m, v, set)
-    checkconflicting(m, v, set, MOI.ZeroOne())
-    checkconflicting(m, v, set, MOI.Integer())
+function MOI.addconstraint!(model::LinQuadOptimizer, variable::SinVar, set::S) where S <: SEMI_TYPES
+    __assert_supported_constraint__(model, SinVar, S)
+    __check_for_conflicting__(model, variable, set, S, MOI.ZeroOne, MOI.Integer)
     if S == MOI.Semicontinuous{Float64}
-        checkconflicting(m, v, set, MOI.Semiinteger(0.0, 0.0))
+        __check_for_conflicting__(model, variable, set, MOI.Semiinteger{Float64})
     else
-        checkconflicting(m, v, set, MOI.Semicontinuous(0.0, 0.0))
+        __check_for_conflicting__(model, variable, set, MOI.Semicontinuous{Float64})
     end
-    change_variable_types!(m, [getcol(m, v)], [backend_type(m, set)])
-    setvariablebound!(m, getcol(m, v), set.upper, backend_type(m, Val{:Upperbound}()))
-    setvariablebound!(m, getcol(m, v), set.lower, backend_type(m, Val{:Lowerbound}()))
-    m.last_constraint_reference += 1
-    ref = SVCI{S}(m.last_constraint_reference)
-    # ref = SVCI(v, set)
-    dict = constrdict(m, ref)
-    dict[ref] = v.variable
-    make_problem_type_integer(m)
-    ref
+    column = get_column(model, variable)
+    change_variable_types!(model, [column], [backend_type(model, set)])
+    set_variable_bound(model, column, set.upper,
+                       backend_type(model, Val{:Upperbound}()))
+    set_variable_bound(model, column, set.lower,
+                       backend_type(model, Val{:Lowerbound}()))
+    model.last_constraint_reference += 1
+    index = SVCI{S}(model.last_constraint_reference)
+    dict = constrdict(model, index)
+    dict[index] = variable.variable
+    make_problem_type_integer(model)
+    return index
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::SVCI{<:SEMI_TYPES}) = MOI.isvalid(m, c)
-function MOI.delete!(m::LinQuadOptimizer, c::SVCI{<:SEMI_TYPES})
-    deleteconstraintname!(m, c)
-    dict = constrdict(m, c)
-    v = dict[c]
-    change_variable_types!(m, [getcol(m, v)], [backend_type(m, Val{:Continuous}())])
-    setvariablebound!(m, getcol(m, v), Inf, backend_type(m, Val{:Upperbound}()))
-    setvariablebound!(m, getcol(m, v), -Inf, backend_type(m, Val{:Lowerbound}()))
-    delete!(dict, c)
-    if !hasinteger(m)
-        make_problem_type_continuous(m)
+function MOI.delete!(model::LinQuadOptimizer, index::SVCI{<:SEMI_TYPES})
+    __assert_valid__(model, index)
+    delete_constraint_name(model, index)
+    dict = constrdict(model, index)
+    column = get_column(model, dict[index])
+    change_variable_types!(model, [column], [backend_type(model, Val{:Continuous}())])
+    set_variable_bound(model, column, Inf,
+                       backend_type(model, Val{:Upperbound}()))
+    set_variable_bound(model, column, -Inf,
+                       backend_type(model, Val{:Lowerbound}()))
+    delete!(dict, index)
+    if !has_integer(model)
+        make_problem_type_continuous(model)
     end
 end
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S <:SEMI_TYPES = true
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::SVCI{S}) where S <: SEMI_TYPES
-    dict = constrdict(m, c)
-    v = dict[c]
-    lb = get_variable_lowerbound(m, getcol(m, v))
-    ub = get_variable_upperbound(m, getcol(m, v))
-    return S(lb, ub)
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S <:SEMI_TYPES = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::SVCI{S}) where S <: SEMI_TYPES
+    dict = constrdict(model, index)
+    column = get_column(model, dict[index])
+    return S(get_variable_lowerbound(model, column),
+             get_variable_upperbound(model, column))
 end
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{S}}) where S <:SEMI_TYPES = true
-MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::SVCI{<:SEMI_TYPES}) = SinVar(m[c])
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{S}}) where S <:SEMI_TYPES = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::SVCI{<:SEMI_TYPES})
+    return SinVar(model[index])
+end

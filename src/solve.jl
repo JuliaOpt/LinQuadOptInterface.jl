@@ -1,73 +1,66 @@
-function hasquadratic(m::LinQuadOptimizer)
-    (m.obj_type == QuadraticObjective) || (length(cmap(m).q_less_than) + length(cmap(m).q_greater_than) + length(cmap(m).q_equal_to) > 0)
+function has_quadratic(model::LinQuadOptimizer)
+    return model.obj_type == QuadraticObjective ||
+        length(cmap(model).q_less_than) > 0 ||
+        length(cmap(model).q_greater_than) > 0 ||
+        length(cmap(model).q_equal_to) > 0
 end
 
 #=
     Optimize the model
 =#
 
-function MOI.optimize!(m::LinQuadOptimizer)
+function MOI.optimize!(model::LinQuadOptimizer)
     # reset storage
-    fill!(m.variable_primal_solution, NaN)
-    fill!(m.variable_dual_solution, NaN)
-    fill!(m.constraint_primal_solution, NaN)
-    fill!(m.constraint_dual_solution, NaN)
-    m.primal_status = MOI.UnknownResultStatus
-    m.dual_status   = MOI.UnknownResultStatus
-    m.primal_result_count = 0
-    m.dual_result_count = 0
+    fill!(model.variable_primal_solution, NaN)
+    fill!(model.variable_dual_solution, NaN)
+    fill!(model.constraint_primal_solution, NaN)
+    fill!(model.constraint_dual_solution, NaN)
+    model.primal_status = MOI.UnknownResultStatus
+    model.dual_status   = MOI.UnknownResultStatus
+    model.primal_result_count = 0
+    model.dual_result_count = 0
 
-    t = time()
-    if hasinteger(m)
-        solve_mip_problem!(m)
-    elseif hasquadratic(m)
-        solve_quadratic_problem!(m)
+    start_time = time()
+    if has_integer(model)
+        solve_mip_problem!(model)
+    elseif has_quadratic(model)
+        solve_quadratic_problem!(model)
     else
-        solve_linear_problem!(m)
+        solve_linear_problem!(model)
     end
-    m.solvetime = time() - t
+    model.solvetime = time() - start_time
 
     # termination_status
-    m.termination_status = get_termination_status(m)
-    m.primal_status = get_primal_status(m)
-    m.dual_status = get_dual_status(m)
+    model.termination_status = get_termination_status(model)
+    model.primal_status = get_primal_status(model)
+    model.dual_status = get_dual_status(model)
 
-    if m.primal_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
-        # primal solution exists
-        get_variable_primal_solution!(m, m.variable_primal_solution)
-        get_linear_primal_solution!(m, m.constraint_primal_solution)
-        if hasquadratic(m)
-            get_quadratic_primal_solution!(m, m.qconstraint_primal_solution)
+    if model.primal_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
+        get_variable_primal_solution!(model, model.variable_primal_solution)
+        get_linear_primal_solution!(model, model.constraint_primal_solution)
+        if has_quadratic(model)
+            get_quadratic_primal_solution!(model, model.qconstraint_primal_solution)
         end
-        m.primal_result_count = 1
-        # CPLEX can return infeasible points
-    elseif m.primal_status == MOI.InfeasibilityCertificate
-        get_unbounded_ray!(m, m.variable_primal_solution)
-        m.primal_result_count = 1
+        model.primal_result_count = 1
+    elseif model.primal_status == MOI.InfeasibilityCertificate
+        get_unbounded_ray!(model, model.variable_primal_solution)
+        model.primal_result_count = 1
     end
-    if m.dual_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
-        # dual solution exists
-        get_variable_dual_solution!(m, m.variable_dual_solution)
-        get_linear_dual_solution!(m, m.constraint_dual_solution)
-        if hasquadratic(m)
-            get_quadratic_dual_solution!(m, m.qconstraint_dual_solution)
+    if model.dual_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
+        get_variable_dual_solution!(model, model.variable_dual_solution)
+        get_linear_dual_solution!(model, model.constraint_dual_solution)
+        if has_quadratic(model)
+            get_quadratic_dual_solution!(model, model.qconstraint_dual_solution)
         end
-        m.dual_result_count = 1
-        # dual solution may not be feasible
-    elseif m.dual_status == MOI.InfeasibilityCertificate
-        get_farkas_dual!(m, m.constraint_dual_solution)
-        m.dual_result_count = 1
+        model.dual_result_count = 1
+    elseif model.dual_status == MOI.InfeasibilityCertificate
+        get_farkas_dual!(model, model.constraint_dual_solution)
+        model.dual_result_count = 1
     end
 
-    #=
-        CPLEX has the dual convention that the sign of the dual depends on the
-        optimization sense. This isn't the same as the MOI convention so we need
-        to correct that.
-    =#
-    # TODO
-    if MOI.get(m, MOI.ObjectiveSense()) == MOI.MaxSense
-        m.constraint_dual_solution *= -1
-        m.variable_dual_solution *= -1
+    if MOI.get(model, MOI.ObjectiveSense()) == MOI.MaxSense
+        model.constraint_dual_solution *= -1
+        model.variable_dual_solution *= -1
     end
 end
 
@@ -75,221 +68,243 @@ end
 #=
     Result Count
 =#
-function MOI.get(m::LinQuadOptimizer, ::MOI.ResultCount)
-    max(m.primal_result_count, m.dual_result_count)
+MOI.canget(::LinQuadOptimizer, ::MOI.ResultCount) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ResultCount)
+    return max(model.primal_result_count, model.dual_result_count)
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ResultCount) = true
 
 #=
     Termination status
 =#
-
-function MOI.get(m::LinQuadOptimizer, ::MOI.TerminationStatus)
-    m.termination_status
+MOI.canget(::LinQuadOptimizer, ::MOI.TerminationStatus) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.TerminationStatus)
+    return model.termination_status
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.TerminationStatus) = true
 
 #=
     Primal status
 =#
-
-function MOI.get(m::LinQuadOptimizer, p::MOI.PrimalStatus)
-    m.primal_status
+function MOI.canget(model::LinQuadOptimizer,  status::MOI.PrimalStatus)
+    if status.N != 1
+        error("Multiple primal statuses are not supported.")
+    end
+    return model.primal_result_count >= status.N
 end
-function MOI.canget(m::LinQuadOptimizer, p::MOI.PrimalStatus)
-    m.primal_result_count >= p.N
+function MOI.get(model::LinQuadOptimizer, ::MOI.PrimalStatus)
+    return model.primal_status
 end
 
 #=
     Dual status
 =#
-
-function MOI.get(m::LinQuadOptimizer, d::MOI.DualStatus)
-    m.dual_status
+function MOI.canget(model::LinQuadOptimizer,  status::MOI.DualStatus)
+    if status.N != 1
+        error("Multiple dual statuses are not supported.")
+    end
+    return model.dual_result_count >= status.N
 end
-function MOI.canget(m::LinQuadOptimizer, d::MOI.DualStatus)
-    m.dual_result_count >= d.N
+function MOI.get(model::LinQuadOptimizer, ::MOI.DualStatus)
+    return model.dual_status
 end
 
 #=
     Objective Value
 =#
-
-
-function MOI.get(m::LinQuadOptimizer, attr::MOI.ObjectiveValue)
+function MOI.canget(::LinQuadOptimizer, attr::MOI.ObjectiveValue)
+    return attr.resultindex == 1
+end
+function MOI.get(model::LinQuadOptimizer, attr::MOI.ObjectiveValue)
     if attr.resultindex == 1
         # Note: we add m.objective_constant here to account for any constant
         # term which was not passed to the solver itself (and which therefore
         # would not be accounted for in `get_objective_value(m)`. We do *not*
-        # call `get_constant_objective(m)` because that would also pull
-        # any constants which were passed to the solver, resulting those
-        # constants being counted twice. This confusion will be alleviated
-        # when all LQOI solvers implement `get_constant_objective()` and
+        # call `get_constant_objective(m)` because that would also pull any
+        # constants which were passed to the solver, resulting those constants
+        # being counted twice. This confusion will be alleviated when all LQOI
+        # solvers implement `get_constant_objective()` and
         # `set_constant_objective!()` by actually passing the relevant constants
-        # to the solvers, at which point we can just get rid of m.objective_constant
-        # entirely.
-        get_objective_value(m) + m.objective_constant
+        # to the solvers, at which point we can just get rid of
+        # m.objective_constant entirely.
+        return get_objective_value(model) + model.objective_constant
     else
         error("Unable to access multiple objective values")
-    end
-end
-function MOI.canget(m::LinQuadOptimizer, attr::MOI.ObjectiveValue)
-    if attr.resultindex == 1
-        return true
-    else
-        return false
     end
 end
 
 #=
     Variable Primal solution
 =#
-
-
-function MOI.get(m::LinQuadOptimizer, ::MOI.VariablePrimal, v::VarInd)
-    col = m.variable_mapping[v]
-    return m.variable_primal_solution[col]
+MOI.canget(::LinQuadOptimizer, ::MOI.VariablePrimal, ::Type{VarInd}) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.VariablePrimal, index::VarInd)
+    column = get_column(model, index)
+    return model.variable_primal_solution[column]
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.VariablePrimal, ::Type{VarInd}) = true
 
-function MOI.get(m::LinQuadOptimizer, ::MOI.VariablePrimal, v::Vector{VarInd})
-    MOI.get.(Ref(m), MOI.VariablePrimal(), v)
+MOI.canget(::LinQuadOptimizer, ::MOI.VariablePrimal, ::Type{Vector{VarInd}}) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.VariablePrimal, indices::Vector{VarInd})
+    MOI.get.(Ref(model), Ref(MOI.VariablePrimal()), indices)
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.VariablePrimal, ::Type{Vector{VarInd}}) = true
 
 #=
     Variable Dual solution
 =#
-isbinding(set::LE, value::Float64) = isapprox(set.upper, value)
-isbinding(set::GE, value::Float64) = isapprox(set.lower, value)
-isbinding(set::EQ, value::Float64) = isapprox(set.value, value)
-isbinding(set::IV, value::Float64) = isapprox(set.lower, value) || isapprox(set.upper, value)
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::SVCI{<: LinSets})
-    vref = m[c]
-    col = m.variable_mapping[vref]
+"""
+    is_binding(set, value::Float64)
+
+Return true if `value` is an extreme point of the set `set`.
+"""
+is_binding(set::LE, value::Float64) = isapprox(set.upper, value)
+is_binding(set::GE, value::Float64) = isapprox(set.lower, value)
+is_binding(set::EQ, value::Float64) = isapprox(set.value, value)
+is_binding(set::IV, value::Float64) = isapprox(set.lower, value) || isapprox(set.upper, value)
+
+function MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{SVCI{S}}) where S <: LinSets
+    return true
+end
+
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintDual, index::SVCI{<: LinSets})
+    column = get_column(model, model[index])
     # the variable reduced cost is only the constriant dual if the bound is active.
-    set = MOI.get(m, MOI.ConstraintSet(), c)
-    solval = m.variable_primal_solution[col]
-    if isbinding(set, solval)
-        return m.variable_dual_solution[col]
+    set = MOI.get(model, MOI.ConstraintSet(), index)
+    primal_value = model.variable_primal_solution[column]
+    if is_binding(set, primal_value)
+        return model.variable_dual_solution[column]
     else
         return 0.0
     end
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{SVCI{S}}) where S <: LinSets = true
 
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::VVCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}})
-    rowrefs = m[c]
-    out = Float64[]
-    sizehint!(out, length(rowrefs))
-    for ref in rowrefs
-        push!(out, m.constraint_dual_solution[ref])
-    end
-    return out
+function MOI.canget(s::LinQuadOptimizer, ::MOI.ConstraintDual,
+                    ::Type{VVCI{S}}) where S <: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}
+    return true
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{VVCI{S}}) where S <: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives} = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintDual, index::VVCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}})
+    return [model.constraint_dual_solution[row] for row in model[index]]
+end
 
 #=
     Variable Bound Primal solution
 =#
 
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::SVCI{<: LinSets})
-    vref = m[c]
-    col = m.variable_mapping[vref]
-    return m.variable_primal_solution[col]
-end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{SVCI{S}}) where S <: LinSets = true
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{SVCI{S}}) where S <: LinSets = true
 
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::VVCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}})
-    rowrefs = m[c]
-    out = Float64[]
-    sizehint!(out, length(rowrefs))
-    for ref in rowrefs
-        push!(out, m.constraint_primal_solution[ref])
-    end
-    return out
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintPrimal, index::SVCI{<: LinSets})
+    column = get_column(model, model[index])
+    return model.variable_primal_solution[column]
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{VVCI{S}}) where S <: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives} = true
+
+function MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintPrimal,
+                   ::Type{VVCI{S}}) where S <: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}
+    return true
+end
+
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintPrimal,
+                 index::VVCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}})
+    return [model.constraint_primal_solution[row] for row in model[index]]
+end
 
 #=
     Constraint Primal solution
 =#
 
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::LCI{<: LinSets})
-    row = m[c]
-    return m.constraint_primal_solution[row]+m.constraint_constant[row]
-end
 MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{LCI{S}}) where S <: LinSets = true
 
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::QCI{<: LinSets})
-    row = m[c]
-    return m.qconstraint_primal_solution[row]#+m.qconstraint_constant[row]
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintPrimal, index::LCI{<: LinSets})
+    row = model[index]
+    return model.constraint_primal_solution[row] + model.constraint_constant[row]
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{QCI{S}}) where S <: LinSets = true
+
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{QCI{S}}) where S <: LinSets = true
+
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintPrimal, index::QCI{<: LinSets})
+    row = model[index]
+    return model.qconstraint_primal_solution[row]
+end
+
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{VLCI{S}}) where S <: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives} = true
 
 # vector valued constraint duals
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, c::VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}})
-    row = m[c]
-    return m.constraint_primal_solution[row]+m.constraint_constant[row]
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintPrimal, index::VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}})
+    row = model[index]
+    return model.constraint_primal_solution[row] + model.constraint_constant[row]
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintPrimal, ::Type{VLCI{S}}) where S <: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives} = true
 
 #=
     Constraint Dual solution
 =#
 
-_checkdualsense(::LCI{LE}, dual) = dual <= 0.0
-_checkdualsense(::LCI{GE}, dual) = dual >= 0.0
-_checkdualsense(::LCI{IV}, dual) = true
-_checkdualsense(::LCI{EQ}, dual) = true
+__assert_dual_sense__(::LCI{LE}, dual) = @assert dual <= 0.0
+__assert_dual_sense__(::LCI{GE}, dual) = @assert dual >= 0.0
+__assert_dual_sense__(::LCI{IV}, dual) = nothing
+__assert_dual_sense__(::LCI{EQ}, dual) = nothing
 
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::LCI{<: LinSets})
-    row = m[c]
-    dual = m.constraint_dual_solution[row]
-    @assert _checkdualsense(c, dual)
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{LCI{S}}) where S <: LinSets = true
+
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintDual, index::LCI{<: LinSets})
+    row = model[index]
+    dual = model.constraint_dual_solution[row]
+    __assert_dual_sense__(index, dual)
     return dual
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{LCI{S}}) where S <: LinSets = true
 
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::QCI{<: LinSets})
-    row = m[c]
-    return m.qconstraint_dual_solution[row]#+m.qconstraint_constant[row]
+MOI.canget(model::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{QCI{S}}) where S <: LinSets = true
+
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintDual, index::QCI{<: LinSets})
+    row = model[index]
+    return model.qconstraint_dual_solution[row]
 end
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{QCI{S}}) where S <: LinSets = true
 
 
 # vector valued constraint duals
-MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintDual, c::VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}}) = m.constraint_dual_solution[m[c]]
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{VLCI{S}}) where S <: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives} = true
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintDual, ::Type{VLCI{S}}) where S <: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives} = true
+
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintDual, index::VLCI{<: Union{MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives}})
+    rows = model[index]
+    return model.constraint_dual_solution[rows]
+end
 
 #=
     Solution Attributes
 =#
 
-# struct ObjectiveBound <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.ObjectiveBound) = get_objective_bound(m)
-MOI.canget(m::LinQuadOptimizer, ::MOI.ObjectiveBound) = true
+MOI.supports(::LinQuadOptimizer, ::MOI.ObjectiveBound) = true
+MOI.canget(::LinQuadOptimizer, ::MOI.ObjectiveBound) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ObjectiveBound)
+    return get_objective_bound(model)
+end
 
-# struct RelativeGap <: MOI.AbstractOptimizerAttribute  end
-MOI.get(m::LinQuadOptimizer, ::MOI.RelativeGap) = get_relative_mip_gap(m)
-MOI.canget(m::LinQuadOptimizer, ::MOI.RelativeGap) = true
+MOI.supports(::LinQuadOptimizer, ::MOI.RelativeGap) = true
+MOI.canget(::LinQuadOptimizer, ::MOI.RelativeGap) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.RelativeGap)
+    return get_relative_mip_gap(model)
+end
 
-# struct SolveTime <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.SolveTime) = m.solvetime
-MOI.canget(m::LinQuadOptimizer, ::MOI.SolveTime) = true
+MOI.supports(::LinQuadOptimizer, ::MOI.SolveTime) = true
+MOI.canget(::LinQuadOptimizer, ::MOI.SolveTime) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.SolveTime)
+    return model.solvetime
+end
 
-# struct SimplexIterations <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.SimplexIterations) = get_iteration_count(m)
-MOI.canget(m::LinQuadOptimizer, ::MOI.SimplexIterations) = true
+MOI.supports(::LinQuadOptimizer, ::MOI.SimplexIterations) = true
+MOI.canget(::LinQuadOptimizer, ::MOI.SimplexIterations) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.SimplexIterations)
+    return get_iteration_count(model)
+end
 
-# struct BarrierIterations <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.BarrierIterations) = get_barrier_iterations(m)
-MOI.canget(m::LinQuadOptimizer, ::MOI.BarrierIterations) = true
+MOI.supports(::LinQuadOptimizer, ::MOI.BarrierIterations) = true
+MOI.canget(::LinQuadOptimizer, ::MOI.BarrierIterations) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.BarrierIterations)
+    return get_barrier_iterations(model)
+end
 
-# struct NodeCount <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.NodeCount) = get_node_count(m)
-MOI.canget(m::LinQuadOptimizer, ::MOI.NodeCount) = true
+MOI.supports(::LinQuadOptimizer, ::MOI.NodeCount) = true
+MOI.canget(::LinQuadOptimizer, ::MOI.NodeCount) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.NodeCount)
+    return get_node_count(model)
+end
 
-# struct RawSolver <: MOI.AbstractOptimizerAttribute end
-MOI.get(m::LinQuadOptimizer, ::MOI.RawSolver) = m
-MOI.canget(m::LinQuadOptimizer, ::MOI.RawSolver) = true
+MOI.supports(::LinQuadOptimizer, ::MOI.RawSolver) = true
+MOI.canget(::LinQuadOptimizer, ::MOI.RawSolver) = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.RawSolver)
+    return model
+end

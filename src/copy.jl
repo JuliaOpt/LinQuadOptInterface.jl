@@ -1,14 +1,32 @@
-MOI.copy!(dest::LinQuadOptimizer, src::MOI.ModelLike; copynames=false)    = MOIU.defaultcopy!(dest, src, copynames)
-MOI.copy!(dest::MOI.ModelLike,    src::LinQuadOptimizer; copynames=false) = MOIU.defaultcopy!(dest, src, copynames)
-MOI.copy!(dest::LinQuadOptimizer, src::LinQuadOptimizer; copynames=false) = MOIU.defaultcopy!(dest, src, copynames)
+function MOI.copy!(dest::LinQuadOptimizer, src::MOI.ModelLike; copynames=false)
+    return MOIU.defaultcopy!(dest, src, copynames)
+end
+
+function MOI.copy!(dest::MOI.ModelLike,    src::LinQuadOptimizer; copynames=false)
+    return MOIU.defaultcopy!(dest, src, copynames)
+end
+
+function MOI.copy!(dest::LinQuadOptimizer, src::LinQuadOptimizer; copynames=false)
+    return MOIU.defaultcopy!(dest, src, copynames)
+end
 
 MOI.canget(::LinQuadOptimizer, ::MOI.ListOfVariableAttributesSet) = true
-MOI.get(::LinQuadOptimizer, ::MOI.ListOfVariableAttributesSet) = MOI.AbstractVariableAttribute[]
+function MOI.get(::LinQuadOptimizer, ::MOI.ListOfVariableAttributesSet)
+    return MOI.AbstractVariableAttribute[]
+end
+
 MOI.canget(::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet) = true
-MOI.get(m::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet) = [
-    MOI.ObjectiveSense(),
-    MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
-    (MOI.get(m, MOI.Name()) != "") ? MOI.Name() : nothing
-]
-MOI.canget(::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet{F,S}) where F where S = true
-MOI.get(::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet{F,S}) where F where S = MOI.AbstractConstraintAttribute[]
+function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet)
+    return [MOI.ObjectiveSense(),
+        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
+        # TODO(odow): why is `nothing` returned?
+        (MOI.get(model, MOI.Name()) != "") ? MOI.Name() : nothing
+    ]
+end
+
+function MOI.canget(::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet{F,S}) where {F, S}
+    return true
+end
+function MOI.get(::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet{F,S}) where {F, S}
+    return MOI.AbstractConstraintAttribute[]
+end

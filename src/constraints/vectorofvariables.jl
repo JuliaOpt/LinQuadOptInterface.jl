@@ -8,115 +8,120 @@
         VectorOfVariables -in- SOS1
         VectorOfVariables -in- SOS2
 =#
-constrdict(m::LinQuadOptimizer, ::VVCI{MOI.Nonnegatives}) = cmap(m).vv_nonnegatives
-constrdict(m::LinQuadOptimizer, ::VVCI{MOI.Nonpositives}) = cmap(m).vv_nonpositives
-constrdict(m::LinQuadOptimizer, ::VVCI{MOI.Zeros}) = cmap(m).vv_zeros
+constrdict(model::LinQuadOptimizer, ::VVCI{MOI.Nonnegatives}) = cmap(model).vv_nonnegatives
+constrdict(model::LinQuadOptimizer, ::VVCI{MOI.Nonpositives}) = cmap(model).vv_nonpositives
+constrdict(model::LinQuadOptimizer, ::VVCI{MOI.Zeros}) = cmap(model).vv_zeros
 
-constrdict(m::LinQuadOptimizer, ::VVCI{SOS1}) = cmap(m).sos1
-constrdict(m::LinQuadOptimizer, ::VVCI{SOS2}) = cmap(m).sos2
+constrdict(model::LinQuadOptimizer, ::VVCI{SOS1}) = cmap(model).sos1
+constrdict(model::LinQuadOptimizer, ::VVCI{SOS2}) = cmap(model).sos2
 
-function MOI.addconstraint!(m::LinQuadOptimizer, func::VecVar, set::S) where S <: VecLinSets
+function MOI.addconstraint!(model::LinQuadOptimizer, func::VecVar, set::S) where S <: VecLinSets
+    __assert_supported_constraint__(model, VecVar, S)
     @assert length(func.variables) == MOI.dimension(set)
-    m.last_constraint_reference += 1
-    ref = VVCI{S}(m.last_constraint_reference)
-    rows = get_number_linear_constraints(m)
-    n = MOI.dimension(set)
-    add_linear_constraints!(m,
-        CSRMatrix{Float64}(collect(1:n), getcol.(Ref(m), func.variables), ones(n)),
-        fill(backend_type(m, set),n),
-        zeros(n)
+    rows = get_number_linear_constraints(model)
+    num_vars = MOI.dimension(set)
+    add_linear_constraints!(model,
+        CSRMatrix{Float64}(collect(1:num_vars),
+                           get_column.(Ref(model), func.variables),
+                           ones(num_vars)),
+        fill(backend_type(model, set), num_vars),
+        zeros(num_vars)
     )
-    dict = constrdict(m, ref)
-    dict[ref] = collect(rows+1:rows+n)
-    append!(m.constraint_primal_solution, fill(NaN,n))
-    append!(m.constraint_dual_solution, fill(NaN,n))
-    append!(m.constraint_constant, fill(0.0,n))
-    return ref
+    model.last_constraint_reference += 1
+    index = VVCI{S}(model.last_constraint_reference)
+    dict = constrdict(model, index)
+    dict[index] = collect((rows + 1):(rows + num_vars))
+    append!(model.constraint_primal_solution, fill(NaN, num_vars))
+    append!(model.constraint_dual_solution, fill(NaN, num_vars))
+    append!(model.constraint_constant, fill(0.0, num_vars))
+    return index
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::VVCI{S}) where S <: VecLinSets = MOI.isvalid(m, c)
-function MOI.delete!(m::LinQuadOptimizer, c::VVCI{S}) where S <: VecLinSets
-    deleteconstraintname!(m, c)
-    dict = constrdict(m, c)
+function MOI.delete!(model::LinQuadOptimizer, index::VVCI{S}) where S <: VecLinSets
+    __assert_valid__(model, index)
+    delete_constraint_name(model, index)
+    dict = constrdict(model, index)
     # we delete rows from largest to smallest here so that we don't have
     # to worry about updating references in a greater numbered row, only to
     # modify it later.
-    for row in sort(dict[c], rev=true)
-        delete_linear_constraints!(m, row, row)
-        deleteat!(m.constraint_primal_solution, row)
-        deleteat!(m.constraint_dual_solution, row)
-        deleteat!(m.constraint_constant, row)
+    for row in sort(dict[index], rev=true)
+        delete_linear_constraints!(model, row, row)
+        deleteat!(model.constraint_primal_solution, row)
+        deleteat!(model.constraint_dual_solution, row)
+        deleteat!(model.constraint_constant, row)
         # shift all the other references
-        shift_references_after_delete_affine!(m, row)
+        shift_references_after_delete_affine!(model, row)
     end
-    delete!(dict, c)
+    delete!(dict, index)
 end
 
 #=
     Get constraint set of vector variable bound
 =#
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{VVCI{S}}) where S <: VecLinSets = true
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::VVCI{S}) where S <: VecLinSets
-    S(length(m[c]))
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{VVCI{S}}) where S <: VecLinSets = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::VVCI{S}) where S <: VecLinSets
+    S(length(model[index]))
 end
 
 #=
     Get constraint function of vector variable bound (linear ctr)
 =#
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{VVCI{S}}) where S <: VecLinSets = true
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VVCI{<: VecLinSets})
-    refs = m[c]
-    out = VarInd[]
-    sizehint!(out, length(refs))
-    for ref in refs
-        colidx, coefs = get_linear_constraint(m, ref)
-        if length(colidx) != 1
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{VVCI{S}}) where S <: VecLinSets = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::VVCI{<: VecLinSets})
+    rows = model[index]
+    variables = VarInd[]
+    sizehint!(variables, length(rows))
+    for row in rows
+        cols, coefs = get_linear_constraint(model, row)
+        if length(cols) != 1
             error("Unexpected constraint")
         end
-        push!(out,m.variable_references[colidx[1]])
+        push!(variables, model.variable_references[cols[1]])
     end
-    return VecVar(out)
+    return VecVar(variables)
 end
 
 #=
     SOS constraints
 =#
 
-function MOI.addconstraint!(m::LinQuadOptimizer, v::VecVar, sos::S) where S <: Union{MOI.SOS1, MOI.SOS2}
-    make_problem_type_integer(m)
-    add_sos_constraint!(m, getcol.(Ref(m), v.variables), sos.weights, backend_type(m, sos))
-    m.last_constraint_reference += 1
-    ref = VVCI{S}(m.last_constraint_reference)
-    dict = constrdict(m, ref)
-    dict[ref] = length(cmap(m).sos1) + length(cmap(m).sos2) + 1
-    ref
+function MOI.addconstraint!(model::LinQuadOptimizer, func::VecVar, set::S) where S <: Union{MOI.SOS1, MOI.SOS2}
+    __assert_supported_constraint__(model, VecVar, S)
+    make_problem_type_integer(model)
+    add_sos_constraint!(model, get_column.(Ref(model), func.variables),
+                        set.weights, backend_type(model, set))
+    model.last_constraint_reference += 1
+    index = VVCI{S}(model.last_constraint_reference)
+    dict = constrdict(model, index)
+    dict[index] = length(cmap(model).sos1) + length(cmap(model).sos2) + 1
+    return index
 end
 
-MOI.candelete(m::LinQuadOptimizer, c::VVCI{<:Union{SOS1, SOS2}}) = MOI.isvalid(m, c)
-function MOI.delete!(m::LinQuadOptimizer, c::VVCI{<:Union{SOS1, SOS2}})
-    deleteconstraintname!(m, c)
-    dict = constrdict(m, c)
-    idx = dict[c]
-    delete_sos!(m, idx, idx)
-    deleteref!(cmap(m).sos1, idx, c)
-    deleteref!(cmap(m).sos2, idx, c)
-    if !hasinteger(m)
-        make_problem_type_continuous(m)
+function MOI.delete!(model::LinQuadOptimizer, index::VVCI{<:Union{SOS1, SOS2}})
+    __assert_valid__(model, index)
+    delete_constraint_name(model, index)
+    dict = constrdict(model, index)
+    sos_row = dict[index]
+    delete_sos!(model, sos_row, sos_row)
+    deleteref!(cmap(model).sos1, sos_row, index)
+    deleteref!(cmap(model).sos2, sos_row, index)
+    if !has_integer(model)
+        make_problem_type_continuous(model)
     end
 end
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{VVCI{S}}) where S <: Union{MOI.SOS1, MOI.SOS2} = true
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintSet, c::VVCI{S}) where S <: Union{MOI.SOS1, MOI.SOS2}
-    indices, weights, types = get_sos_constraint(m, m[c])
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{VVCI{S}}) where S <: Union{MOI.SOS1, MOI.SOS2} = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::VVCI{S}) where S <: Union{MOI.SOS1, MOI.SOS2}
+    indices, weights, types = get_sos_constraint(model, model[index])
     set = S(weights)
-    @assert types == backend_type(m, set)
+    @assert types == backend_type(model, set)
     return set
 end
 
-MOI.canget(m::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{VVCI{S}}) where S <: Union{MOI.SOS1, MOI.SOS2} = true
-function MOI.get(m::LinQuadOptimizer, ::MOI.ConstraintFunction, c::VVCI{<:Union{SOS1, SOS2}})
-    indices, weights, types = get_sos_constraint(m, m[c])
-    return VecVar(m.variable_references[indices])
+MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{VVCI{S}}) where S <: Union{MOI.SOS1, MOI.SOS2} = true
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::VVCI{<:Union{SOS1, SOS2}})
+    indices, weights, types = get_sos_constraint(model, model[index])
+    return VecVar(model.variable_references[indices])
 end
