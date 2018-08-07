@@ -24,28 +24,38 @@ function MOI.addconstraint!(model::LinQuadOptimizer, func::VecLin, set::S) where
 end
 
 function add_linear_constraint(model::LinQuadOptimizer, func::VecLin, sense::Cchar)
-    outputindex   = [term.output_index for term in func.terms]
+
+    # sort terms by output index, then by variable index
+    func = copy(func)
+    MOIU.sort_and_compress!(func.terms, MOIU.termindices, t -> true, MOIU.unsafe_add)
     columns       = [get_column(model, term.scalar_term.variable_index) for term in func.terms]
     coefficients  = [term.scalar_term.coefficient for term in func.terms]
-    # sort into row order
-    pidx = sortperm(outputindex)
-    permute!(columns, pidx)
-    permute!(coefficients, pidx)
 
-    # check that there is at least a RHS for each row
-    @assert maximum(outputindex) <= length(func.constants)
-    # loop through to get starting position of each row
-    row_pointers = Vector{Int}(undef, length(func.constants))
+
+    # Compute the row pointers into the compressed sparse row
+    # matrix. The row pointers are defined recursively:
+    #  r[1] = 1
+    #  r[i] = r[i - 1] + (number of nonzero elements in the (i - 1)th row)
+    #
+    # To compute this, we first count up the number of nonzero elemnets
+    # in each row (i - 1), storing the result in r[i]. Then we perform
+    # a cumsum on r, storing the result back in r.
+    num_rows = length(func.constants)
+    row_pointers = fill(0, num_rows)
     row_pointers[1] = 1
-    row = 1
-    for i in 2:length(pidx)
-        if outputindex[pidx[i]] != outputindex[pidx[i-1]]
-            row += 1
-            row_pointers[row] = i
+    for term in func.terms
+        row = term.output_index
+        if row < 1 || row > num_rows
+            throw(ArgumentError("Output index $row out of range [1, $num_rows]"))
+        end
+        if row < num_rows
+            row_pointers[row + 1] += 1
         end
     end
+    cumsum!(row_pointers, row_pointers)
+
     A = CSRMatrix{Float64}(row_pointers, columns, coefficients)
-    add_linear_constraints!(model, A, fill(sense, length(func.constants)), -func.constants)
+    add_linear_constraints!(model, A, fill(sense, num_rows), -func.constants)
 end
 
 function MOI.modify!(model::LinQuadOptimizer, index::VLCI{<: VecLinSets},
