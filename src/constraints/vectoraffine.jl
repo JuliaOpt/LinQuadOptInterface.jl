@@ -32,14 +32,14 @@ function add_linear_constraint(model::LinQuadOptimizer, func::VecLin, sense::Cch
     coefficients  = [term.scalar_term.coefficient for term in func.terms]
 
 
-    # Compute the row pointers in the compressed sparse row
-    # matrix. The row pointers are defined recursively:
+    # Compute the row pointers in the compressed sparse row matrix. The row
+    # pointers are defined recursively:
     #  r[1] = 1
     #  r[i] = r[i - 1] + (number of nonzero elements in the (i - 1)th row)
     #
-    # To compute this, we first count up the number of nonzero elemnets
-    # in each row (i - 1), storing the result in r[i]. Then we perform
-    # a cumsum on r, storing the result back in r.
+    # To compute this, we first count up the number of nonzero elements in each
+    # row (i - 1), storing the result in r[i]. Then we perform a cumsum on r,
+    # storing the result back in r.
     num_rows = length(func.constants)
     row_pointers = fill(0, num_rows)
     row_pointers[1] = 1
