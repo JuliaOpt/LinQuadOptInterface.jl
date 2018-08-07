@@ -88,18 +88,35 @@ Convert a vector of ScalarAffineFunctions into a CSRMatrix with `num_non_zeros`
 non-zero coefficients.
 """
 function functions_to_CSRMatrix(model::LinQuadOptimizer, functions::Vector{Linear}, num_non_zeros::Int)
-    row_pointers = Vector{Int}(undef, length(functions))
     columns = Vector{Int}(undef, num_non_zeros)
     coefficients  = Vector{Float64}(undef, num_non_zeros)
-    non_zero_index = 1
+    # Compute the row pointers in the compressed sparse row matrix. The row
+    # pointers are defined recursively:
+    #  r[1] = 1
+    #  r[i] = r[i - 1] + (number of nonzero elements in the (i - 1)th row)
+    #
+    # To compute this, we first count up the number of nonzero elements in each
+    # row (i - 1), storing the result in r[i]. Then we perform a cumsum on r,
+    # storing the result back in r.
+    num_rows = length(functions)
+    row_pointers = fill(0, num_rows)
+    row_pointers[1] = 1
+    non_zero_index = 0
     for (row, func) in enumerate(functions)
-        row_pointers[row] = non_zero_index
         for term in func.terms
+            non_zero_index += 1
+            if non_zero_index > num_non_zeros
+                error("There were more non-zero entries in the function than " *
+                      "indicated: >$(num_non_zeros).")
+            end
             columns[non_zero_index] = get_column(model, term.variable_index)
             coefficients[non_zero_index] = term.coefficient
-            non_zero_index += 1
+            if row < num_rows
+                row_pointers[row + 1] += 1
+            end
         end
     end
+    cumsum!(row_pointers, row_pointers)
     return CSRMatrix{Float64}(row_pointers, columns, coefficients)
 end
 
