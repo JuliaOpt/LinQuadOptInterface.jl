@@ -233,8 +233,6 @@ function MOI.set!(model::LinQuadOptimizer, attr::MOI.ConstraintFunction, CI::LCI
     else
         _replace_with_different_sparsity!(model, previous, replacement, row)
     end
-    @show get_rhs(model, row)
-    @show (replacement.constant - previous.constant)
     change_rhs_coefficient!(model, row, get_rhs(model, row) - (replacement.constant - previous.constant))
     model.constraint_constant[model[CI]] = replacement.constant
     nothing
