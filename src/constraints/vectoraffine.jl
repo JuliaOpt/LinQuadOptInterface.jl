@@ -128,6 +128,7 @@ function MOI.set!(model::LinQuadOptimizer, attr::MOI.ConstraintFunction, c::VLCI
     for i in eachindex(constraint_indices)
         row = constraint_indices[i]
         model.constraint_constant[row] = replacement.constants[i]
+        change_rhs_coefficient!(model, row, -replacement.constants[i])
     end
 end
 
