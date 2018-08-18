@@ -76,53 +76,58 @@ function MOI.modify!(model::LinQuadOptimizer, index::VLCI{<: VecLinSets},
     end
 end
 
-function matching_sparsity_pattern(f1::VecLin, f2::VecLin)
+_constant(f::Linear) = f.constant
+_constant(f::VecLin) = f.constants
+
+function _matching_sparsity_pattern(f1::T, f2::T) where {T <: Union{Linear, VecLin}}
     indices(f1.terms) == indices(f2.terms) || return false
-    indices(f1.constants) == indices(f2.constants) || return false
+    indices(_constant(f1)) == indices(_constant(f2)) || return false
     for i in eachindex(f1.terms)
-        f1.terms[i].output_index == f2.terms[i].output_index || return false
-        f1.terms[i].scalar_term.variable_index == f2.terms[i].scalar_term.variable_index || return false
+        MOIU.termindices(f1.terms[i]) == MOIU.termindices(f2.terms[i]) || return false
     end
     return true
 end
 
-function replace_with_matching_sparsity!(m::LinQuadOptimizer, previous::VecLin, replacement::VecLin, constraint_indices)
+function _replace_with_matching_sparsity!(model::LinQuadOptimizer, previous::VecLin, replacement::VecLin, constraint_indices)
     rows = [constraint_indices[t.output_index] for t in previous.terms]
-    cols = [m.variable_mapping[t.scalar_term.variable_index] for t in previous.terms]
-    coefs = [t.scalar_term.coefficient for t in replacement.terms]
-    change_matrix_coefficients!(m, rows, cols, coefs)
+    cols = [model.variable_mapping[t.scalar_term.variable_index] for t in previous.terms]
+    coefs = MOIU.coefficient.(replacement.terms)
+    change_matrix_coefficients!(model, rows, cols, coefs)
 end
 
-function replace_with_different_sparsity!(m::LinQuadOptimizer, previous::VecLin, replacement::VecLin, constraint_indices)
+function _replace_with_different_sparsity!(model::LinQuadOptimizer, previous::VecLin, replacement::VecLin, constraint_indices)
     # First, zero out the old constraint function terms
     rows = [constraint_indices[t.output_index] for t in previous.terms]
-    cols = [m.variable_mapping[t.scalar_term.variable_index] for t in previous.terms]
-    coefs = [0.0 for t in previous.terms]
-    change_matrix_coefficients!(m, rows, cols, coefs)
+    cols = [model.variable_mapping[t.scalar_term.variable_index] for t in previous.terms]
+    coefs = fill(0.0, length(previous.terms))
+    change_matrix_coefficients!(model, rows, cols, coefs)
 
     # Next, set the new constraint function terms
     rows = [constraint_indices[t.output_index] for t in replacement.terms]
-    cols = [m.variable_mapping[t.scalar_term.variable_index] for t in replacement.terms]
-    coefs = [t.scalar_term.coefficient for t in replacement.terms]
-    change_matrix_coefficients!(m, rows, cols, coefs)
+    cols = [model.variable_mapping[t.scalar_term.variable_index] for t in replacement.terms]
+    coefs = MOIU.coefficient.(replacement.terms)
+    change_matrix_coefficients!(model, rows, cols, coefs)
 end
 
-function MOI.set!(m::LinQuadOptimizer, attr::MOI.ConstraintFunction, c::VLCI{S}, replacement::VecLin) where {S <: VecLinSets}
-    constraint_indices = m[c]
-    previous = MOI.get(m, attr, c)
-    MOI.Utilities.canonicalize!(previous)
+MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{VLCI{S}}) where {S <: VecLinSets} = true
+function MOI.set!(model::LinQuadOptimizer, attr::MOI.ConstraintFunction, c::VLCI{S}, replacement::VecLin) where {S <: VecLinSets}
     replacement = MOI.Utilities.canonical(replacement)
-
-    if matching_sparsity_pattern(previous, replacement)
-        replace_with_matching_sparsity!(m, previous, replacement, constraint_indices)
+    previous = MOI.get(model, attr, c)
+    MOI.Utilities.canonicalize!(previous)
+    # If the previous and replacement constraint functions have exactly
+    # the same sparsity pattern, then we can take a faster path by just
+    # passing the replacement terms to the model. But if their sparsity
+    # patterns differ, then we need to first zero out the previous terms
+    # and then set the replacement terms.
+    constraint_indices = model[c]
+    if _matching_sparsity_pattern(previous, replacement)
+        _replace_with_matching_sparsity!(model, previous, replacement, constraint_indices)
     else
-        replace_with_different_sparsity!(m, previous, replacement, constraint_indices)
+        _replace_with_different_sparsity!(model, previous, replacement, constraint_indices)
     end
-
     for i in eachindex(constraint_indices)
         row = constraint_indices[i]
-        change_rhs_coefficient!(m, row, -replacement.constants[i])
-        m.constraint_constant[row] = replacement.constants[i]
+        model.constraint_constant[row] = replacement.constants[i]
     end
 end
 
