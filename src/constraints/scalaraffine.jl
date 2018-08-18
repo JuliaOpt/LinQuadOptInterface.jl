@@ -196,22 +196,22 @@ function MOI.modify!(model::LinQuadOptimizer, index::LCI{S}, change::MOI.ScalarC
     change_matrix_coefficient!(model, row, column, change.new_coefficient)
 end
 
-function _replace_with_matching_sparsity!(model::LinQuadOptimizer, previous::Linear, replacement::Linear, constraint_index)
-    rows = fill(constraint_index, length(replacement.terms))
+function _replace_with_matching_sparsity!(model::LinQuadOptimizer, previous::Linear, replacement::Linear, row)
+    rows = fill(row, length(replacement.terms))
     cols = [model.variable_mapping[t.variable_index] for t in replacement.terms]
     coefs = MOIU.coefficient.(replacement.terms)
     change_matrix_coefficients!(model, rows, cols, coefs)
 end
 
-function _replace_with_different_sparsity!(model::LinQuadOptimizer, previous::Linear, replacement::Linear, constraint_indices)
+function _replace_with_different_sparsity!(model::LinQuadOptimizer, previous::Linear, replacement::Linear, row)
     # First, zero out the old constraint function terms
-    rows = fill(constraint_index, length(previous.terms))
+    rows = fill(row, length(previous.terms))
     cols = [model.variable_mapping[t.variable_index] for t in previous.terms]
     coefs = fill(0.0, length(previous.terms))
     change_matrix_coefficients!(model, rows, cols, coefs)
 
     # Next, set the new constraint function terms
-    rows = fill(constraint_index, length(replacement.terms))
+    rows = fill(row, length(replacement.terms))
     cols = [model.variable_mapping[t.variable_index] for t in replacement.terms]
     coefs = MOIU.coefficient.(replacement.terms)
     change_matrix_coefficients!(model, rows, cols, coefs)
@@ -227,11 +227,13 @@ function MOI.set!(model::LinQuadOptimizer, attr::MOI.ConstraintFunction, CI::LCI
     # passing the replacement terms to the model. But if their sparsity
     # patterns differ, then we need to first zero out the previous terms
     # and then set the replacement terms.
+    row = model[CI]
     if _matching_sparsity_pattern(previous, replacement)
-        _replace_with_matching_sparsity!(model, previous, replacement, model[CI])
+        _replace_with_matching_sparsity!(model, previous, replacement, row)
     else
-        _replace_with_different_sparsity!(model, previous, replacement, model[CI])
+        _replace_with_different_sparsity!(model, previous, replacement, row)
     end
+    change_rhs_coefficient!(model, row, replacement.constant - previous.constant)
     model.constraint_constant[model[CI]] = replacement.constant
     nothing
 end
