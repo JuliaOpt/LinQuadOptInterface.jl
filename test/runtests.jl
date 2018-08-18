@@ -75,7 +75,7 @@ end
         f1 =  MOI.VectorAffineFunction(
             MOI.VectorAffineTerm.([1], MOI.ScalarAffineTerm.([1.0], [x])), [1.5])
         s1 = MOI.Zeros(1)
-        c = MOI.addconstraint!(model, f1, s)
+        c = MOI.addconstraint!(model, f1, s1)
         f2 = MOI.get(model, MOI.ConstraintFunction(), c)
         @test f1 ≈ f2
         s2 = MOI.get(model, MOI.ConstraintSet(), c)
