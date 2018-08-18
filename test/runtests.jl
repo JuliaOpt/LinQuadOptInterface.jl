@@ -2,6 +2,7 @@ using Compat.Test, MathOptInterface
 using LinQuadOptInterface
 
 const MOI = MathOptInterface
+const MOIU = MathOptInterface.Utilities
 const MOIT = MathOptInterface.Test
 const LQOI = LinQuadOptInterface
 
@@ -115,3 +116,59 @@ end
         @test s2.upper == s3.upper
     end
 end
+
+@testset "Issue #32" begin
+    @testset "Simple scalar affine function replacement" begin
+        model = LQOI.MockLinQuadOptimizer()
+        x = MOI.addvariable!(model)
+
+        # Add the constraint and verify that we can retrieve it
+        f =  MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([2.0], [x]), 0.1)
+        s = MOI.GreaterThan(0.5)
+        c = MOI.addconstraint!(model, f, s)
+        @test MOI.get(model, MOI.ConstraintFunction(), c) ≈ f
+        s2 = MOI.get(model, MOI.ConstraintSet(), c)
+        @test typeof(s2) == typeof(s)
+        @test s2.lower == s.lower
+
+        # Replace the constraint function with itself and verify that
+        # the problem is unchanged
+        MOI.set!(model, MOI.ConstraintFunction(), c, f)
+        @test MOI.get(model, MOI.ConstraintFunction(), c) ≈ f
+        s2 = MOI.get(model, MOI.ConstraintSet(), c)
+        @test typeof(s2) == typeof(s)
+        @test s2.lower == s.lower
+
+        # Replace the constraint function with a new function, verify
+        # that the replacement occurred and that the set is unchanged
+        f2 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.5)
+        MOI.set!(model, MOI.ConstraintFunction(), c, f2)
+        @test MOI.get(model, MOI.ConstraintFunction(), c) ≈ f2
+        s2 = MOI.get(model, MOI.ConstraintSet(), c)
+        @test typeof(s2) == typeof(s)
+        @test s2.lower == s.lower
+
+        # Replace the constraint function with a new function which is not
+        # in canonical form:
+        f3 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 0.5], [x]), 0.5)
+        MOI.set!(model, MOI.ConstraintFunction(), c, f3)
+        @test MOI.get(model, MOI.ConstraintFunction(), c) ≈ MOIU.canonical(f3)
+        s2 = MOI.get(model, MOI.ConstraintSet(), c)
+        @test typeof(s2) == typeof(s)
+        @test s2.lower == s.lower
+
+
+        # Replace the constraint function with a new function whose sparsity
+        # pattern is different:
+        f4 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm{Float64}[], 2.0)
+        MOI.set!(model, MOI.ConstraintFunction(), c, f4)
+        @test MOI.get(model, MOI.ConstraintFunction(), c) ≈ f4
+        s2 = MOI.get(model, MOI.ConstraintSet(), c)
+        @test typeof(s2) == typeof(s)
+        @test s2.lower == s.lower
+    end
+end
+
+
+
+
