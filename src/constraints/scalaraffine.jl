@@ -183,7 +183,7 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::LCI{<
         model.variable_references[columns],
         coefficients
     )
-    Linear(terms, -model.constraint_constant[row])
+    Linear(terms, model.constraint_constant[row])
 end
 
 #=
