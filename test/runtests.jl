@@ -107,7 +107,7 @@ end
         c = MOI.addconstraint!(model, f, s)
         # Change the constraint set, and verify that we get the same set
         # when we retrieve it:
-        s2 = MOI.LessThan(1.0)
+        s2 = MOI.Interval(1.0, 2.0)
         MOI.set!(model, MOI.ConstraintSet(), c, s2)
         s3 = MOI.get(model, MOI.ConstraintSet(), c)
         @test typeof(s2) == typeof(s3)
