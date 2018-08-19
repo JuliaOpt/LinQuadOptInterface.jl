@@ -183,7 +183,7 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::LCI{<
         model.variable_references[columns],
         coefficients
     )
-    Linear(terms, -model.constraint_constant[row])
+    Linear(terms, model.constraint_constant[row])
 end
 
 #=
@@ -202,12 +202,17 @@ end
 MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{S}}) where S <: LinSets = true
 function MOI.set!(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::LCI{S},
                   new_set::S) where S <: Union{LE, GE, EQ}
-    change_rhs_coefficient!(model, model[index], MOIU.getconstant(new_set))
+    row = model[index]
+    rhs = MOIU.getconstant(new_set) - model.constraint_constant[row]
+    change_rhs_coefficient!(model, model[index], rhs)
 end
 
 function MOI.set!(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::LCI{IV},
                   new_set::IV)
-    modify_ranged_constraints!(model, [model[index]], [new_set.lower], [new_set.upper])
+    row = model[index]
+    constant = model.constraint_constant[row]
+    modify_ranged_constraints!(model, [model[index]],
+        [new_set.lower - constant], [new_set.upper - constant])
 end
 
 #=
