@@ -211,7 +211,8 @@ function MOI.set!(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::LCI{IV},
                   new_set::IV)
     row = model[index]
     constant = model.constraint_constant[row]
-    modify_ranged_constraints!(model, [model[index]], [new_set.lower - constant], [new_set.upper - constant])
+    modify_ranged_constraints!(model, [model[index]],
+        [new_set.lower - constant], [new_set.upper - constant])
 end
 
 #=
