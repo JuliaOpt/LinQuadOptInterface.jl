@@ -98,6 +98,8 @@ end
 
 function MOI.addconstraint!(model::LinQuadOptimizer, variable::SinVar, set::S) where S <: LinSets
     __assert_supported_constraint__(model, SinVar, S)
+    # Since the following "variable type" sets also define bounds (implicitly or explicitly), 
+    # they may conflict with other bound constraints.
     __check_for_conflicting__(model, variable, set,
         S, MOI.Semicontinuous{Float64}, MOI.Semiinteger{Float64}, MOI.ZeroOne)
     set_variable_bound(model, variable, set)
