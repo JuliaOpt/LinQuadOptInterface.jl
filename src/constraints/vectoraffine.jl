@@ -79,6 +79,15 @@ end
 _constant(f::Linear) = f.constant
 _constant(f::VecLin) = f.constants
 
+"""
+    _matching_sparsity_pattern(f1::T, f2::T) where {T <: Union{Linear, VecLin}}
+
+Internal function, not intended for external use.
+
+Determines whether functions `f1` and `f2` have the same sparsity pattern
+w.r.t. their constraint rows and columns. Assumes both functions are already
+in canonical form.
+"""
 function _matching_sparsity_pattern(f1::T, f2::T) where {T <: Union{Linear, VecLin}}
     indices(f1.terms) == indices(f2.terms) || return false
     indices(_constant(f1)) == indices(_constant(f2)) || return false
@@ -88,6 +97,19 @@ function _matching_sparsity_pattern(f1::T, f2::T) where {T <: Union{Linear, VecL
     return true
 end
 
+"""
+    _replace_with_matching_sparsity!(model::LinQuadOptimizer,
+        previous::VecLin, replacement::VecLin, row)
+
+Internal function, not intended for external use.
+
+Change the linear constraint function at index `row` in `model` from
+`previous` to `replacement`. This function assumes that `previous` and
+`replacement` have exactly the same sparsity pattern w.r.t. which variables
+they include and that both constraint functions are in canonical form (as
+returned by `MOIU.canonical()`. Neither assumption is checked within the body
+of this function.
+"""
 function _replace_with_matching_sparsity!(model::LinQuadOptimizer, previous::VecLin, replacement::VecLin, constraint_indices)
     rows = [constraint_indices[t.output_index] for t in previous.terms]
     cols = [model.variable_mapping[t.scalar_term.variable_index] for t in previous.terms]
@@ -95,6 +117,23 @@ function _replace_with_matching_sparsity!(model::LinQuadOptimizer, previous::Vec
     change_matrix_coefficients!(model, rows, cols, coefs)
 end
 
+"""
+    _replace_with_different_sparsity!(model::LinQuadOptimizer,
+        previous::VecLin, replacement::VecLin, row)
+
+Internal function, not intended for external use.
+
+Change the linear constraint function at index `row` in `model` from
+`previous` to `replacement`. This function assumes that `previous` and
+`replacement` may have different sparsity patterns.
+
+This function (and `_replace_with_matching_sparsity!` above) are necessary
+because the LQOI API currently *only* allows linear constraint modification
+through the `change_matrix_coefficient!` and `change_matrix_coefficients!`
+functions. In order to fully replace a linear constraint, we have to zero out
+the current matrix coefficients and then set the new matrix coefficients. When
+the sparsity patterns match, the zeroing-out step can be skipped.
+"""
 function _replace_with_different_sparsity!(model::LinQuadOptimizer, previous::VecLin, replacement::VecLin, constraint_indices)
     # First, zero out the old constraint function terms
     rows = [constraint_indices[t.output_index] for t in previous.terms]
