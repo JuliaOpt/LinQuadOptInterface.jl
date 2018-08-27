@@ -31,6 +31,6 @@ recommend that you carefully analyze the solver's low-level API to check if it
 is close to what LQOI expects.
 
 If a solver low-level API does not support most of the functions required by LQOI, then following the example of
-[MathOptInterfaceSCS.jl](https://github.com/JuliaOpt/MathOptInterfaceSCS.jl) and
-[MathOptInterfaceECOS.jl](https://github.com/JuliaOpt/MathOptInterfaceECOS.jl)
+[SCS.jl](https://github.com/JuliaOpt/SCS.jl) and
+[ECOS.jl](https://github.com/JuliaOpt/ECOS.jl)
 might be a better idea.
