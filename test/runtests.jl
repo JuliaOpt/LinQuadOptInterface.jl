@@ -87,6 +87,20 @@ const LQOI = LinQuadOptInterface
     @testset "Linear Conic tests" begin
         config = MOIT.TestConfig(solve=false)
         MOIT.lintest(solver, config)
+        include("contconic.jl")
+        config = MOIT.TestConfig()
+        set_lin1test_solutions!(solver)
+        MOIT.lin1vtest(solver, config)
+        set_lin1test_solutions!(solver)
+        MOIT.lin1ftest(solver, config)
+        set_lin2test_solutions!(solver)
+        MOIT.lin2vtest(solver, config)
+        set_lin2test_solutions!(solver)
+        MOIT.lin2ftest(solver, config)
+        set_lin3test_solutions!(solver)
+        MOIT.lin3test(solver, config)
+        set_lin3test_solutions!(solver)
+        MOIT.lin4test(solver, config)
     end
 
     @testset "Integer Linear tests" begin
