@@ -809,6 +809,13 @@ function LQOI.get_farkas_dual!(instance::MockLinQuadOptimizer, place)
     nothing
 end
 
+function LQOI.get_farkas_dual_bounds!(instance::MockLinQuadOptimizer, place)
+    for i in eachindex(place)
+        place[i] = instance.inner.variable_dual_solution[i]
+    end
+    nothing
+end
+
 function hasdualray(instance::MockLinQuadOptimizer)
     return !(NaN in instance.inner.constraint_dual_solution)
 end

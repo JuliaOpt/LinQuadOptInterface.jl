@@ -522,6 +522,17 @@ each linear constraint.
 function get_farkas_dual! end
 
 """
+get_farkas_dual_bounds!(m, x::Vector{Float64})
+
+Get the farkas dual (certificate of primal infeasiblility) for the variable
+boundss in the model `m`, and store in `x`. `x`must have one element for
+each variable.
+"""
+function get_farkas_dual_bounds!(m::LinQuadOptimizer, x)
+    nothing
+end
+
+"""
     get_unbounded_ray!(m, x::Vector{Float64})
 
 Get the unbounded ray (certificate of dual infeasiblility) for the linear

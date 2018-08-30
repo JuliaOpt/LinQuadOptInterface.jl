@@ -55,6 +55,7 @@ function MOI.optimize!(model::LinQuadOptimizer)
         model.dual_result_count = 1
     elseif model.dual_status == MOI.InfeasibilityCertificate
         get_farkas_dual!(model, model.constraint_dual_solution)
+        get_farkas_dual_bounds!(model, model.variable_dual_solution)
         model.dual_result_count = 1
     end
 
@@ -164,13 +165,18 @@ end
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintDual, index::SVCI{<: LinSets})
     column = get_column(model, model[index])
-    # the variable reduced cost is only the constriant dual if the bound is active.
-    set = MOI.get(model, MOI.ConstraintSet(), index)
-    primal_value = model.variable_primal_solution[column]
-    if is_binding(set, primal_value)
+    # the variable reduced cost is only the constraint dual if the bound is active.
+    # or it might be a dual ray
+    if model.dual_status == MOI.InfeasibilityCertificate
         return model.variable_dual_solution[column]
     else
-        return 0.0
+        set = MOI.get(model, MOI.ConstraintSet(), index)
+        primal_value = model.variable_primal_solution[column]
+        if is_binding(set, primal_value)
+            return model.variable_dual_solution[column]
+        else
+            return 0.0
+        end
     end
 end
 
