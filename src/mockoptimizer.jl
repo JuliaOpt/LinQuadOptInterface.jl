@@ -795,12 +795,18 @@ function get_objval(inner::MockLinQuadModel)
     obj = 0.0
     obj += inner.c' * x
     if !isempty(inner.Qobj)
-        obj += x' * inner.Qobj * x
+        Q = full(Symmetric(inner.Qobj,:U))
+        obj += (0.5) * x' * Q * x
     end
     return obj
 end
 
 LQOI.get_objective_value(instance::MockLinQuadOptimizer) = get_objval(instance.inner)
+LQOI.get_objective_bound(instance::MockLinQuadOptimizer) = get_objval(instance.inner)
+LQOI.get_relative_mip_gap(instance::MockLinQuadOptimizer) = 0.0
+LQOI.get_iteration_count(instance::MockLinQuadOptimizer) = 1
+LQOI.get_barrier_iterations(instance::MockLinQuadOptimizer) = 1
+LQOI.get_node_count(instance::MockLinQuadOptimizer) = 1
 
 function LQOI.get_farkas_dual!(instance::MockLinQuadOptimizer, place)
     for i in eachindex(place)

@@ -8,7 +8,7 @@ const LQOI = LinQuadOptInterface
 
 @testset "LinQuadOptInterface" begin
     solver = LQOI.MockLinQuadOptimizer()
-    # TODO(@joaquim): test with solve=true
+
     config = MOIT.TestConfig(solve=false)
 
     @testset "Unit Tests" begin
@@ -25,7 +25,7 @@ const LQOI = LinQuadOptInterface
     @testset "Linear tests" begin
         config = MOIT.TestConfig(solve=false)
         MOIT.contlineartest(solver, config)
-        config = MOIT.TestConfig(solve=true)
+        config = MOIT.TestConfig()
         include("contlinear.jl")
         set_linear1test_solutions!(solver)
         MOIT.linear1test(solver, config)
@@ -66,6 +66,22 @@ const LQOI = LinQuadOptInterface
     @testset "Quadratic tests" begin
         config = MOIT.TestConfig(solve=false)
         MOIT.contquadratictest(solver, config)
+        include("contquadratic.jl")
+        config = MOIT.TestConfig(atol=1e-3, rtol=1e-3, duals=false)
+        set_qp1test_solutions!(solver)
+        MOIT.qp1test(solver, config)
+        set_qp2test_solutions!(solver)
+        MOIT.qp2test(solver, config)
+        set_qp3test_solutions!(solver)
+        MOIT.qp3test(solver, config)
+        set_qcp1test_solutions!(solver)
+        MOIT.qcp1test(solver, config)
+        set_qcp2test_solutions!(solver)
+        MOIT.qcp2test(solver, config)
+        set_qcp3test_solutions!(solver)
+        MOIT.qcp3test(solver, config)
+        set_socp1test_solutions!(solver)
+        MOIT.socp1test(solver, config)
     end
 
     @testset "Linear Conic tests" begin
@@ -76,6 +92,14 @@ const LQOI = LinQuadOptInterface
     @testset "Integer Linear tests" begin
         config = MOIT.TestConfig(solve=false)
         MOIT.intlineartest(solver, config, ["int2"])
+        include("intlinear.jl")
+        config = MOIT.TestConfig()
+        set_knapsacktest_solutions!(solver)
+        MOIT.knapsacktest(solver, config)
+        set_int1test_solutions!(solver)
+        MOIT.int1test(solver, config)
+        set_int3test_solutions!(solver)
+        MOIT.int3test(solver, config)
     end
 
     @testset "ModelLike tests" begin
