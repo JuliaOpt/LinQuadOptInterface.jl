@@ -28,35 +28,19 @@ mutable struct MockLinQuadModel # <: LinQuadOptInterface.LinQuadOptimizer
     sos::Vector{LinQuadSOS}
 
     termination_status::MOI.TerminationStatusCode
-    termination_status_stored::Vector{MOI.TerminationStatusCode}
 
     primal_status::MOI.ResultStatusCode
-    primal_status_stored::Vector{MOI.ResultStatusCode}
 
     dual_status::MOI.ResultStatusCode
-    dual_status_stored::Vector{MOI.ResultStatusCode}
 
     variable_primal_solution::Vector{Float64}
-    variable_primal_solution_stored::Vector{Vector{Float64}}
     variable_dual_solution::Vector{Float64}
-    variable_dual_solution_stored::Vector{Vector{Float64}}
 
     constraint_primal_solution::Vector{Float64}
-    constraint_primal_solution_stored::Vector{Vector{Float64}}
     constraint_dual_solution::Vector{Float64}
-    constraint_dual_solution_stored::Vector{Vector{Float64}}
 
     quadratic_primal_solution::Vector{Float64}
-    quadratic_primal_solution_stored::Vector{Vector{Float64}}
-
     quadratic_dual_solution::Vector{Float64}
-    quadratic_dual_solution_stored::Vector{Vector{Float64}}
-
-    ray_dual_solution::Vector{Float64}
-    ray_dual_solution_stored::Vector{Vector{Float64}}
-
-    ray_primal_solution::Vector{Float64}
-    ray_primal_solution_stored::Vector{Vector{Float64}}
 
     function MockLinQuadModel(env::Nothing,str::String="defaultname")
         m = new()
@@ -80,106 +64,58 @@ mutable struct MockLinQuadModel # <: LinQuadOptInterface.LinQuadOptimizer
         m.sos = LinQuadSOS[]
 
         m.termination_status = MOI.Success
-        m.termination_status_stored = MOI.TerminationStatusCode[]
         m.primal_status = MOI.FeasiblePoint
-        m.primal_status_stored = MOI.ResultStatusCode[]
         m.dual_status = MOI.FeasiblePoint
-        m.dual_status_stored = MOI.ResultStatusCode[]
 
         m.variable_primal_solution = zeros(0)
-        m.variable_primal_solution_stored = Vector{Float64}[]
         m.variable_dual_solution = zeros(0)
-        m.variable_dual_solution_stored = Vector{Float64}[]
 
         m.constraint_primal_solution = zeros(0)
-        m.constraint_primal_solution_stored = Vector{Float64}[]
         m.constraint_dual_solution = zeros(0)
-        m.constraint_dual_solution_stored = Vector{Float64}[]
 
         m.quadratic_primal_solution = zeros(0)
-        m.quadratic_primal_solution_stored = Vector{Float64}[]
         m.quadratic_dual_solution = zeros(0)
-        m.quadratic_dual_solution_stored = Vector{Float64}[]
-
-        m.ray_primal_solution = zeros(0)
-        m.ray_primal_solution_stored = Vector{Float64}[]
-        m.ray_dual_solution = zeros(0)
-        m.ray_dual_solution_stored = Vector{Float64}[]
 
         return m
     end
 end
 
-function unload(from,to,warn = true)
-    if !isempty(from)
-        out = from[1]
-        shift!(from)
-        return out
-    else
-        if warn
-            Compat.@warn("cant solve this model no extra solution")
-        end
-        return to
-    end
+"""
+Solution builder to create solutions for the mock solver.
+Should be called inside `MOI.optimize!(model::LinQuadOptimizer)` right before changing signs. This means that these solutions replicate the low-level solver output.
+The idea is to run the test with a solver like Xpress, Gurobi, GLPK or CPLEX to obtain the detailed solution.
+"""
+function print_low_level_solution(model)
+    println()
+    println("------------------------------------------")
+    println("---------------- solution ----------------")
+    println("------------------------------------------")
+    println()
+    println("---------------- statuses ----------------")
+    println()
+    @show model.termination_status
+    @show model.primal_status
+    @show model.dual_status
+    println()
+    println("----------------- primal -----------------")
+    println()
+    @show model.variable_primal_solution
+    @show model.constraint_primal_solution
+    @show model.qconstraint_primal_solution
+    println()
+    println("------------------ dual- -----------------")
+    println()
+    @show model.variable_dual_solution
+    @show model.constraint_dual_solution
+    @show model.qconstraint_dual_solution
+    println()
+    println("------------------------------------------")
+    println()
 end
 
-function fakesolve(m::MockLinQuadModel)
-
-    m.termination_status = unload(m.termination_status_stored,  m.termination_status)
-    m.primal_status = unload(m.primal_status_stored,  m.primal_status)
-    m.dual_status = unload(m.dual_status_stored,  m.dual_status)
-
-    m.variable_primal_solution = unload(m.variable_primal_solution_stored,  m.variable_primal_solution)
-    m.variable_dual_solution = unload(m.variable_dual_solution_stored,  m.variable_dual_solution)
-
-    m.constraint_primal_solution = unload(m.constraint_primal_solution_stored,  m.constraint_primal_solution)
-    m.constraint_dual_solution = unload(m.constraint_dual_solution_stored,  m.constraint_dual_solution)
-
-    m.quadratic_primal_solution = unload(m.quadratic_primal_solution_stored,  m.quadratic_primal_solution)
-    m.quadratic_dual_solution = unload(m.quadratic_dual_solution_stored,  m.quadratic_dual_solution)
-
-    m.ray_primal_solution = unload(m.ray_primal_solution_stored,  m.ray_primal_solution, false)
-    m.ray_dual_solution = unload(m.ray_dual_solution_stored,  m.ray_dual_solution, false)
-
-    nothing
-end
 
 num_vars(inner::MockLinQuadModel) = length(inner.c)
 num_cons(inner::MockLinQuadModel) = length(inner.b)
-
-function set_variable_primal_solution!(inner::MockLinQuadModel,input)
-    push!(m.variable_primal_solution_stored, input)
-end
-function set_variable_dual_solution!(inner::MockLinQuadModel,input)
-    push!(m.variable_dual_solution_stored, input)
-end
-function set_constraint_primal_solution!(inner::MockLinQuadModel,input)
-    push!(m.constraint_primal_solution_stored, input)
-end
-function set_constraint_dual_solution!(inner::MockLinQuadModel,input)
-    push!(m.constraint_dual_solution_stored, input)
-end
-function set_quadratic_dual_solution!(inner::MockLinQuadModel,input)
-    push!(m.quadratic_dual_solution_stored, input)
-end
-function set_quadratic_primal_solution!(inner::MockLinQuadModel,input)
-    push!(m.quadratic_primal_solution_stored, input)
-end
-function set_ray_primal_solution!(inner::MockLinQuadModel,input)
-    push!(m.ray_primal_solution_stored, input)
-end
-function set_ray_dual_solution!(inner::MockLinQuadModel,input)
-    push!(m.ray_dual_solution_stored, input)
-end
-function set_termination_status!(inner::MockLinQuadModel,input)
-    push!(m.termination_status_stored, input)
-end
-function set_primal_status!(inner::MockLinQuadModel,input)
-    push!(m.primal_status_stored, input)
-end
-function set_dual_status!(inner::MockLinQuadModel,input)
-    push!(m.dual_status_stored, input)
-end
 
 const SUPPORTED_OBJECTIVES = [
     MOI.SingleVariable,
@@ -216,6 +152,20 @@ mutable struct MockLinQuadOptimizer <: LQOI.LinQuadOptimizer
     params::Dict{String,Any}
     l_rows::Vector{Int}
     q_rows::Vector{Int}
+
+    termination_status_stored::Vector{MOI.TerminationStatusCode}
+    primal_status_stored::Vector{MOI.ResultStatusCode}
+    dual_status_stored::Vector{MOI.ResultStatusCode}
+
+    variable_primal_solution_stored::Vector{Vector{Float64}}
+    variable_dual_solution_stored::Vector{Vector{Float64}}
+
+    constraint_primal_solution_stored::Vector{Vector{Float64}}
+    constraint_dual_solution_stored::Vector{Vector{Float64}}
+
+    quadratic_primal_solution_stored::Vector{Vector{Float64}}
+    quadratic_dual_solution_stored::Vector{Vector{Float64}}
+
     MockLinQuadOptimizer(::Nothing) = new()
 end
 
@@ -223,14 +173,92 @@ LQOI.LinearQuadraticModel(::Type{MockLinQuadOptimizer},env::Nothing) = MockLinQu
 
 function MockLinQuadOptimizer(;kwargs...)
 
-    m = MockLinQuadOptimizer(nothing)
-    m.params = Dict{String,Any}()
-    MOI.empty!(m)
+    instance = MockLinQuadOptimizer(nothing)
+    instance.params = Dict{String,Any}()
+    instance.l_rows = Int[]
+    instance.q_rows = Int[]
+
+    instance.termination_status_stored = MOI.TerminationStatusCode[]
+    instance.primal_status_stored = MOI.ResultStatusCode[]
+    instance.dual_status_stored = MOI.ResultStatusCode[]
+
+    instance.variable_primal_solution_stored = Vector{Float64}[]
+    instance.variable_dual_solution_stored = Vector{Float64}[]
+
+    instance.constraint_primal_solution_stored = Vector{Float64}[]
+    instance.constraint_dual_solution_stored = Vector{Float64}[]
+
+    instance.quadratic_primal_solution_stored = Vector{Float64}[]
+    instance.quadratic_dual_solution_stored = Vector{Float64}[]
+
+    MOI.empty!(instance)
     for (name,value) in kwargs
-        m.params[string(name)] = value
-        setparam!(m.inner, string(name), value)
+        instance.params[string(name)] = value
+        setparam!(instance.inner, string(name), value)
     end
-    return m
+    return instance
+end
+
+function unload(from,to,warn = true)
+    if !isempty(from)
+        out = from[1]
+        try
+            out = copy(from[1])
+        end
+        shift!(from)
+        return out
+    else
+        if warn
+            Compat.@warn("cant solve this model no extra solution")
+        end
+        return to
+    end
+end
+
+function fakesolve(instance::MockLinQuadOptimizer)
+
+    instance.inner.termination_status = unload(instance.termination_status_stored, instance.inner.termination_status)
+    instance.inner.primal_status = unload(instance.primal_status_stored, instance.inner.primal_status)
+    instance.inner.dual_status = unload(instance.dual_status_stored, instance.inner.dual_status)
+
+    instance.inner.variable_primal_solution = unload(instance.variable_primal_solution_stored, instance.inner.variable_primal_solution)
+    instance.inner.variable_dual_solution = unload(instance.variable_dual_solution_stored, instance.inner.variable_dual_solution)
+
+    instance.inner.constraint_primal_solution = unload(instance.constraint_primal_solution_stored, instance.inner.constraint_primal_solution)
+    instance.inner.constraint_dual_solution = unload(instance.constraint_dual_solution_stored, instance.inner.constraint_dual_solution)
+
+    instance.inner.quadratic_primal_solution = unload(instance.quadratic_primal_solution_stored, instance.inner.quadratic_primal_solution)
+    instance.inner.quadratic_dual_solution = unload(instance.quadratic_dual_solution_stored, instance.inner.quadratic_dual_solution)
+
+    nothing
+end
+
+function set_variable_primal_solution!(instance::MockLinQuadOptimizer, input)
+    push!(instance.variable_primal_solution_stored, input)
+end
+function set_variable_dual_solution!(instance::MockLinQuadOptimizer, input)
+    push!(instance.variable_dual_solution_stored, input)
+end
+function set_constraint_primal_solution!(instance::MockLinQuadOptimizer, input)
+    push!(instance.constraint_primal_solution_stored, input)
+end
+function set_constraint_dual_solution!(instance::MockLinQuadOptimizer, input)
+    push!(instance.constraint_dual_solution_stored, input)
+end
+function set_quadratic_dual_solution!(instance::MockLinQuadOptimizer, input)
+    push!(instance.quadratic_dual_solution_stored, input)
+end
+function set_quadratic_primal_solution!(instance::MockLinQuadOptimizer, input)
+    push!(instance.quadratic_primal_solution_stored, input)
+end
+function set_termination_status!(instance::MockLinQuadOptimizer, input)
+    push!(instance.termination_status_stored, input)
+end
+function set_primal_status!(instance::MockLinQuadOptimizer, input)
+    push!(instance.primal_status_stored, input)
+end
+function set_dual_status!(instance::MockLinQuadOptimizer, input)
+    push!(instance.dual_status_stored, input)
 end
 
 LQOI.get_number_linear_constraints(instance::MockLinQuadOptimizer) = num_cons(instance.inner) - LQOI.get_number_quadratic_constraints(instance)
@@ -244,12 +272,13 @@ function LQOI.get_number_quadratic_constraints(instance::MockLinQuadOptimizer)
     return c
 end
 
-function MOI.empty!(m::MockLinQuadOptimizer)
-    MOI.empty!(m,nothing)
-    m.l_rows = Int[]
-    m.q_rows = Int[]
-    for (name,value) in m.params
-        setparam!(m.inner, name, value)
+function MOI.empty!(instance::MockLinQuadOptimizer)
+    MOI.empty!(instance,nothing)
+    # do not empty param
+    instance.l_rows = Int[]
+    instance.q_rows = Int[]
+    for (name,value) in instance.params
+        setparam!(instance.inner, name, value)
     end
 end
 
@@ -701,22 +730,22 @@ end
     Solve
 =#
 
-LQOI.solve_mip_problem!(instance::MockLinQuadOptimizer) = nothing # fakesolve(instance.inner)
+LQOI.solve_mip_problem!(instance::MockLinQuadOptimizer) = fakesolve(instance)
 
-LQOI.solve_quadratic_problem!(instance::MockLinQuadOptimizer) = nothing # fakesolve(instance.inner)
+LQOI.solve_quadratic_problem!(instance::MockLinQuadOptimizer) = fakesolve(instance)
 
-LQOI.solve_linear_problem!(instance::MockLinQuadOptimizer) = nothing # fakesolve(instance.inner)
+LQOI.solve_linear_problem!(instance::MockLinQuadOptimizer) = fakesolve(instance)
 
 function LQOI.get_termination_status(instance::MockLinQuadOptimizer)
-    return MOI.Success
+    return instance.inner.termination_status
 end
 
 function LQOI.get_primal_status(instance::MockLinQuadOptimizer)
-    return MOI.FeasiblePoint
+    return instance.inner.primal_status
 end
 
 function LQOI.get_dual_status(instance::MockLinQuadOptimizer)
-    return MOI.FeasiblePoint
+    return instance.inner.dual_status
 end
 
 function LQOI.get_variable_primal_solution!(instance::MockLinQuadOptimizer, place)
@@ -761,28 +790,38 @@ function LQOI.get_quadratic_dual_solution!(instance::MockLinQuadOptimizer, place
     nothing
 end
 
+function get_objval(inner::MockLinQuadModel)
+    x = inner.variable_primal_solution
+    obj = 0.0
+    obj += inner.c' * x
+    if !isempty(inner.Qobj)
+        obj += x' * inner.Qobj * x
+    end
+    return obj
+end
+
 LQOI.get_objective_value(instance::MockLinQuadOptimizer) = get_objval(instance.inner)
 
 function LQOI.get_farkas_dual!(instance::MockLinQuadOptimizer, place)
     for i in eachindex(place)
-        place[i] = instance.inner.ray_dual_solution[i]
+        place[i] = instance.inner.constraint_dual_solution[i]
     end
     nothing
 end
 
 function hasdualray(instance::MockLinQuadOptimizer)
-    return !isempty(instance.inner.ray_dual_solution)
+    return !(NaN in instance.inner.constraint_dual_solution)
 end
 
 function LQOI.get_unbounded_ray!(instance::MockLinQuadOptimizer, place)
     for i in eachindex(place)
-        place[i] = instance.inner.ray_primal_solution[i]
+        place[i] = instance.inner.variable_primal_solution[i]
     end
     nothing
 end
 
 function hasprimalray(instance::MockLinQuadOptimizer)
-    return !isempty(instance.inner.ray_primal_solution)
+    return !(NaN in instance.inner.variable_primal_solution)
 end
 
 MOI.free!(m::MockLinQuadOptimizer) = nothing
