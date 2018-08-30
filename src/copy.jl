@@ -1,8 +1,5 @@
-function MOI.copy!(dest::LinQuadOptimizer, src::MOI.ModelLike; copynames=false)
-    return MOIU.defaultcopy!(dest, src, copynames)
-end
-
-function MOI.copy!(dest::MOI.ModelLike,    src::LinQuadOptimizer; copynames=false)
+function MOI.copy!(dest::LinQuadOptimizer, src; copynames=false)
+    src::MOI.ModelLike
     return MOIU.defaultcopy!(dest, src, copynames)
 end
 

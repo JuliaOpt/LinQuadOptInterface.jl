@@ -4,6 +4,7 @@ using LinQuadOptInterface
 
 const MOI = MathOptInterface
 const MOIT = MathOptInterface.Test
+const MOIU = MathOptInterface.Utilities
 const LQOI = LinQuadOptInterface
 
 @testset "LinQuadOptInterface" begin
@@ -133,8 +134,26 @@ const LQOI = LinQuadOptInterface
         @testset "copytest" begin
             MOIT.copytest(LQOI.MockLinQuadOptimizer(),
                           LQOI.MockLinQuadOptimizer())
+            MOIT.failcopytestc(LQOI.MockLinQuadOptimizer())
+            MOIT.failcopytestia(LQOI.MockLinQuadOptimizer())
+            MOIT.failcopytestva(LQOI.MockLinQuadOptimizer())
+            MOIT.failcopytestca(LQOI.MockLinQuadOptimizer())
         end
     end
+end
+
+MOIU.@model(ModelComplete,
+    (ZeroOne, Integer),
+    (EqualTo, GreaterThan, LessThan, Interval, Semicontinuous, Semiinteger),
+    (Reals, Zeros, Nonnegatives, Nonpositives, SecondOrderCone, RotatedSecondOrderCone, GeometricMeanCone, ExponentialCone, DualExponentialCone, PositiveSemidefiniteConeTriangle, PositiveSemidefiniteConeSquare, RootDetConeTriangle, RootDetConeSquare, LogDetConeTriangle, LogDetConeSquare),
+    (PowerCone, DualPowerCone, SOS1, SOS2),
+    (SingleVariable,),
+    (ScalarAffineFunction, ScalarQuadraticFunction),
+    (VectorOfVariables,),
+    (VectorAffineFunction, VectorQuadraticFunction))
+@testset "Copy from/to @Model" begin
+    MOIT.copytest(LQOI.MockLinQuadOptimizer(), ModelComplete{Float64}())
+    MOIT.copytest(ModelComplete{Float64}(), LQOI.MockLinQuadOptimizer())
 end
 
 @testset "Issue #52" begin
