@@ -199,22 +199,32 @@ function MockLinQuadOptimizer(;kwargs...)
     return instance
 end
 
-function unload(from,to,warn = true)
+"""
+    unload(from::Vector, to, warn = true)
+
+Helper function to remove the first element of a vector and return it.
+If the vector is empty data in `default` is returned instead.
+Used in `fakesolve`.
+"""
+function unload(from, default, warn = true)
     if !isempty(from)
         out = from[1]
-        try
-            out = copy(from[1])
-        end
         shift!(from)
         return out
     else
         if warn
-            Compat.@warn("cant solve this model no extra solution")
+            Compat.@warn("No data in the input vector, returning default.")
         end
-        return to
+        return default
     end
 end
 
+"""
+    fakesolve(instance::MockLinQuadOptimizer)
+
+Set solutions upon solve calls.
+Data held in `MockLinQuadOptimizer` stored data is passed to the low-level emulator `MockLinQuadModel`.
+"""
 function fakesolve(instance::MockLinQuadOptimizer)
 
     instance.inner.termination_status = unload(instance.termination_status_stored, instance.inner.termination_status)
@@ -277,7 +287,7 @@ function MOI.empty!(instance::MockLinQuadOptimizer)
     # do not empty param
     instance.l_rows = Int[]
     instance.q_rows = Int[]
-    for (name,value) in instance.params
+    for (name, value) in instance.params
         setparam!(instance.inner, name, value)
     end
 end
