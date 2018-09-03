@@ -165,7 +165,7 @@ end
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintDual, index::SVCI{<: LinSets})
     column = get_column(model, model[index])
-    # the variable reduced cost is only the constraint dual if the bound is active.
+    # the variable reduced cost is only the constraint dual if the bound is active,
     # or it might be a dual ray
     if model.dual_status == MOI.InfeasibilityCertificate
         return model.variable_dual_solution[column]
