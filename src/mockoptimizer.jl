@@ -271,6 +271,49 @@ function set_dual_status!(instance::MockLinQuadOptimizer, input)
     push!(instance.dual_status_stored, input)
 end
 
+function set_solution!(instance::MockLinQuadOptimizer;
+    variable_primal = nothing,
+    variable_dual = nothing,
+    constraint_primal = nothing,
+    constraint_dual = nothing,
+    quadratic_primal = nothing,
+    quadratic_dual = nothing,
+    termination_status = nothing,
+    primal_status = nothing,
+    dual_status = nothing
+    )
+
+    if typeof(variable_primal) != Nothing
+        set_variable_primal_solution!(instance, variable_primal)
+    end
+    if typeof(variable_dual) != Nothing
+        set_variable_dual_solution!(instance, variable_dual)
+    end
+    if typeof(constraint_primal) != Nothing
+        set_constraint_primal_solution!(instance, constraint_primal)
+    end
+    if typeof(constraint_dual) != Nothing
+        set_constraint_dual_solution!(instance, constraint_dual)
+    end
+    if typeof(quadratic_primal) != Nothing
+        set_quadratic_primal_solution!(instance, quadratic_primal)
+    end
+    if typeof(quadratic_dual) != Nothing
+        set_quadratic_dual_solution!(instance, quadratic_dual)
+    end
+    if typeof(termination_status) != Nothing
+        set_termination_status!(instance, termination_status)
+    end
+    if typeof(primal_status) != Nothing
+        set_primal_status!(instance, primal_status)
+    end
+    if typeof(dual_status) != Nothing
+        set_dual_status!(instance, dual_status)
+    end
+
+    nothing
+end
+
 LQOI.get_number_linear_constraints(instance::MockLinQuadOptimizer) = num_cons(instance.inner) - LQOI.get_number_quadratic_constraints(instance)
 function LQOI.get_number_quadratic_constraints(instance::MockLinQuadOptimizer)
     c = 0
@@ -283,7 +326,7 @@ function LQOI.get_number_quadratic_constraints(instance::MockLinQuadOptimizer)
 end
 
 function MOI.empty!(instance::MockLinQuadOptimizer)
-    MOI.empty!(instance,nothing)
+    MOI.empty!(instance, nothing)
     # do not empty param
     instance.l_rows = Int[]
     instance.q_rows = Int[]
