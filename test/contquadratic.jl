@@ -6,7 +6,7 @@ function set_qp1test_solutions!(solver)
         variable_dual = [0.0, 0.0, 0.0],
         constraint_dual = [0.714286, 0.857144]
     )
-    return nothing
+    return
 end
 
 function set_qp2test_solutions!(solver)
@@ -24,7 +24,7 @@ function set_qp2test_solutions!(solver)
         variable_dual = [-0.0, -0.0, -0.0],
         constraint_dual = [-1.42857, -1.71429]
     )
-    return nothing
+    return
 end
 
 function set_qp3test_solutions!(solver)
@@ -42,7 +42,7 @@ function set_qp3test_solutions!(solver)
         variable_dual = [-0.0, -1.0],
         constraint_dual = [2.0]
     )
-    return nothing
+    return
 end
 
 function set_qcp1test_solutions!(solver)
@@ -55,7 +55,7 @@ function set_qcp1test_solutions!(solver)
         constraint_dual = [4.48497e-8, 5.48002e-8],
         quadratic_dual = [1.0]
     )
-    return nothing
+    return
 end
 
 function set_qcp2test_solutions!(solver)
@@ -68,7 +68,7 @@ function set_qcp2test_solutions!(solver)
         constraint_dual = Float64[],
         quadratic_dual = [0.353553]
     )
-    return nothing
+    return
 end
 
 function set_qcp3test_solutions!(solver)
@@ -81,7 +81,7 @@ function set_qcp3test_solutions!(solver)
         constraint_dual = Float64[],
         quadratic_dual = [-0.353553]
     )
-    return nothing
+    return
 end
 
 function set_socp1test_solutions!(solver)
@@ -94,5 +94,5 @@ function set_socp1test_solutions!(solver)
         constraint_dual = [0.707107],
         quadratic_dual = [-1.41421]
     )
-    return nothing
+    return
 end

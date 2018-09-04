@@ -11,7 +11,7 @@ function set_knapsacktest_solutions!(solver)
         constraint_dual = [NaN],
         quadratic_dual = Float64[]
     )
-    return nothing
+    return
 end
 
 function set_int1test_solutions!(solver)
@@ -27,7 +27,7 @@ function set_int1test_solutions!(solver)
         constraint_dual = [NaN, NaN],
         quadratic_dual = Float64[]
     )
-    return nothing
+    return
 end
 
 function set_int3test_solutions!(solver)
@@ -55,5 +55,5 @@ function set_int3test_solutions!(solver)
         constraint_dual = [NaN],
         quadratic_dual = Float64[]
     )
-    return nothing
+    return
 end

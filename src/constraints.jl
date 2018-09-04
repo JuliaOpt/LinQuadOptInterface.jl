@@ -134,7 +134,7 @@ function MOI.set!(model::LinQuadOptimizer, ::MOI.ConstraintName,
         model.constraint_names[index] = name
         model.constraint_names_rev[name] = index
     end
-    return nothing
+    return
 end
 
 #=
