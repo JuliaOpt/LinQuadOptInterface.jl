@@ -343,7 +343,7 @@ objective to the solver itself) must also overload `get_constant_objective(m)`.
 """
 function set_constant_objective!(m::LinQuadOptimizer, value)
     m.objective_constant = value
-    return nothing
+    return
 end
 
 """

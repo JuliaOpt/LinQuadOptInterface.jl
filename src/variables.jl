@@ -47,7 +47,7 @@ function MOI.set!(model::LinQuadOptimizer, ::MOI.VariableName, index::VarInd, na
         model.variable_names[index] = name
         model.variable_names_rev[name] = index
     end
-    return nothing
+    return
 end
 
 #=
@@ -157,7 +157,7 @@ function MOI.delete!(model::LinQuadOptimizer, index::VarInd)
     delete_from_dictionary_by_value(constraint_map.lower_bound, index)
     delete_from_dictionary_by_value(constraint_map.fixed_bound, index)
     delete_from_dictionary_by_value(constraint_map.interval_bound, index)
-    return nothing
+    return
 end
 
 """

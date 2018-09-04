@@ -2,21 +2,14 @@
 language: julia
 os:
   - linux
-#  - osx
 julia:
   - 0.6
   - 0.7
-  - nightly
+  - 1.0
 notifications:
   email: false
 git:
   depth: 99999999
-
-## uncomment the following lines to allow failures on nightly julia
-## (tests will run but not make your overall status red)
-matrix:
-  allow_failures:
-  - julia: nightly
 
 # Integration with JuMP-dev gitter channel
 notifications:
@@ -27,10 +20,5 @@ notifications:
     on_failure: always  # options: [always|never|change] default: always
     on_start: never     # options: [always|never|change] default: always
 
-script:
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("LinQuadOptInterface")'
-  - julia -e 'Pkg.test("LinQuadOptInterface"; coverage=true)'
 after_success:
-  - julia -e 'cd(Pkg.dir("LinQuadOptInterface")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
-  #- julia -e 'Pkg.add("Documenter")'
-  #- julia -e 'cd(Pkg.dir("LinQuadOptInterface")); include(joinpath("docs", "make.jl"))'
+  - julia -e '(VERSION >= v"0.7" && using Pkg); cd(Pkg.dir("LinQuadOptInterface")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'

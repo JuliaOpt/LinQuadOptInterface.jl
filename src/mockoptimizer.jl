@@ -192,7 +192,7 @@ function MockLinQuadOptimizer(;kwargs...)
     instance.quadratic_dual_solution_stored = Vector{Float64}[]
 
     MOI.empty!(instance)
-    for (name,value) in kwargs
+    for (name, value) in kwargs
         instance.params[string(name)] = value
         setparam!(instance.inner, string(name), value)
     end
@@ -209,7 +209,7 @@ Used in `fakesolve`.
 function unload(from, default, warn = true)
     if !isempty(from)
         out = from[1]
-        shift!(from)
+        Compat.popfirst!(from)
         return out
     else
         if warn
@@ -240,7 +240,7 @@ function fakesolve(instance::MockLinQuadOptimizer)
     instance.inner.quadratic_primal_solution = unload(instance.quadratic_primal_solution_stored, instance.inner.quadratic_primal_solution)
     instance.inner.quadratic_dual_solution = unload(instance.quadratic_dual_solution_stored, instance.inner.quadratic_dual_solution)
 
-    return nothing
+    return
 end
 
 function set_variable_primal_solution!(instance::MockLinQuadOptimizer, input)
@@ -293,7 +293,7 @@ function set_solution!(instance::MockLinQuadOptimizer;
     set_primal_status!(instance, primal_status)
     set_dual_status!(instance, dual_status)
 
-    return nothing
+    return
 end
 
 LQOI.get_number_linear_constraints(instance::MockLinQuadOptimizer) = num_cons(instance.inner) - LQOI.get_number_quadratic_constraints(instance)
@@ -336,7 +336,6 @@ backend_type(m::MockLinQuadOptimizer, ::Val{:Continuous}) = Cchar('C')
 backend_type(m::MockLinQuadOptimizer, ::Val{:Upperbound}) = Cchar('U')
 backend_type(m::MockLinQuadOptimizer, ::Val{:Lowerbound}) = Cchar('L')
 
-# TODO - improve single type
 function LQOI.change_variable_bounds!(instance::MockLinQuadOptimizer, colvec, valvec, sensevec)
 
     lb_len = count(x->x==Cchar('L'), sensevec)
@@ -376,8 +375,6 @@ function LQOI.change_variable_bounds!(instance::MockLinQuadOptimizer, colvec, va
             instance.inner.ub[UB_col[i]] = UB_val[i]
         end
     end
-
-    nothing
 end
 
 function LQOI.get_variable_lowerbound(instance::MockLinQuadOptimizer, col)
@@ -412,7 +409,7 @@ function LQOI.add_linear_constraints!(instance::MockLinQuadOptimizer, A::CSRMatr
     append!(instance.inner.range,[Inf for i in 1:rows])
     append!(instance.inner.Qcon,[zeros(0,0) for i in 1:rows])
 
-    nothing
+    return
 end
 
 function LQOI.add_ranged_constraints!(instance::MockLinQuadOptimizer, A::CSRMatrix{Float64}, lowerbound, upperbound)
@@ -439,7 +436,7 @@ function LQOI.add_ranged_constraints!(instance::MockLinQuadOptimizer, A::CSRMatr
 
     append!(instance.inner.range,upperbound)
     append!(instance.inner.Qcon,[zeros(0,0) for i in 1:rows])
-    nothing
+    return
 end
 
 function modify_ranged_constraints!(instance::MockLinQuadOptimizer, rows, lowerbound, upperbound)
@@ -449,7 +446,6 @@ function modify_ranged_constraints!(instance::MockLinQuadOptimizer, rows, lowerb
         instance.inner.b[i] = lowerbound[i]
         instance.inner.range[i] = upperbound[i]
     end
-    nothing
 end
 
 function LQOI.get_rhs(instance::MockLinQuadOptimizer, row)
@@ -626,7 +622,7 @@ function LQOI.set_quadratic_objective!(instance::MockLinQuadOptimizer, I, J, V)
     # scalediagonal!(V, I, J, 0.5)
     instance.inner.Qobj = Q
     # scalediagonal!(V, I, J, 2.0)
-    return nothing
+    return
 end
 
 function LQOI.set_linear_objective!(instance::MockLinQuadOptimizer, colvec, coefvec)
@@ -638,7 +634,7 @@ function LQOI.set_linear_objective!(instance::MockLinQuadOptimizer, colvec, coef
     end
 
     instance.inner.c = obj
-    nothing
+    return
 end
 
 function LQOI.change_objective_sense!(instance::MockLinQuadOptimizer, symbol)
@@ -787,42 +783,36 @@ function LQOI.get_variable_primal_solution!(instance::MockLinQuadOptimizer, plac
     for i in eachindex(place)
         place[i] = instance.inner.variable_primal_solution[i]
     end
-    nothing
 end
 
 function LQOI.get_linear_primal_solution!(instance::MockLinQuadOptimizer, place)
     for i in eachindex(place)
         place[i] = instance.inner.constraint_primal_solution[i]
     end
-    nothing
 end
 
 function LQOI.get_quadratic_primal_solution!(instance::MockLinQuadOptimizer, place)
     for i in eachindex(place)
         place[i] = instance.inner.quadratic_primal_solution[i]
     end
-    nothing
 end
 
 function LQOI.get_variable_dual_solution!(instance::MockLinQuadOptimizer, place)
     for i in eachindex(place)
         place[i] = instance.inner.variable_dual_solution[i]
     end
-    nothing
 end
 
 function LQOI.get_linear_dual_solution!(instance::MockLinQuadOptimizer, place)
     for i in eachindex(place)
         place[i] = instance.inner.constraint_dual_solution[i]
     end
-    nothing
 end
 
 function LQOI.get_quadratic_dual_solution!(instance::MockLinQuadOptimizer, place)
     for i in eachindex(place)
         place[i] = instance.inner.quadratic_dual_solution[i]
     end
-    nothing
 end
 
 function get_objval(inner::MockLinQuadModel)
@@ -830,7 +820,7 @@ function get_objval(inner::MockLinQuadModel)
     obj = 0.0
     obj += inner.c' * x
     if !isempty(inner.Qobj)
-        Q = full(Symmetric(inner.Qobj,:U))
+        Q = Matrix(Symmetric(inner.Qobj, :U))
         obj += (0.5) * x' * Q * x
     end
     return obj
@@ -847,14 +837,12 @@ function LQOI.get_farkas_dual!(instance::MockLinQuadOptimizer, place)
     for i in eachindex(place)
         place[i] = instance.inner.constraint_dual_solution[i]
     end
-    nothing
 end
 
 function LQOI.get_farkas_dual_bounds!(instance::MockLinQuadOptimizer, place)
     for i in eachindex(place)
         place[i] = instance.inner.variable_dual_solution[i]
     end
-    nothing
 end
 
 function hasdualray(instance::MockLinQuadOptimizer)
@@ -865,14 +853,11 @@ function LQOI.get_unbounded_ray!(instance::MockLinQuadOptimizer, place)
     for i in eachindex(place)
         place[i] = instance.inner.variable_primal_solution[i]
     end
-    nothing
 end
 
 function hasprimalray(instance::MockLinQuadOptimizer)
     return !(NaN in instance.inner.variable_primal_solution)
 end
-
-MOI.free!(m::MockLinQuadOptimizer) = nothing
 
 #=
 LQOI.get_objective_bound(instance::MockLinQuadOptimizer) = get_objval(instance.inner)

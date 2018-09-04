@@ -55,7 +55,7 @@ function set_linear1test_solutions!(solver)
         variable_dual = [0.0, 0.0, -1.5],
         constraint_dual = [1.5, -0.5]
     )
-    return nothing
+    return
 end
 
 function set_linear2test_solutions!(solver)
@@ -66,7 +66,7 @@ function set_linear2test_solutions!(solver)
         variable_dual = [0.0, 1.0],
         constraint_dual = [-1.0]
     )
-    return nothing
+    return
 end
 
 function set_linear3test_solutions!(solver)
@@ -84,7 +84,7 @@ function set_linear3test_solutions!(solver)
         variable_dual = [1.0],
         constraint_dual = [0.0]
     )
-    return nothing
+    return
 end
 
 function set_linear4test_solutions!(solver)
@@ -109,7 +109,7 @@ function set_linear4test_solutions!(solver)
         variable_dual = [1.0, -1.0],
         constraint_dual = Float64[]
     )
-    return nothing
+    return
 end
 
 function set_linear5test_solutions!(solver)
@@ -142,7 +142,7 @@ function set_linear5test_solutions!(solver)
         variable_dual = [-0.0],
         constraint_dual = [0.5]
     )
-    return nothing
+    return
 end
 
 function set_linear6test_solutions!(solver)
@@ -167,7 +167,7 @@ function set_linear6test_solutions!(solver)
         variable_dual = [0.0, 0.0],
         constraint_dual = [1.0, -1.0]
     )
-    return nothing
+    return
 end
 
 function set_linear7test_solutions!(solver)
@@ -192,7 +192,7 @@ function set_linear7test_solutions!(solver)
         variable_dual = [0.0, 0.0],
         constraint_dual = [1.0, -1.0]
     )
-    return nothing
+    return
 end
 
 function set_linear8atest_solutions!(solver)
@@ -206,7 +206,7 @@ function set_linear8atest_solutions!(solver)
         variable_dual = [NaN, NaN],
         constraint_dual = [-0.5]
     )
-    return nothing
+    return
 end
 
 function set_linear8btest_solutions!(solver)
@@ -220,7 +220,7 @@ function set_linear8btest_solutions!(solver)
         variable_dual = [NaN, NaN],
         constraint_dual = [NaN]
     )
-    return nothing
+    return
 end
 
 function set_linear8ctest_solutions!(solver)
@@ -234,7 +234,7 @@ function set_linear8ctest_solutions!(solver)
         variable_dual = [NaN, NaN],
         constraint_dual = [NaN]
     )
-    return nothing
+    return
 end
 
 function set_linear9test_solutions!(solver)
@@ -245,7 +245,7 @@ function set_linear9test_solutions!(solver)
         variable_dual = [-0.0, -0.0],
         constraint_dual = [0.0, 11.3636, 0.863636]
     )
-    return nothing
+    return
 end
 
 function set_linear10test_solutions!(solver)
@@ -277,7 +277,7 @@ function set_linear10test_solutions!(solver)
         variable_dual = [-0.0, -0.0],
         constraint_dual = [1.0]
     )
-    return nothing
+    return
 end
 
 function set_linear11test_solutions!(solver)
@@ -295,7 +295,7 @@ function set_linear11test_solutions!(solver)
         variable_dual = [0.0, 0.0],
         constraint_dual = [1.0, 0.0]
     )
-    return nothing
+    return
 end
 
 function set_linear12test_solutions!(solver)
@@ -309,7 +309,7 @@ function set_linear12test_solutions!(solver)
         variable_dual = [2/3, 0.0],
         constraint_dual = [-1/3, -1.0]
     )
-    return nothing
+    return
 end
 
 function set_linear13test_solutions!(solver)
@@ -320,7 +320,7 @@ function set_linear13test_solutions!(solver)
         variable_dual = [0.0, 0.0],
         constraint_dual = [0.0, 0.0]
     )
-    return nothing
+    return
 end
 
 function set_linear14test_solutions!(solver)
@@ -338,5 +338,5 @@ function set_linear14test_solutions!(solver)
         variable_dual = [-0.0],
         constraint_dual = [1.0]
     )
-    return nothing
+    return
 end
