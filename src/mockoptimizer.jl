@@ -240,7 +240,7 @@ function fakesolve(instance::MockLinQuadOptimizer)
     instance.inner.quadratic_primal_solution = unload(instance.quadratic_primal_solution_stored, instance.inner.quadratic_primal_solution)
     instance.inner.quadratic_dual_solution = unload(instance.quadratic_dual_solution_stored, instance.inner.quadratic_dual_solution)
 
-    nothing
+    return nothing
 end
 
 function set_variable_primal_solution!(instance::MockLinQuadOptimizer, input)
@@ -272,46 +272,28 @@ function set_dual_status!(instance::MockLinQuadOptimizer, input)
 end
 
 function set_solution!(instance::MockLinQuadOptimizer;
-    variable_primal = nothing,
-    variable_dual = nothing,
-    constraint_primal = nothing,
-    constraint_dual = nothing,
-    quadratic_primal = nothing,
-    quadratic_dual = nothing,
-    termination_status = nothing,
-    primal_status = nothing,
-    dual_status = nothing
+    variable_primal = Float64[],
+    variable_dual = Float64[],
+    constraint_primal = Float64[],
+    constraint_dual = Float64[],
+    quadratic_primal = Float64[],
+    quadratic_dual = Float64[],
+    termination_status = MOI.Success,
+    primal_status = MOI.FeasiblePoint,
+    dual_status = MOI.FeasiblePoint
     )
 
-    if typeof(variable_primal) != Nothing
-        set_variable_primal_solution!(instance, variable_primal)
-    end
-    if typeof(variable_dual) != Nothing
-        set_variable_dual_solution!(instance, variable_dual)
-    end
-    if typeof(constraint_primal) != Nothing
-        set_constraint_primal_solution!(instance, constraint_primal)
-    end
-    if typeof(constraint_dual) != Nothing
-        set_constraint_dual_solution!(instance, constraint_dual)
-    end
-    if typeof(quadratic_primal) != Nothing
-        set_quadratic_primal_solution!(instance, quadratic_primal)
-    end
-    if typeof(quadratic_dual) != Nothing
-        set_quadratic_dual_solution!(instance, quadratic_dual)
-    end
-    if typeof(termination_status) != Nothing
-        set_termination_status!(instance, termination_status)
-    end
-    if typeof(primal_status) != Nothing
-        set_primal_status!(instance, primal_status)
-    end
-    if typeof(dual_status) != Nothing
-        set_dual_status!(instance, dual_status)
-    end
+    set_variable_primal_solution!(instance, variable_primal)
+    set_variable_dual_solution!(instance, variable_dual)
+    set_constraint_primal_solution!(instance, constraint_primal)
+    set_constraint_dual_solution!(instance, constraint_dual)
+    set_quadratic_primal_solution!(instance, quadratic_primal)
+    set_quadratic_dual_solution!(instance, quadratic_dual)
+    set_termination_status!(instance, termination_status)
+    set_primal_status!(instance, primal_status)
+    set_dual_status!(instance, dual_status)
 
-    nothing
+    return nothing
 end
 
 LQOI.get_number_linear_constraints(instance::MockLinQuadOptimizer) = num_cons(instance.inner) - LQOI.get_number_quadratic_constraints(instance)
