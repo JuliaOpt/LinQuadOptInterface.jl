@@ -6,6 +6,7 @@ os:
 julia:
   - 0.6
   - 0.7
+  - 1.0
   - nightly
 notifications:
   email: false
@@ -27,10 +28,7 @@ notifications:
     on_failure: always  # options: [always|never|change] default: always
     on_start: never     # options: [always|never|change] default: always
 
-script:
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("LinQuadOptInterface")'
-  - julia -e 'Pkg.test("LinQuadOptInterface"; coverage=true)'
 after_success:
-  - julia -e 'cd(Pkg.dir("LinQuadOptInterface")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+  - julia -e 'if VERSION < v"0.7-"; cd(Pkg.dir("LinQuadOptInterface")); else; using Pkg; end; Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
   #- julia -e 'Pkg.add("Documenter")'
   #- julia -e 'cd(Pkg.dir("LinQuadOptInterface")); include(joinpath("docs", "make.jl"))'
