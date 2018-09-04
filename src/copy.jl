@@ -1,8 +1,7 @@
-function MOI.copy!(dest::LinQuadOptimizer, src::MOI.ModelLike; copynames=false)
-    return MOIU.defaultcopy!(dest, src, copynames)
-end
-
-function MOI.copy!(dest::MOI.ModelLike,    src::LinQuadOptimizer; copynames=false)
+# this function is only defined with `LinQuadOptimizer` in dest because a version
+# with `LinQuadOptimizer` in src and anything in dest does not work due to ambiguity.
+function MOI.copy!(dest::LinQuadOptimizer, src; copynames=false)
+    src::MOI.ModelLike
     return MOIU.defaultcopy!(dest, src, copynames)
 end
 

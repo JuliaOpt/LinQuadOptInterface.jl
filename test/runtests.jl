@@ -4,14 +4,16 @@ using LinQuadOptInterface
 const MOI = MathOptInterface
 const MOIU = MathOptInterface.Utilities
 const MOIT = MathOptInterface.Test
+const MOIU = MathOptInterface.Utilities
 const LQOI = LinQuadOptInterface
 
 @testset "LinQuadOptInterface" begin
     solver = LQOI.MockLinQuadOptimizer()
-    # TODO(@joaquim): test with solve=true
+
     config = MOIT.TestConfig(solve=false)
 
     @testset "Unit Tests" begin
+        config = MOIT.TestConfig(solve=false)
         MOIT.basic_constraint_tests(solver, config)
         MOIT.unittest(solver, config, [
             "solve_affine_interval",
@@ -22,22 +24,101 @@ const LQOI = LinQuadOptInterface
     end
 
     @testset "Linear tests" begin
+        config = MOIT.TestConfig(solve=false)
         MOIT.contlineartest(solver, config)
+        config = MOIT.TestConfig()
+        include("contlinear.jl")
+        set_linear1test_solutions!(solver)
+        MOIT.linear1test(solver, config)
+        set_linear2test_solutions!(solver)
+        MOIT.linear2test(solver, config)
+        set_linear3test_solutions!(solver)
+        MOIT.linear3test(solver, config)
+        set_linear4test_solutions!(solver)
+        MOIT.linear4test(solver, config)
+        set_linear5test_solutions!(solver)
+        MOIT.linear5test(solver, config)
+        set_linear6test_solutions!(solver)
+        MOIT.linear6test(solver, config)
+        set_linear7test_solutions!(solver)
+        MOIT.linear7test(solver, config)
+        set_linear8atest_solutions!(solver)
+        MOIT.linear8atest(solver, config)
+        set_linear8btest_solutions!(solver)
+        MOIT.linear8btest(solver, config)
+        set_linear8ctest_solutions!(solver)
+        MOIT.linear8ctest(solver, config)
+        set_linear9test_solutions!(solver)
+        MOIT.linear9test(solver, config)
+        set_linear10test_solutions!(solver)
+        MOIT.linear10test(solver, config)
+        set_linear11test_solutions!(solver)
+        MOIT.linear11test(solver, config)
+        set_linear12test_solutions!(solver)
+        MOIT.linear12test(solver, MOIT.TestConfig(atol=1e-3,rtol=1e-3))
+        set_linear13test_solutions!(solver)
+        MOIT.linear13test(solver, config)
+        set_linear14test_solutions!(solver)
+        MOIT.linear14test(solver, config)
+        # set_linear15test_solutions!(solver)
+        # MOIT.linear15test(solver, config)
     end
 
     @testset "Quadratic tests" begin
+        config = MOIT.TestConfig(solve=false)
         MOIT.contquadratictest(solver, config)
+        include("contquadratic.jl")
+        config = MOIT.TestConfig(atol=1e-3, rtol=1e-3, duals=false)
+        set_qp1test_solutions!(solver)
+        MOIT.qp1test(solver, config)
+        set_qp2test_solutions!(solver)
+        MOIT.qp2test(solver, config)
+        set_qp3test_solutions!(solver)
+        MOIT.qp3test(solver, config)
+        set_qcp1test_solutions!(solver)
+        MOIT.qcp1test(solver, config)
+        set_qcp2test_solutions!(solver)
+        MOIT.qcp2test(solver, config)
+        set_qcp3test_solutions!(solver)
+        MOIT.qcp3test(solver, config)
+        set_socp1test_solutions!(solver)
+        MOIT.socp1test(solver, config)
     end
 
     @testset "Linear Conic tests" begin
+        config = MOIT.TestConfig(solve=false)
         MOIT.lintest(solver, config)
+        include("contconic.jl")
+        config = MOIT.TestConfig()
+        set_lin1test_solutions!(solver)
+        MOIT.lin1vtest(solver, config)
+        set_lin1test_solutions!(solver)
+        MOIT.lin1ftest(solver, config)
+        set_lin2test_solutions!(solver)
+        MOIT.lin2vtest(solver, config)
+        set_lin2test_solutions!(solver)
+        MOIT.lin2ftest(solver, config)
+        set_lin3test_solutions!(solver)
+        MOIT.lin3test(solver, config)
+        set_lin3test_solutions!(solver)
+        MOIT.lin4test(solver, config)
     end
 
     @testset "Integer Linear tests" begin
+        config = MOIT.TestConfig(solve=false)
         MOIT.intlineartest(solver, config, ["int2"])
+        include("intlinear.jl")
+        config = MOIT.TestConfig()
+        set_knapsacktest_solutions!(solver)
+        MOIT.knapsacktest(solver, config)
+        set_int1test_solutions!(solver)
+        MOIT.int1test(solver, config)
+        set_int3test_solutions!(solver)
+        MOIT.int3test(solver, config)
     end
 
     @testset "ModelLike tests" begin
+        config = MOIT.TestConfig(solve=false)
         @testset "nametest" begin
             MOIT.nametest(LQOI.MockLinQuadOptimizer())
         end
@@ -53,8 +134,26 @@ const LQOI = LinQuadOptInterface
         @testset "copytest" begin
             MOIT.copytest(LQOI.MockLinQuadOptimizer(),
                           LQOI.MockLinQuadOptimizer())
+            MOIT.failcopytestc(LQOI.MockLinQuadOptimizer())
+            MOIT.failcopytestia(LQOI.MockLinQuadOptimizer())
+            MOIT.failcopytestva(LQOI.MockLinQuadOptimizer())
+            MOIT.failcopytestca(LQOI.MockLinQuadOptimizer())
         end
     end
+end
+
+MOIU.@model(ModelComplete,
+    (ZeroOne, Integer),
+    (EqualTo, GreaterThan, LessThan, Interval, Semicontinuous, Semiinteger),
+    (Reals, Zeros, Nonnegatives, Nonpositives, SecondOrderCone, RotatedSecondOrderCone, GeometricMeanCone, ExponentialCone, DualExponentialCone, PositiveSemidefiniteConeTriangle, PositiveSemidefiniteConeSquare, RootDetConeTriangle, RootDetConeSquare, LogDetConeTriangle, LogDetConeSquare),
+    (PowerCone, DualPowerCone, SOS1, SOS2),
+    (SingleVariable,),
+    (ScalarAffineFunction, ScalarQuadraticFunction),
+    (VectorOfVariables,),
+    (VectorAffineFunction, VectorQuadraticFunction))
+@testset "Copy from/to @Model" begin
+    MOIT.copytest(LQOI.MockLinQuadOptimizer(), ModelComplete{Float64}())
+    MOIT.copytest(ModelComplete{Float64}(), LQOI.MockLinQuadOptimizer())
 end
 
 @testset "Issue #52" begin
