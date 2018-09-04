@@ -196,6 +196,78 @@ function MOI.modify!(model::LinQuadOptimizer, index::LCI{S}, change::MOI.ScalarC
     change_matrix_coefficient!(model, row, column, change.new_coefficient)
 end
 
+"""
+    _replace_with_matching_sparsity!(model::LinQuadOptimizer,
+        previous::Linear, replacement::Linear, row)
+
+Internal function, not intended for external use.
+
+Change the linear constraint function at index `row` in `model` from
+`previous` to `replacement`. This function assumes that `previous` and
+`replacement` have exactly the same sparsity pattern w.r.t. which variables
+they include and that both constraint functions are in canonical form (as
+returned by `MOIU.canonical()`. Neither assumption is checked within the body
+of this function.
+"""
+function _replace_with_matching_sparsity!(model::LinQuadOptimizer, previous::Linear, replacement::Linear, row)
+    rows = fill(row, length(replacement.terms))
+    cols = [model.variable_mapping[t.variable_index] for t in replacement.terms]
+    coefs = MOIU.coefficient.(replacement.terms)
+    change_matrix_coefficients!(model, rows, cols, coefs)
+end
+
+"""
+    _replace_with_different_sparsity!(model::LinQuadOptimizer,
+        previous::Linear, replacement::Linear, row)
+
+Internal function, not intended for external use.
+
+Change the linear constraint function at index `row` in `model` from
+`previous` to `replacement`. This function assumes that `previous` and
+`replacement` may have different sparsity patterns.
+
+This function (and `_replace_with_matching_sparsity!` above) are necessary
+because the LQOI API currently *only* allows linear constraint modification
+through the `change_matrix_coefficient!` and `change_matrix_coefficients!`
+functions. In order to fully replace a linear constraint, we have to zero out
+the current matrix coefficients and then set the new matrix coefficients. When
+the sparsity patterns match, the zeroing-out step can be skipped.
+"""
+function _replace_with_different_sparsity!(model::LinQuadOptimizer, previous::Linear, replacement::Linear, row)
+    # First, zero out the old constraint function terms
+    rows = fill(row, length(previous.terms))
+    cols = [model.variable_mapping[t.variable_index] for t in previous.terms]
+    coefs = fill(0.0, length(previous.terms))
+    change_matrix_coefficients!(model, rows, cols, coefs)
+
+    # Next, set the new constraint function terms
+    rows = fill(row, length(replacement.terms))
+    cols = [model.variable_mapping[t.variable_index] for t in replacement.terms]
+    coefs = MOIU.coefficient.(replacement.terms)
+    change_matrix_coefficients!(model, rows, cols, coefs)
+end
+
+MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{LCI{S}}) where {S <: Union{LE, GE, EQ}} = true
+function MOI.set!(model::LinQuadOptimizer, attr::MOI.ConstraintFunction, CI::LCI{S}, replacement::Linear) where {S <: Union{LE, GE, EQ}}
+    previous = MOI.get(model, attr, CI)
+    MOIU.canonicalize!(previous)
+    replacement = MOIU.canonical(replacement)
+    # If the previous and replacement constraint functions have exactly
+    # the same sparsity pattern, then we can take a faster path by just
+    # passing the replacement terms to the model. But if their sparsity
+    # patterns differ, then we need to first zero out the previous terms
+    # and then set the replacement terms.
+    row = model[CI]
+    if _matching_sparsity_pattern(previous, replacement)
+        _replace_with_matching_sparsity!(model, previous, replacement, row)
+    else
+        _replace_with_different_sparsity!(model, previous, replacement, row)
+    end
+    change_rhs_coefficient!(model, row, get_rhs(model, row) - (replacement.constant - previous.constant))
+    model.constraint_constant[model[CI]] = replacement.constant
+    return nothing
+end
+
 #=
     Change RHS of linear constraint without modifying sense
 =#
