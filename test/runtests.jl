@@ -1,4 +1,3 @@
-push!(Base.LOAD_PATH,joinpath(dirname(@__FILE__),"..",".."))
 using Compat.Test, MathOptInterface
 using LinQuadOptInterface
 
