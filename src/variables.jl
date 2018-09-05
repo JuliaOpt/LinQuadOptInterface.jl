@@ -24,7 +24,6 @@ end
     Get variable names
 =#
 MOI.supports(::LinQuadOptimizer, ::MOI.VariableName, ::Type{VarInd}) = true
-MOI.canget(::LinQuadOptimizer, ::MOI.VariableName, ::Type{VarInd}) = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.VariableName, index::VarInd)
     if haskey(model.variable_names, index)
         return model.variable_names[index]
@@ -33,7 +32,7 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.VariableName, index::VarInd)
     end
 end
 
-function MOI.set!(model::LinQuadOptimizer, ::MOI.VariableName, index::VarInd, name::String)
+function MOI.set(model::LinQuadOptimizer, ::MOI.VariableName, index::VarInd, name::String)
     if haskey(model.variable_names_rev, name)
         if model.variable_names_rev[name] != index
             error("Duplicate variable name: $(name)")
@@ -53,17 +52,19 @@ end
 #=
     Get variable by name
 =#
-function MOI.canget(model::LinQuadOptimizer, ::Type{MOI.VariableIndex}, name::String)
-    return haskey(model.variable_names_rev, name)
-end
+
 function MOI.get(model::LinQuadOptimizer, ::Type{MOI.VariableIndex}, name::String)
-    return model.variable_names_rev[name]
+    if haskey(model.variable_names_rev, name)
+        return model.variable_names_rev[name]
+    else
+        return nothing
+    end
 end
 
 #=
     Get number of variables
 =#
-MOI.canget(::LinQuadOptimizer, ::MOI.NumberOfVariables) = true
+
 function MOI.get(model::LinQuadOptimizer, ::MOI.NumberOfVariables)
     # TODO(odow): work out why this is not the same as
     # length(model.variable_references)
@@ -73,7 +74,7 @@ end
 #=
     List of Variable References
 =#
-MOI.canget(::LinQuadOptimizer, ::MOI.ListOfVariableIndices) = true
+
 function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfVariableIndices)
     return model.variable_references
 end
@@ -82,7 +83,7 @@ end
     Add a single variable
 =#
 
-function MOI.addvariable!(model::LinQuadOptimizer)
+function MOI.add_variable(model::LinQuadOptimizer)
     add_variables!(model, 1)
     # assumes we add columns linearly
     model.last_variable_reference += 1
@@ -98,7 +99,7 @@ end
     Add multiple variables
 =#
 
-function MOI.addvariables!(model::LinQuadOptimizer, number_to_add::Int)
+function MOI.add_variables(model::LinQuadOptimizer, number_to_add::Int)
     previous_vars = MOI.get(model, MOI.NumberOfVariables())
     add_variables!(model, number_to_add)
     variable_indices = VarInd[]
@@ -122,7 +123,7 @@ end
     Check if reference is valid
 =#
 
-function MOI.isvalid(model::LinQuadOptimizer, index::VarInd)
+function MOI.is_valid(model::LinQuadOptimizer, index::VarInd)
     if haskey(model.variable_mapping, index)
         column = get_column(model, index)
         if 1 <= column <= MOI.get(model, MOI.NumberOfVariables())
@@ -136,7 +137,7 @@ end
     Delete a variable
 =#
 
-function MOI.delete!(model::LinQuadOptimizer, index::VarInd)
+function MOI.delete(model::LinQuadOptimizer, index::VarInd)
     __assert_valid__(model, index)
     column = get_column(model, index)
     delete_variables!(model, column, column)
@@ -183,12 +184,12 @@ function MOI.supports(::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::Type{VarI
     return false
 end
 
-function MOI.set!(model::LinQuadOptimizer, ::MOI.VariablePrimalStart,
+function MOI.set(model::LinQuadOptimizer, ::MOI.VariablePrimalStart,
                   indices::Vector{VarInd}, values::Vector{Float64})
     add_mip_starts!(model, get_column.(Ref(model), indices), values)
 end
 
-function MOI.set!(model::LinQuadOptimizer, ::MOI.VariablePrimalStart,
+function MOI.set(model::LinQuadOptimizer, ::MOI.VariablePrimalStart,
                   index::VarInd, value::Float64)
-    MOI.set!(model, MOI.VariablePrimalStart(), [index], [value])
+    MOI.set(model, MOI.VariablePrimalStart(), [index], [value])
 end

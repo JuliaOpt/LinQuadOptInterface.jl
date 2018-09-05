@@ -9,7 +9,7 @@ constrdict(model::LinQuadOptimizer, ::LCI{GE})  = cmap(model).greater_than
 constrdict(model::LinQuadOptimizer, ::LCI{EQ})  = cmap(model).equal_to
 constrdict(model::LinQuadOptimizer, ::LCI{IV})  = cmap(model).interval
 
-function MOI.addconstraint!(model::LinQuadOptimizer, func::Linear, set::T) where T <: LinSets
+function MOI.add_constraint(model::LinQuadOptimizer, func::Linear, set::T) where T <: LinSets
     __assert_supported_constraint__(model, Linear, T)
     canonicalized_func = MOIU.canonical(func)
     add_linear_constraint(model, canonicalized_func, set)
@@ -53,7 +53,7 @@ end
     Add linear constraints (plural)
 =#
 
-function MOI.addconstraints!(model::LinQuadOptimizer, func::Vector{Linear},
+function MOI.add_constraints(model::LinQuadOptimizer, func::Vector{Linear},
                              set::Vector{S}) where S <: LinSets
     __assert_supported_constraint__(model, Linear, S)
     @assert length(func) == length(set)
@@ -155,14 +155,13 @@ end
 #=
     Constraint set of Linear function
 =#
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{S}}) where S <: Union{LE, GE, EQ} = true
+
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::LCI{S}) where S <: Union{LE, GE, EQ}
     row = model[index]
     rhs = get_rhs(model, row)
     S(rhs + model.constraint_constant[row])
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{IV}}) = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::LCI{IV})
     row = model[index]
     lowerbound, upperbound = get_range(model, row)
@@ -174,7 +173,6 @@ end
     Constraint function of Linear function
 =#
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:LCI{<: LinSets}}) = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::LCI{<: LinSets})
     row = model[index]
     columns, coefficients = get_linear_constraint(model, row)
@@ -190,7 +188,7 @@ end
     Scalar Coefficient Change of Linear Constraint
 =#
 
-function MOI.modify!(model::LinQuadOptimizer, index::LCI{S}, change::MOI.ScalarCoefficientChange{Float64}) where S <: LinSets
+function MOI.modify(model::LinQuadOptimizer, index::LCI{S}, change::MOI.ScalarCoefficientChange{Float64}) where S <: LinSets
     row = model[index]
     column = get_column(model, change.variable)
     change_matrix_coefficient!(model, row, column, change.new_coefficient)
@@ -248,7 +246,7 @@ function _replace_with_different_sparsity!(model::LinQuadOptimizer, previous::Li
 end
 
 MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{LCI{S}}) where {S <: Union{LE, GE, EQ}} = true
-function MOI.set!(model::LinQuadOptimizer, attr::MOI.ConstraintFunction, CI::LCI{S}, replacement::Linear) where {S <: Union{LE, GE, EQ}}
+function MOI.set(model::LinQuadOptimizer, attr::MOI.ConstraintFunction, CI::LCI{S}, replacement::Linear) where {S <: Union{LE, GE, EQ}}
     previous = MOI.get(model, attr, CI)
     MOIU.canonicalize!(previous)
     replacement = MOIU.canonical(replacement)
@@ -272,14 +270,14 @@ end
     Change RHS of linear constraint without modifying sense
 =#
 MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{LCI{S}}) where S <: LinSets = true
-function MOI.set!(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::LCI{S},
+function MOI.set(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::LCI{S},
                   new_set::S) where S <: Union{LE, GE, EQ}
     row = model[index]
     rhs = MOIU.getconstant(new_set) - model.constraint_constant[row]
     change_rhs_coefficient!(model, model[index], rhs)
 end
 
-function MOI.set!(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::LCI{IV},
+function MOI.set(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::LCI{IV},
                   new_set::IV)
     row = model[index]
     constant = model.constraint_constant[row]
@@ -291,7 +289,7 @@ end
     Delete a linear constraint
 =#
 
-function MOI.delete!(model::LinQuadOptimizer, index::LCI{<: LinSets})
+function MOI.delete(model::LinQuadOptimizer, index::LCI{<: LinSets})
     __assert_valid__(model, index)
     delete_constraint_name(model, index)
     dict = constrdict(model, index)
@@ -309,7 +307,7 @@ end
     Transform scalar constraint
 =#
 
-function MOI.transform!(model::LinQuadOptimizer, index::LCI{S1}, new_set::S2) where S1 where S2 <: Union{LE, GE, EQ}
+function MOI.transform(model::LinQuadOptimizer, index::LCI{S1}, new_set::S2) where S1 where S2 <: Union{LE, GE, EQ}
     __assert_supported_constraint__(model, Linear, S2)
     dict = constrdict(model, index)
     row = dict[index]

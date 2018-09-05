@@ -15,7 +15,7 @@ constrdict(model::LinQuadOptimizer, ::VVCI{MOI.Zeros}) = cmap(model).vv_zeros
 constrdict(model::LinQuadOptimizer, ::VVCI{SOS1}) = cmap(model).sos1
 constrdict(model::LinQuadOptimizer, ::VVCI{SOS2}) = cmap(model).sos2
 
-function MOI.addconstraint!(model::LinQuadOptimizer, func::VecVar, set::S) where S <: VecLinSets
+function MOI.add_constraint(model::LinQuadOptimizer, func::VecVar, set::S) where S <: VecLinSets
     __assert_supported_constraint__(model, VecVar, S)
     @assert length(func.variables) == MOI.dimension(set)
     rows = get_number_linear_constraints(model)
@@ -37,7 +37,7 @@ function MOI.addconstraint!(model::LinQuadOptimizer, func::VecVar, set::S) where
     return index
 end
 
-function MOI.delete!(model::LinQuadOptimizer, index::VVCI{S}) where S <: VecLinSets
+function MOI.delete(model::LinQuadOptimizer, index::VVCI{S}) where S <: VecLinSets
     __assert_valid__(model, index)
     delete_constraint_name(model, index)
     dict = constrdict(model, index)
@@ -59,7 +59,6 @@ end
     Get constraint set of vector variable bound
 =#
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{VVCI{S}}) where S <: VecLinSets = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::VVCI{S}) where S <: VecLinSets
     S(length(model[index]))
 end
@@ -68,7 +67,6 @@ end
     Get constraint function of vector variable bound (linear ctr)
 =#
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{VVCI{S}}) where S <: VecLinSets = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::VVCI{<: VecLinSets})
     rows = model[index]
     variables = VarInd[]
@@ -87,7 +85,7 @@ end
     SOS constraints
 =#
 
-function MOI.addconstraint!(model::LinQuadOptimizer, func::VecVar, set::S) where S <: Union{MOI.SOS1, MOI.SOS2}
+function MOI.add_constraint(model::LinQuadOptimizer, func::VecVar, set::S) where S <: Union{MOI.SOS1, MOI.SOS2}
     __assert_supported_constraint__(model, VecVar, S)
     make_problem_type_integer(model)
     add_sos_constraint!(model, get_column.(Ref(model), func.variables),
@@ -99,7 +97,7 @@ function MOI.addconstraint!(model::LinQuadOptimizer, func::VecVar, set::S) where
     return index
 end
 
-function MOI.delete!(model::LinQuadOptimizer, index::VVCI{<:Union{SOS1, SOS2}})
+function MOI.delete(model::LinQuadOptimizer, index::VVCI{<:Union{SOS1, SOS2}})
     __assert_valid__(model, index)
     delete_constraint_name(model, index)
     dict = constrdict(model, index)
@@ -112,7 +110,6 @@ function MOI.delete!(model::LinQuadOptimizer, index::VVCI{<:Union{SOS1, SOS2}})
     end
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{VVCI{S}}) where S <: Union{MOI.SOS1, MOI.SOS2} = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::VVCI{S}) where S <: Union{MOI.SOS1, MOI.SOS2}
     indices, weights, types = get_sos_constraint(model, model[index])
     set = S(weights)
@@ -120,7 +117,6 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::VVCI{S}) w
     return set
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{VVCI{S}}) where S <: Union{MOI.SOS1, MOI.SOS2} = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::VVCI{<:Union{SOS1, SOS2}})
     indices, weights, types = get_sos_constraint(model, model[index])
     return VecVar(model.variable_references[indices])

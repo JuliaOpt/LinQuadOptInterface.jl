@@ -35,10 +35,10 @@ function has_integer(model::LinQuadOptimizer)
 end
 
 #=
-    MOI.isvalid
+    MOI.is_valid
 =#
 
-function MOI.isvalid(model::LinQuadOptimizer, index::CI{F,S}) where F where S
+function MOI.is_valid(model::LinQuadOptimizer, index::CI{F,S}) where F where S
     dict = constrdict(model, index)
     return haskey(dict, index)
 end
@@ -46,10 +46,10 @@ end
 """
     __assert_valid__(model::LinQuadOptimizer, index::MOI.Index)
 
-Throw an MOI.InvalidIndex error if `MOI.isvalid(model, index) == false`.
+Throw an MOI.InvalidIndex error if `MOI.is_valid(model, index) == false`.
 """
 function __assert_valid__(model::LinQuadOptimizer, index::MOI.Index)
-    if !MOI.isvalid(model, index)
+    if !MOI.is_valid(model, index)
         throw(MOI.InvalidIndex(index))
     end
 end
@@ -69,9 +69,6 @@ end
 #=
     Get number of constraints
 =#
-function MOI.canget(model::LinQuadOptimizer, ::MOI.NumberOfConstraints{F, S}) where F where S
-    return (F,S) in supported_constraints(model)
-end
 
 function MOI.get(model::LinQuadOptimizer, attribute::MOI.NumberOfConstraints{F, S}) where F where S
     __assert_supported_constraint__(model, F, S)
@@ -81,9 +78,6 @@ end
 #=
     Get list of constraint references
 =#
-function MOI.canget(model::LinQuadOptimizer, ::MOI.ListOfConstraintIndices{F, S}) where F where S
-    return (F,S) in supported_constraints(model)
-end
 
 function MOI.get(model::LinQuadOptimizer, attribute::MOI.ListOfConstraintIndices{F, S}) where F where S
     __assert_supported_constraint__(model, F, S)
@@ -95,9 +89,7 @@ end
 #=
     Get list of constraint types in model
 =#
-function MOI.canget(::LinQuadOptimizer, ::MOI.ListOfConstraints)
-    return true
-end
+
 function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfConstraints)
     return [(F, S) for (F, S) in supported_constraints(model) if
         MOI.get(model, MOI.NumberOfConstraints{F,S}()) > 0]
@@ -106,9 +98,7 @@ end
 #=
     Get constraint names
 =#
-function MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex})
-    return true
-end
+
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintName, index::MOI.ConstraintIndex)
     if haskey(model.constraint_names, index)
         return model.constraint_names[index]
@@ -119,7 +109,7 @@ end
 function MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex})
     return true
 end
-function MOI.set!(model::LinQuadOptimizer, ::MOI.ConstraintName,
+function MOI.set(model::LinQuadOptimizer, ::MOI.ConstraintName,
                   index::MOI.ConstraintIndex, name::String)
     if haskey(model.constraint_names_rev, name)
         if model.constraint_names_rev[name] != index
@@ -141,20 +131,24 @@ end
     Get constraint by name
 =#
 
-# this covers the non-type-stable get(m, ConstraintIndex) case
-function MOI.canget(model::LinQuadOptimizer, ::Type{MOI.ConstraintIndex}, name::String)
-    return haskey(model.constraint_names_rev, name)
-end
-function MOI.get(model::LinQuadOptimizer, ::Type{<:MOI.ConstraintIndex}, name::String)
-    return model.constraint_names_rev[name]
+function MOI.get(model::LinQuadOptimizer, ::Type{<:MOI.ConstraintIndex}, 
+                 name::String)
+    if haskey(model.constraint_names_rev, name)
+        return model.constraint_names_rev[name]
+    else
+        return nothing
+    end
 end
 
 # this covers the type-stable get(m, ConstraintIndex{F,S}, name)::CI{F,S} case
-function MOI.canget(model::LinQuadOptimizer, ::Type{FS}, name::String) where FS <: MOI.ConstraintIndex
-    return haskey(model.constraint_names_rev, name) && typeof(model.constraint_names_rev[name]) == FS
-end
-function MOI.get(model::LinQuadOptimizer, ::Type{MOI.ConstraintIndex{F,S}}, name::String) where F where S
-    model.constraint_names_rev[name]::MOI.ConstraintIndex{F,S}
+function MOI.get(model::LinQuadOptimizer, ::Type{MOI.ConstraintIndex{F,S}}, 
+                 name::String) where F where S
+    if haskey(model.constraint_names_rev, name) && 
+            isa(model.constraint_names_rev[name], MOI.ConstraintIndex{F,S})
+        return model.constraint_names_rev[name]::MOI.ConstraintIndex{F,S}
+    else
+        return nothing
+    end
 end
 
 
