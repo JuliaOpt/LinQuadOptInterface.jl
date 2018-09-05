@@ -98,10 +98,10 @@ const LQOI = LinQuadOptInterface
         MOIT.lin2vtest(solver, config)
         set_lin2test_solutions!(solver)
         MOIT.lin2ftest(solver, config)
-        # set_lin3test_solutions!(solver)
-        # MOIT.lin3test(solver, config)
-        # set_lin3test_solutions!(solver)
-        # MOIT.lin4test(solver, config)
+        set_lin3test_solutions!(solver)
+        MOIT.lin3test(solver, config)
+        set_lin3test_solutions!(solver)
+        MOIT.lin4test(solver, config)
     end
 
     @testset "Integer Linear tests" begin
