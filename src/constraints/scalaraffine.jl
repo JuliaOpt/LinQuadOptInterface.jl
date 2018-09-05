@@ -210,7 +210,7 @@ of this function.
 function _replace_with_matching_sparsity!(model::LinQuadOptimizer, previous::Linear, replacement::Linear, row)
     rows = fill(row, length(replacement.terms))
     cols = [model.variable_mapping[t.variable_index] for t in replacement.terms]
-    coefs = MOIU.coefficient.(replacement.terms)
+    coefs = MOI.coefficient.(replacement.terms)
     change_matrix_coefficients!(model, rows, cols, coefs)
 end
 
@@ -241,7 +241,7 @@ function _replace_with_different_sparsity!(model::LinQuadOptimizer, previous::Li
     # Next, set the new constraint function terms
     rows = fill(row, length(replacement.terms))
     cols = [model.variable_mapping[t.variable_index] for t in replacement.terms]
-    coefs = MOIU.coefficient.(replacement.terms)
+    coefs = MOI.coefficient.(replacement.terms)
     change_matrix_coefficients!(model, rows, cols, coefs)
 end
 

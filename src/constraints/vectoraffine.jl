@@ -92,7 +92,7 @@ function _matching_sparsity_pattern(f1::T, f2::T) where {T <: Union{Linear, VecL
     Compat.axes(f1.terms) == Compat.axes(f2.terms) || return false
     Compat.axes(_constant(f1)) == Compat.axes(_constant(f2)) || return false
     for i in eachindex(f1.terms)
-        MOIU.termindices(f1.terms[i]) == MOIU.termindices(f2.terms[i]) || return false
+        MOI.term_indices(f1.terms[i]) == MOI.term_indices(f2.terms[i]) || return false
     end
     return true
 end
@@ -113,7 +113,7 @@ of this function.
 function _replace_with_matching_sparsity!(model::LinQuadOptimizer, previous::VecLin, replacement::VecLin, constraint_indices)
     rows = [constraint_indices[t.output_index] for t in previous.terms]
     cols = [model.variable_mapping[t.scalar_term.variable_index] for t in previous.terms]
-    coefs = MOIU.coefficient.(replacement.terms)
+    coefs = MOI.coefficient.(replacement.terms)
     change_matrix_coefficients!(model, rows, cols, coefs)
 end
 
@@ -144,7 +144,7 @@ function _replace_with_different_sparsity!(model::LinQuadOptimizer, previous::Ve
     # Next, set the new constraint function terms
     rows = [constraint_indices[t.output_index] for t in replacement.terms]
     cols = [model.variable_mapping[t.scalar_term.variable_index] for t in replacement.terms]
-    coefs = MOIU.coefficient.(replacement.terms)
+    coefs = MOI.coefficient.(replacement.terms)
     change_matrix_coefficients!(model, rows, cols, coefs)
 end
 

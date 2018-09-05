@@ -1,9 +1,9 @@
 
 # this function is only defined with `LinQuadOptimizer` in dest because a version
 # with `LinQuadOptimizer` in src and anything in dest does not work due to ambiguity.
-function MOI.copy_to(dest::LinQuadOptimizer, src; copynames=false)
+function MOI.copy_to(dest::LinQuadOptimizer, src; copy_names=false)
     src::MOI.ModelLike
-    return MOIU.default_copy_to(dest, src, copynames)
+    return MOIU.default_copy_to(dest, src, copy_names)
 end
 
 function MOI.copy_to(dest::LinQuadOptimizer, src::LinQuadOptimizer; copy_names=false)
