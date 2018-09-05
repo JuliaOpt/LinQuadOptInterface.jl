@@ -6,6 +6,10 @@ julia:
   - 0.6
   - 0.7
   - 1.0
+  - nightly
+matrix:
+  allow_failures:
+  - julia: nightly
 notifications:
   email: false
 git:
@@ -21,4 +25,5 @@ notifications:
     on_start: never     # options: [always|never|change] default: always
 
 after_success:
-  - julia -e '(VERSION >= v"0.7" && using Pkg); cd(Pkg.dir("LinQuadOptInterface")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+ - julia -e 'if VERSION >= v"0.7-"; using Pkg; else; cd(Pkg.dir("LinQuadOptInterface")); end; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+ 
