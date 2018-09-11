@@ -66,7 +66,7 @@ function canonical_reduction(model::LinQuadOptimizer, func::Quad)
     return affine_columns, affine_coefficients, quad_columns_1, quad_columns_2, quad_coefficients
 end
 
-function MOI.addconstraint!(model::LinQuadOptimizer, func::Quad, set::S) where S <: Union{LE, GE, EQ}
+function MOI.add_constraint(model::LinQuadOptimizer, func::Quad, set::S) where S <: Union{LE, GE, EQ}
     add_quadratic_constraint(model, func, set)
     model.last_constraint_reference += 1
     index = QCI{S}(model.last_constraint_reference)
@@ -91,7 +91,7 @@ function add_quadratic_constraint(model::LinQuadOptimizer, func::Quad, sense, rh
                               sense, I, J, V)
 end
 
-function MOI.delete!(model::LinQuadOptimizer, index::QCI{<: LinSets})
+function MOI.delete(model::LinQuadOptimizer, index::QCI{<: LinSets})
     __assert_valid__(model, index)
     delete_constraint_name(model, index)
     dict = constrdict(model, index)
@@ -108,18 +108,15 @@ end
     Constraint set of Linear function
 =#
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{QCI{S}}) where S <: Union{LE, GE, EQ} = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::QCI{S}) where S <: Union{LE, GE, EQ}
     rhs = get_quadratic_rhs(model, model[index])
     S(rhs)
 end
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{QCI{IV}}) = false
 
 #=
     Constraint function of Linear function
 =#
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{<:QCI{<: LinSets}}) = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::QCI{<: LinSets})
     aff_cols, aff_coeffs, Q = get_quadratic_constraint(model, model[index])
     affine_terms = map(

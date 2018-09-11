@@ -143,14 +143,20 @@ const LQOI = LinQuadOptInterface
 end
 
 MOIU.@model(ModelComplete,
-    (ZeroOne, Integer),
-    (EqualTo, GreaterThan, LessThan, Interval, Semicontinuous, Semiinteger),
-    (Reals, Zeros, Nonnegatives, Nonpositives, SecondOrderCone, RotatedSecondOrderCone, GeometricMeanCone, ExponentialCone, DualExponentialCone, PositiveSemidefiniteConeTriangle, PositiveSemidefiniteConeSquare, RootDetConeTriangle, RootDetConeSquare, LogDetConeTriangle, LogDetConeSquare),
-    (PowerCone, DualPowerCone, SOS1, SOS2),
-    (SingleVariable,),
-    (ScalarAffineFunction, ScalarQuadraticFunction),
-    (VectorOfVariables,),
-    (VectorAffineFunction, VectorQuadraticFunction))
+    (MOI.ZeroOne, MOI.Integer),
+    (MOI.EqualTo, MOI.GreaterThan, MOI.LessThan, MOI.Interval, 
+     MOI.Semicontinuous, MOI.Semiinteger),
+    (MOI.Reals, MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives, 
+     MOI.SecondOrderCone, MOI.RotatedSecondOrderCone, MOI.GeometricMeanCone, 
+     MOI.ExponentialCone, MOI.DualExponentialCone, 
+     MOI.PositiveSemidefiniteConeTriangle, MOI.PositiveSemidefiniteConeSquare, 
+     MOI.RootDetConeTriangle, MOI.RootDetConeSquare, MOI.LogDetConeTriangle, 
+     MOI.LogDetConeSquare),
+    (MOI.PowerCone, MOI.DualPowerCone, MOI.SOS1, MOI.SOS2),
+    (MOI.SingleVariable,),
+    (MOI.ScalarAffineFunction, MOI.ScalarQuadraticFunction),
+    (MOI.VectorOfVariables,),
+    (MOI.VectorAffineFunction, MOI.VectorQuadraticFunction))
 @testset "Copy from/to @Model" begin
     MOIT.copytest(LQOI.MockLinQuadOptimizer(), ModelComplete{Float64}())
     MOIT.copytest(ModelComplete{Float64}(), LQOI.MockLinQuadOptimizer())
@@ -159,10 +165,10 @@ end
 @testset "Issue #52" begin
     @testset "scalaraffine" begin
         model = LQOI.MockLinQuadOptimizer()
-        x = MOI.addvariable!(model)
+        x = MOI.add_variable(model)
         f1 =  MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 1.5)
         s1 = MOI.LessThan(2.0)
-        c = MOI.addconstraint!(model, f1, s1)
+        c = MOI.add_constraint(model, f1, s1)
         f2 = MOI.get(model, MOI.ConstraintFunction(), c)
         @test f1 ≈ f2
         s2 = MOI.get(model, MOI.ConstraintSet(), c)
@@ -171,11 +177,11 @@ end
     end
     @testset "vectoraffine" begin
         model = LQOI.MockLinQuadOptimizer()
-        x = MOI.addvariable!(model)
+        x = MOI.add_variable(model)
         f1 =  MOI.VectorAffineFunction(
             MOI.VectorAffineTerm.([1], MOI.ScalarAffineTerm.([1.0], [x])), [1.5])
         s1 = MOI.Zeros(1)
-        c = MOI.addconstraint!(model, f1, s1)
+        c = MOI.add_constraint(model, f1, s1)
         f2 = MOI.get(model, MOI.ConstraintFunction(), c)
         @test f1 ≈ f2
         s2 = MOI.get(model, MOI.ConstraintSet(), c)
@@ -187,28 +193,28 @@ end
 @testset "Issue #54" begin
     @testset "scalar, one-sided" begin
         model = LQOI.MockLinQuadOptimizer()
-        x = MOI.addvariable!(model)
+        x = MOI.add_variable(model)
         f =  MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 1.5)
         s = MOI.LessThan(2.0)
-        c = MOI.addconstraint!(model, f, s)
+        c = MOI.add_constraint(model, f, s)
         # Change the constraint set, and verify that we get the same set
         # when we retrieve it:
         s2 = MOI.LessThan(1.0)
-        MOI.set!(model, MOI.ConstraintSet(), c, s2)
+        MOI.set(model, MOI.ConstraintSet(), c, s2)
         s3 = MOI.get(model, MOI.ConstraintSet(), c)
         @test typeof(s2) == typeof(s3)
         @test s2.upper == s3.upper
     end
     @testset "scalar, interval" begin
         model = LQOI.MockLinQuadOptimizer()
-        x = MOI.addvariable!(model)
+        x = MOI.add_variable(model)
         f =  MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 1.5)
         s = MOI.Interval(2.0, 3.0)
-        c = MOI.addconstraint!(model, f, s)
+        c = MOI.add_constraint(model, f, s)
         # Change the constraint set, and verify that we get the same set
         # when we retrieve it:
         s2 = MOI.Interval(1.0, 2.0)
-        MOI.set!(model, MOI.ConstraintSet(), c, s2)
+        MOI.set(model, MOI.ConstraintSet(), c, s2)
         s3 = MOI.get(model, MOI.ConstraintSet(), c)
         @test typeof(s2) == typeof(s3)
         @test s2.lower == s3.lower
@@ -239,78 +245,78 @@ end
     @testset "Scalar affine function" begin
         @testset "Single variable" begin
             model = LQOI.MockLinQuadOptimizer()
-            x = MOI.addvariable!(model)
+            x = MOI.add_variable(model)
 
             # Add the constraint and verify that we can retrieve it
             f =  MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([2.0], [x]), 0.1)
             s = MOI.GreaterThan(0.5)
-            c = MOI.addconstraint!(model, f, s)
+            c = MOI.add_constraint(model, f, s)
             check_row(model, c, f, s)
 
             # Replace the constraint function with itself and verify that
             # the problem is unchanged
-            MOI.set!(model, MOI.ConstraintFunction(), c, f)
+            MOI.set(model, MOI.ConstraintFunction(), c, f)
             check_row(model, c, f, s)
 
             # Replace the constraint function with a new function, verify
             # that the replacement occurred and that the set is unchanged
             f2 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0], [x]), 0.5)
-            MOI.set!(model, MOI.ConstraintFunction(), c, f2)
+            MOI.set(model, MOI.ConstraintFunction(), c, f2)
             check_row(model, c, f2, s)
 
             # Replace the constraint function with a new function which is not
             # in canonical form:
             f3 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 0.5], [x]), 0.5)
-            MOI.set!(model, MOI.ConstraintFunction(), c, f3)
+            MOI.set(model, MOI.ConstraintFunction(), c, f3)
             check_row(model, c, MOIU.canonical(f3), s)
 
             # Replace the constraint function with a new function whose sparsity
             # pattern is different:
             f4 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm{Float64}[], 2.0)
-            MOI.set!(model, MOI.ConstraintFunction(), c, f4)
+            MOI.set(model, MOI.ConstraintFunction(), c, f4)
             check_row(model, c, f4, s)
         end
 
         @testset "Multiple variables" begin
             model = LQOI.MockLinQuadOptimizer()
-            x = MOI.addvariable!(model)
-            y = MOI.addvariable!(model)
+            x = MOI.add_variable(model)
+            y = MOI.add_variable(model)
 
             # Add the constraint and verify that we can retrieve it
             f =  MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([1.0, 2.0], [x, y]), 0.1)
             s = MOI.GreaterThan(0.5)
-            c = MOI.addconstraint!(model, f, s)
+            c = MOI.add_constraint(model, f, s)
             check_row(model, c, f, s)
 
             # Replace the constraint function with itself and verify that
             # the problem is unchanged
-            MOI.set!(model, MOI.ConstraintFunction(), c, f)
+            MOI.set(model, MOI.ConstraintFunction(), c, f)
             check_row(model, c, f, s)
 
             # Replace the constraint function with a new function, verify
             # that the replacement occurred and that the set is unchanged
             f2 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([0.5, 1.0], [x, y]), 0.5)
-            MOI.set!(model, MOI.ConstraintFunction(), c, f2)
+            MOI.set(model, MOI.ConstraintFunction(), c, f2)
             check_row(model, c, f2, s)
 
             # Replace the constraint function with a new function which is not
             # in canonical form:
             f3 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([-0.1, 0.2], [y, x]), 0.5)
-            MOI.set!(model, MOI.ConstraintFunction(), c, f3)
+            MOI.set(model, MOI.ConstraintFunction(), c, f3)
             check_row(model, c, MOIU.canonical(f3), s)
 
             # Replace the constraint function with a new function whose sparsity
             # pattern is different:
             f4 = MOI.ScalarAffineFunction(MOI.ScalarAffineTerm.([-2.0], [y]), 2.0)
-            MOI.set!(model, MOI.ConstraintFunction(), c, f4)
+            MOI.set(model, MOI.ConstraintFunction(), c, f4)
             check_row(model, c, f4, s)
         end
     end
 
     @testset "Vector affine function" begin
         model = LQOI.MockLinQuadOptimizer()
-        x = MOI.addvariable!(model)
-        y = MOI.addvariable!(model)
+        x = MOI.add_variable(model)
+        y = MOI.add_variable(model)
 
         # Add the constraint and verify that we can retrieve it
         f = MOI.VectorAffineFunction(
@@ -319,12 +325,12 @@ end
              MOI.VectorAffineTerm(2, MOI.ScalarAffineTerm(-1.0, x))],
             [0.1, 0.2])
         s = MOI.Nonpositives(2)
-        c = MOI.addconstraint!(model, f, s)
+        c = MOI.add_constraint(model, f, s)
         check_row(model, c, f, s)
 
         # Replace the constraint function with itself and verify that
         # the problem is unchanged
-        MOI.set!(model, MOI.ConstraintFunction(), c, f)
+        MOI.set(model, MOI.ConstraintFunction(), c, f)
         check_row(model, c, f, s)
 
 
@@ -335,7 +341,7 @@ end
              MOI.VectorAffineTerm(1, MOI.ScalarAffineTerm(-2.0, y)),
              MOI.VectorAffineTerm(2, MOI.ScalarAffineTerm(-1.5, x))],
             [0.5, 2.0])
-        MOI.set!(model, MOI.ConstraintFunction(), c, f2)
+        MOI.set(model, MOI.ConstraintFunction(), c, f2)
         check_row(model, c, f2, s)
 
         # Replace the constraint function with a new function which is not
@@ -345,7 +351,7 @@ end
              MOI.VectorAffineTerm(2, MOI.ScalarAffineTerm(-1.5, x)),
              MOI.VectorAffineTerm(1, MOI.ScalarAffineTerm(-2.5, y))],
             [0.1, 0.2])
-        MOI.set!(model, MOI.ConstraintFunction(), c, f3)
+        MOI.set(model, MOI.ConstraintFunction(), c, f3)
         check_row(model, c, MOIU.canonical(f3), s)
 
         # Replace the constraint function with a new function whose sparsity
@@ -354,7 +360,7 @@ end
             [MOI.VectorAffineTerm(2, MOI.ScalarAffineTerm(-1.5, y)),
              MOI.VectorAffineTerm(1, MOI.ScalarAffineTerm(2.0, x))],
             [0.1, 0.2])
-        MOI.set!(model, MOI.ConstraintFunction(), c, f4)
+        MOI.set(model, MOI.ConstraintFunction(), c, f4)
         check_row(model, c, f4, s)
     end
 end

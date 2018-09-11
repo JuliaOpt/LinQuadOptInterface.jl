@@ -96,7 +96,7 @@ function __check_for_conflicting__(model::LinQuadOptimizer, variable::SinVar, se
     end
 end
 
-function MOI.addconstraint!(model::LinQuadOptimizer, variable::SinVar, set::S) where S <: LinSets
+function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::S) where S <: LinSets
     __assert_supported_constraint__(model, SinVar, S)
     # Since the following "variable type" sets also define bounds (implicitly or explicitly), 
     # they may conflict with other bound constraints.
@@ -110,7 +110,7 @@ function MOI.addconstraint!(model::LinQuadOptimizer, variable::SinVar, set::S) w
     return index
 end
 
-function MOI.delete!(model::LinQuadOptimizer, index::SVCI{S}) where S <: LinSets
+function MOI.delete(model::LinQuadOptimizer, index::SVCI{S}) where S <: LinSets
     __assert_valid__(model, index)
     delete_constraint_name(model, index)
     dict = constrdict(model, index)
@@ -120,7 +120,6 @@ function MOI.delete!(model::LinQuadOptimizer, index::SVCI{S}) where S <: LinSets
 end
 
 # constraint set
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S <: LinSets = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::SVCI{LE})
     MOI.LessThan{Float64}(
         get_variable_upperbound(model, get_column(model, model[index]))
@@ -143,14 +142,13 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::SVCI{IV})
 end
 
 # constraint function
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{S}}) where S <: LinSets = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::SVCI{<: LinSets})
     return SinVar(model[index])
 end
 
 # modify
 MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S<:LinSets = true
-function MOI.set!(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::SVCI{S}, newset::S) where S <: LinSets
+function MOI.set(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::SVCI{S}, newset::S) where S <: LinSets
     set_variable_bound(model, SinVar(model[index]), newset)
 end
 
@@ -163,7 +161,7 @@ we can revert to the old bounds
 
 Xpress is worse, once binary, the bounds are changed independently of what the user does
 =#
-function MOI.addconstraint!(model::LinQuadOptimizer, variable::SinVar, set::MOI.ZeroOne)
+function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::MOI.ZeroOne)
     __assert_supported_constraint__(model, SinVar, MOI.ZeroOne)
     __check_for_conflicting__(model, variable, set, MOI.ZeroOne, MOI.Integer,
         MOI.Semicontinuous{Float64}, MOI.Semiinteger{Float64})
@@ -182,7 +180,7 @@ function MOI.addconstraint!(model::LinQuadOptimizer, variable::SinVar, set::MOI.
     return index
 end
 
-function MOI.delete!(model::LinQuadOptimizer, index::SVCI{MOI.ZeroOne})
+function MOI.delete(model::LinQuadOptimizer, index::SVCI{MOI.ZeroOne})
     __assert_valid__(model, index)
     delete_constraint_name(model, index)
     dict = constrdict(model, index)
@@ -200,12 +198,10 @@ function MOI.delete!(model::LinQuadOptimizer, index::SVCI{MOI.ZeroOne})
     end
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{MOI.ZeroOne}}) = true
 function MOI.get(::LinQuadOptimizer, ::MOI.ConstraintSet, ::SVCI{MOI.ZeroOne})
     return MOI.ZeroOne()
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{MOI.ZeroOne}}) = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::SVCI{MOI.ZeroOne})
     return SinVar(model[index][1])
 end
@@ -214,7 +210,7 @@ end
     Integer constraints
 =#
 
-function MOI.addconstraint!(model::LinQuadOptimizer, variable::SinVar, set::MOI.Integer)
+function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::MOI.Integer)
     __assert_supported_constraint__(model, SinVar, MOI.Integer)
     __check_for_conflicting__(model, variable, set, MOI.ZeroOne,
         MOI.Semicontinuous{Float64}, MOI.Semiinteger{Float64})
@@ -228,7 +224,7 @@ function MOI.addconstraint!(model::LinQuadOptimizer, variable::SinVar, set::MOI.
     return index
 end
 
-function MOI.delete!(model::LinQuadOptimizer, index::SVCI{MOI.Integer})
+function MOI.delete(model::LinQuadOptimizer, index::SVCI{MOI.Integer})
     __assert_valid__(model, index)
     delete_constraint_name(model, index)
     dict = constrdict(model, index)
@@ -241,12 +237,10 @@ function MOI.delete!(model::LinQuadOptimizer, index::SVCI{MOI.Integer})
     end
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{MOI.Integer}}) = true
 function MOI.get(::LinQuadOptimizer, ::MOI.ConstraintSet, ::SVCI{MOI.Integer})
     return MOI.Integer()
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{MOI.Integer}}) = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction,
                  index::SVCI{MOI.Integer})
     return SinVar(model[index])
@@ -256,7 +250,7 @@ end
     Semicontinuous / Semiinteger constraints
 =#
 const SEMI_TYPES = Union{MOI.Semicontinuous{Float64}, MOI.Semiinteger{Float64}}
-function MOI.addconstraint!(model::LinQuadOptimizer, variable::SinVar, set::S) where S <: SEMI_TYPES
+function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::S) where S <: SEMI_TYPES
     __assert_supported_constraint__(model, SinVar, S)
     __check_for_conflicting__(model, variable, set, S, MOI.ZeroOne, MOI.Integer)
     if S == MOI.Semicontinuous{Float64}
@@ -278,7 +272,7 @@ function MOI.addconstraint!(model::LinQuadOptimizer, variable::SinVar, set::S) w
     return index
 end
 
-function MOI.delete!(model::LinQuadOptimizer, index::SVCI{<:SEMI_TYPES})
+function MOI.delete(model::LinQuadOptimizer, index::SVCI{<:SEMI_TYPES})
     __assert_valid__(model, index)
     delete_constraint_name(model, index)
     dict = constrdict(model, index)
@@ -294,7 +288,6 @@ function MOI.delete!(model::LinQuadOptimizer, index::SVCI{<:SEMI_TYPES})
     end
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintSet, ::Type{SVCI{S}}) where S <:SEMI_TYPES = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::SVCI{S}) where S <: SEMI_TYPES
     dict = constrdict(model, index)
     column = get_column(model, dict[index])
@@ -302,7 +295,6 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintSet, index::SVCI{S}) w
              get_variable_upperbound(model, column))
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ConstraintFunction, ::Type{SVCI{S}}) where S <:SEMI_TYPES = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintFunction, index::SVCI{<:SEMI_TYPES})
     return SinVar(model[index])
 end

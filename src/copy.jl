@@ -1,20 +1,19 @@
+
 # this function is only defined with `LinQuadOptimizer` in dest because a version
 # with `LinQuadOptimizer` in src and anything in dest does not work due to ambiguity.
-function MOI.copy!(dest::LinQuadOptimizer, src; copynames=false)
+function MOI.copy_to(dest::LinQuadOptimizer, src; copy_names=false)
     src::MOI.ModelLike
-    return MOIU.defaultcopy!(dest, src, copynames)
+    return MOIU.default_copy_to(dest, src, copy_names)
 end
 
-function MOI.copy!(dest::LinQuadOptimizer, src::LinQuadOptimizer; copynames=false)
-    return MOIU.defaultcopy!(dest, src, copynames)
+function MOI.copy_to(dest::LinQuadOptimizer, src::LinQuadOptimizer; copy_names=false)
+    return MOIU.default_copy_to(dest, src, copy_names)
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ListOfVariableAttributesSet) = true
 function MOI.get(::LinQuadOptimizer, ::MOI.ListOfVariableAttributesSet)
     return MOI.AbstractVariableAttribute[]
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet) = true
 function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet)
     return [MOI.ObjectiveSense(),
         MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
@@ -23,9 +22,6 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet)
     ]
 end
 
-function MOI.canget(::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet{F,S}) where {F, S}
-    return true
-end
 function MOI.get(::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet{F,S}) where {F, S}
     return MOI.AbstractConstraintAttribute[]
 end

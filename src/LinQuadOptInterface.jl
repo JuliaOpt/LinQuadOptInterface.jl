@@ -245,7 +245,7 @@ macro LinQuadOptimizerBase(inner_model_type=Any)
 end
 
 
-function MOI.isempty(m::LinQuadOptimizer)
+function MOI.is_empty(m::LinQuadOptimizer)
     ret = true
     ret = ret && m.name == ""
     ret = ret && m.obj_type == AffineObjective
@@ -321,17 +321,16 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     nothing
 end
 
-MOI.canget(::LinQuadOptimizer, ::MOI.Name) = true
 function MOI.get(m::LinQuadOptimizer, ::MOI.Name)
     m.name
 end
 
 MOI.supports(::LinQuadOptimizer, ::MOI.Name) = true
-function MOI.set!(m::LinQuadOptimizer, ::MOI.Name, name::String)
+function MOI.set(m::LinQuadOptimizer, ::MOI.Name, name::String)
     m.name = name
 end
 
-function MOI.supportsconstraint(m::LinQuadOptimizer, ft::Type{F}, st::Type{S}) where F <: MOI.AbstractFunction where S <: MOI.AbstractSet
+function MOI.supports_constraint(m::LinQuadOptimizer, ft::Type{F}, st::Type{S}) where F <: MOI.AbstractFunction where S <: MOI.AbstractSet
     (ft,st) in supported_constraints(m)
 end
 function MOI.supports(m::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}) where F <: MOI.AbstractFunction
