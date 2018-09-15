@@ -63,6 +63,7 @@ function MOI.optimize!(model::LinQuadOptimizer)
         model.constraint_dual_solution *= -1
         model.variable_dual_solution *= -1
     end
+    return
 end
 
 
