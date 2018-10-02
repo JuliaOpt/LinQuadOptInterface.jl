@@ -21,30 +21,40 @@ constrdict(model::LinQuadOptimizer, ::SVCI{MOI.Integer}) = cmap(model).integer
 constrdict(model::LinQuadOptimizer, ::SVCI{MOI.Semicontinuous{Float64}}) = cmap(model).semicontinuous
 constrdict(model::LinQuadOptimizer, ::SVCI{MOI.Semiinteger{Float64}}) = cmap(model).semiinteger
 
-function set_variable_bound(model::LinQuadOptimizer, column::Int,
-                            bound::Float64, sense)
-    change_variable_bounds!(model, [column], [bound], [sense])
+function set_variable_bound(model::LinQuadOptimizer, v::SinVar, set::LE)
+    change_variable_bounds!(model,
+        [get_column(model, v)],
+        [set.upper],
+        [backend_type(model, Val{:Upperbound}())]
+    )
 end
 
-function set_variable_bound(model::LinQuadOptimizer, v::SinVar, set::LE)
-    set_variable_bound(model, get_column(model, v), set.upper,
-                      backend_type(model, Val{:Upperbound}()))
-end
 function set_variable_bound(model::LinQuadOptimizer, v::SinVar, set::GE)
-    set_variable_bound(model, get_column(model, v), set.lower,
-                      backend_type(model, Val{:Lowerbound}()))
+    change_variable_bounds!(model,
+        [get_column(model, v)],
+        [set.lower],
+        [backend_type(model, Val{:Lowerbound}())]
+    )
 end
+
 function set_variable_bound(model::LinQuadOptimizer, v::SinVar, set::EQ)
-    set_variable_bound(model, get_column(model, v), set.value,
-                      backend_type(model, Val{:Upperbound}()))
-    set_variable_bound(model, get_column(model, v), set.value,
-                      backend_type(model, Val{:Lowerbound}()))
+    change_variable_bounds!(model,
+        [get_column(model, v), get_column(model, v)],
+        [set.value, set.value],
+        [backend_type(model, Val{:Upperbound}()),
+         backend_type(model, Val{:Lowerbound}())
+        ]
+    )
 end
+
 function set_variable_bound(model::LinQuadOptimizer, v::SinVar, set::IV)
-    set_variable_bound(model, get_column(model, v), set.upper,
-                      backend_type(model, Val{:Upperbound}()))
-    set_variable_bound(model, get_column(model, v), set.lower,
-                      backend_type(model, Val{:Lowerbound}()))
+    change_variable_bounds!(model,
+        [get_column(model, v), get_column(model, v)],
+        [set.upper, set.lower],
+        [backend_type(model, Val{:Upperbound}()),
+         backend_type(model, Val{:Lowerbound}())
+        ]
+    )
 end
 
 """
@@ -98,7 +108,7 @@ end
 
 function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::S) where S <: LinSets
     __assert_supported_constraint__(model, SinVar, S)
-    # Since the following "variable type" sets also define bounds (implicitly or explicitly), 
+    # Since the following "variable type" sets also define bounds (implicitly or explicitly),
     # they may conflict with other bound constraints.
     __check_for_conflicting__(model, variable, set,
         S, MOI.Semicontinuous{Float64}, MOI.Semiinteger{Float64}, MOI.ZeroOne)
