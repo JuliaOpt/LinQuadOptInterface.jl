@@ -165,11 +165,12 @@ end
 #=
     Binary constraints
 
-For some reason CPLEX doesn't respect bounds on a binary variable, so we
-should store the previous bounds so that if we delete the binary constraint
-we can revert to the old bounds
+For some reason CPLEX doesn't respect bounds on a binary variable, so we should
+store the previous bounds so that if we delete the binary constraint we can
+revert to the old bounds.
 
-Xpress is worse, once binary, the bounds are changed independently of what the user does
+Xpress is worse, once binary, the bounds are changed independently of what the
+user does.
 =#
 function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::MOI.ZeroOne)
     __assert_supported_constraint__(model, SinVar, MOI.ZeroOne)
@@ -180,12 +181,14 @@ function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::MOI.
     column = get_column(model, variable)
     dict = constrdict(model, index)
     dict[index] = (variable.variable, get_variable_lowerbound(model, column),
-                    get_variable_upperbound(model, column))
+                   get_variable_upperbound(model, column))
     change_variable_types!(model, [column], [backend_type(model, set)])
-    set_variable_bound(model, column, 1.0,
-                       backend_type(model, Val{:Upperbound}()))
-    set_variable_bound(model, column, 0.0,
-                       backend_type(model, Val{:Lowerbound}()))
+    change_variable_bounds!(model,
+        [column, column],
+        [0.0, 1.0],
+        [backend_type(model, Val{:Lowerbound}()),
+         backend_type(model, Val{:Upperbound}())]
+    )
     make_problem_type_integer(model)
     return index
 end
@@ -196,12 +199,14 @@ function MOI.delete(model::LinQuadOptimizer, index::SVCI{MOI.ZeroOne})
     dict = constrdict(model, index)
     (variable, lower, upper) = dict[index]
     column = get_column(model, variable)
-    change_variable_types!(model, [column],
-                           [backend_type(model, Val{:Continuous}())])
-    set_variable_bound(model, column, upper,
-                       backend_type(model, Val{:Upperbound}()))
-    set_variable_bound(model, column, lower,
-                       backend_type(model, Val{:Lowerbound}()))
+    change_variable_types!(
+        model, [column], [backend_type(model, Val{:Continuous}())])
+    change_variable_bounds!(model,
+       [column, column],
+       [lower, upper],
+       [backend_type(model, Val{:Lowerbound}()),
+        backend_type(model, Val{:Upperbound}())]
+    )
     delete!(dict, index)
     if !has_integer(model)
         make_problem_type_continuous(model)
@@ -270,10 +275,12 @@ function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::S) w
     end
     column = get_column(model, variable)
     change_variable_types!(model, [column], [backend_type(model, set)])
-    set_variable_bound(model, column, set.upper,
-                       backend_type(model, Val{:Upperbound}()))
-    set_variable_bound(model, column, set.lower,
-                       backend_type(model, Val{:Lowerbound}()))
+    change_variable_bounds!(model,
+        [column, column],
+        [set.lower, set.upper],
+        [backend_type(model, Val{:Lowerbound}()),
+         backend_type(model, Val{:Upperbound}())]
+    )
     model.last_constraint_reference += 1
     index = SVCI{S}(model.last_constraint_reference)
     dict = constrdict(model, index)
@@ -288,10 +295,12 @@ function MOI.delete(model::LinQuadOptimizer, index::SVCI{<:SEMI_TYPES})
     dict = constrdict(model, index)
     column = get_column(model, dict[index])
     change_variable_types!(model, [column], [backend_type(model, Val{:Continuous}())])
-    set_variable_bound(model, column, Inf,
-                       backend_type(model, Val{:Upperbound}()))
-    set_variable_bound(model, column, -Inf,
-                       backend_type(model, Val{:Lowerbound}()))
+    change_variable_bounds!(model,
+        [column, column],
+        [-Inf, Inf],
+        [backend_type(model, Val{:Lowerbound}()),
+         backend_type(model, Val{:Upperbound}())]
+    )
     delete!(dict, index)
     if !has_integer(model)
         make_problem_type_continuous(model)
