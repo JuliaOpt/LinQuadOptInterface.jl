@@ -364,3 +364,16 @@ end
         check_row(model, c, f4, s)
     end
 end
+
+@testset "Issue #67" begin
+    model = LQOI.MockLinQuadOptimizer()
+    function objective_type_test(f::MOI.AbstractScalarFunction)
+        MOI.set(model, MOI.ObjectiveFunction{typeof(f)}(), f)
+        @test MOI.get(model, MOI.ObjectiveFunctionType()) == typeof(f)
+    end
+    x = MOI.add_variable(model)
+    f = MOI.SingleVariable(x)
+    objective_type_test(f)
+    objective_type_test(convert(MOI.ScalarAffineFunction{Float64}, f))
+    objective_type_test(convert(MOI.ScalarQuadraticFunction{Float64}, f))
+end

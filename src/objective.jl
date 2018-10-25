@@ -99,10 +99,21 @@ function MOI.supports(model::LinQuadOptimizer, ::MOI.ObjectiveFunction{F}) where
     return F in supported_objectives(model)
 end
 
+function MOI.get(model::LinQuadOptimizer, ::MOI.ObjectiveFunctionType)
+    if model.obj_type == SingleVariableObjective
+        return MOI.SingleVariable
+    elseif model.obj_type == AffineObjective
+        return MOI.ScalarAffineFunction{Float64}
+    else
+        @assert model.obj_type == QuadraticObjective
+        return MOI.ScalarQuadraticFunction{Float64}
+    end
+end
+
 function MOI.get(model::LinQuadOptimizer, ::MOI.ObjectiveFunction{MOI.SingleVariable})
     if model.obj_type != SingleVariableObjective
         if VERSION >= v"0.7-"
-            throw(InexactError(:convert, SingleVariableObjective, model.obj_type))            
+            throw(InexactError(:convert, SingleVariableObjective, model.obj_type))
         else
             throw(InexactError())
         end
@@ -140,7 +151,7 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.ObjectiveFunction{Quad})
     if model.obj_type == QuadraticObjective
         Q = get_quadratic_terms_objective(model)
         rows = rowvals(Q)
-        coefficients = nonzeros(Q)        
+        coefficients = nonzeros(Q)
         sizehint!(quadratic_terms, length(coefficients))
         for (column, variable) in enumerate(model.variable_references)
             for j in nzrange(Q, column)
