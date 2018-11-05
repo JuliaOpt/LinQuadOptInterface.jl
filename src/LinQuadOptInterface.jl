@@ -199,6 +199,8 @@ end
 # Abstract + macro
 abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
 
+@enum(VariableType, Continuous, Binary, Integer, Semiinteger, Semicontinuous)
+
 macro LinQuadOptimizerBase(inner_model_type=Any)
     esc(quote
     inner::$inner_model_type
@@ -214,6 +216,7 @@ macro LinQuadOptimizerBase(inner_model_type=Any)
     variable_names::Dict{MOI.VariableIndex, String}
     variable_names_rev::Dict{String, MOI.VariableIndex}
     variable_references::Vector{MOI.VariableIndex}
+    variable_type::Dict{MOI.VariableIndex, LinQuadOptInterface.VariableType}
 
     variable_primal_solution::Vector{Float64}
     variable_dual_solution::Vector{Float64}
@@ -256,6 +259,7 @@ function MOI.is_empty(m::LinQuadOptimizer)
     ret = ret && isempty(m.variable_names)
     ret = ret && isempty(m.variable_names_rev)
     ret = ret && isempty(m.variable_references)
+    ret = ret && isempty(m.variable_type)
     ret = ret && isempty(m.variable_primal_solution)
     ret = ret && isempty(m.variable_dual_solution)
     ret = ret && m.last_constraint_reference == 0
@@ -291,7 +295,7 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.variable_names = Dict{MathOptInterface.VariableIndex, String}()
     m.variable_names_rev = Dict{String, MathOptInterface.VariableIndex}()
     m.variable_references = MathOptInterface.VariableIndex[]
-
+    m.variable_type = Dict{MathOptInterface.VariableIndex, VariableType}()
     m.variable_primal_solution = Float64[]
     m.variable_dual_solution = Float64[]
 
