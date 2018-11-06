@@ -144,13 +144,13 @@ end
 
 MOIU.@model(ModelComplete,
     (MOI.ZeroOne, MOI.Integer),
-    (MOI.EqualTo, MOI.GreaterThan, MOI.LessThan, MOI.Interval, 
+    (MOI.EqualTo, MOI.GreaterThan, MOI.LessThan, MOI.Interval,
      MOI.Semicontinuous, MOI.Semiinteger),
-    (MOI.Reals, MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives, 
-     MOI.SecondOrderCone, MOI.RotatedSecondOrderCone, MOI.GeometricMeanCone, 
-     MOI.ExponentialCone, MOI.DualExponentialCone, 
-     MOI.PositiveSemidefiniteConeTriangle, MOI.PositiveSemidefiniteConeSquare, 
-     MOI.RootDetConeTriangle, MOI.RootDetConeSquare, MOI.LogDetConeTriangle, 
+    (MOI.Reals, MOI.Zeros, MOI.Nonnegatives, MOI.Nonpositives,
+     MOI.SecondOrderCone, MOI.RotatedSecondOrderCone, MOI.GeometricMeanCone,
+     MOI.ExponentialCone, MOI.DualExponentialCone,
+     MOI.PositiveSemidefiniteConeTriangle, MOI.PositiveSemidefiniteConeSquare,
+     MOI.RootDetConeTriangle, MOI.RootDetConeSquare, MOI.LogDetConeTriangle,
      MOI.LogDetConeSquare),
     (MOI.PowerCone, MOI.DualPowerCone, MOI.SOS1, MOI.SOS2),
     (MOI.SingleVariable,),
@@ -376,4 +376,29 @@ end
     objective_type_test(f)
     objective_type_test(convert(MOI.ScalarAffineFunction{Float64}, f))
     objective_type_test(convert(MOI.ScalarQuadraticFunction{Float64}, f))
+end
+
+@testset "SemiXXX variables" begin
+    @testset "Semiinteger" begin
+        model = LQOI.MockLinQuadOptimizer()
+        x = MOI.add_variable(model)
+        c = MOI.add_constraint(
+            model, MOI.SingleVariable(x), MOI.Semiinteger(1.0, 4.5))
+        @test model.inner.vartype[1] == Cchar('N')
+        @test MOI.get(model, MOI.ConstraintSet(), c) == MOI.Semiinteger(1.0, 4.5)
+        @test MOI.get(model, MOI.ConstraintFunction(), c) == MOI.SingleVariable(x)
+        MOI.delete(model, c)
+        @test model.inner.vartype[1] == Cchar('C')
+    end
+    @testset "Semicontinuous" begin
+        model = LQOI.MockLinQuadOptimizer()
+        x = MOI.add_variable(model)
+        c = MOI.add_constraint(
+            model, MOI.SingleVariable(x), MOI.Semicontinuous(1.0, 4.0))
+        @test model.inner.vartype[1] == Cchar('S')
+        @test MOI.get(model, MOI.ConstraintSet(), c) == MOI.Semicontinuous(1.0, 4.0)
+        @test MOI.get(model, MOI.ConstraintFunction(), c) == MOI.SingleVariable(x)
+        MOI.delete(model, c)
+        @test model.inner.vartype[1] == Cchar('C')
+    end
 end

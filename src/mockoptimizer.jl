@@ -137,6 +137,8 @@ const SUPPORTED_CONSTRAINTS = [
     (LQOI.SinVar, LQOI.IV),
     (LQOI.SinVar, MOI.ZeroOne),
     (LQOI.SinVar, MOI.Integer),
+    (LQOI.SinVar, MOI.Semiinteger{Float64}),
+    (LQOI.SinVar, MOI.Semicontinuous{Float64}),
     (LQOI.VecVar, LQOI.SOS1),
     (LQOI.VecVar, LQOI.SOS2),
     (LQOI.VecVar, MOI.Nonnegatives),
@@ -542,19 +544,9 @@ function LQOI.delete_quadratic_constraints!(instance::MockLinQuadOptimizer, rowb
     end
 end
 
-# TODO fix types
-function variabletype(::MockLinQuadOptimizer, typeval)
-    if typeval == 'B'
-        return 'B'
-    elseif typeval == 'I'
-        return 'I'
-    else
-        return 'C'
-    end
-end
 function LQOI.change_variable_types!(instance::MockLinQuadOptimizer, colvec, typevec)
     for i in eachindex(colvec)
-        instance.inner.vartype[colvec[i]] = variabletype(instance, typevec[i])
+        instance.inner.vartype[colvec[i]] = typevec[i]
     end
 end
 
