@@ -378,6 +378,45 @@ end
     objective_type_test(convert(MOI.ScalarQuadraticFunction{Float64}, f))
 end
 
+@testset "Conflicting SingleVariable constraints" begin
+    @testset "ZeroOne" begin
+        model = LQOI.MockLinQuadOptimizer()
+        x = MOI.add_variable(model)
+        MOI.add_constraint(model, MOI.SingleVariable(x), MOI.ZeroOne())
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Interval(2.0, 3.0))
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Integer())
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semiinteger(2.0, 3.0))
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semicontinuous(2.0, 3.0))
+    end
+    @testset "Integer" begin
+        model = LQOI.MockLinQuadOptimizer()
+        x = MOI.add_variable(model)
+        MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Integer())
+        MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Interval(2.0, 3.0))
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.ZeroOne())
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semiinteger(2.0, 3.0))
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semicontinuous(2.0, 3.0))
+    end
+    @testset "Semiinteger" begin
+        model = LQOI.MockLinQuadOptimizer()
+        x = MOI.add_variable(model)
+        MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semiinteger(2.0, 3.0))
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Interval(2.0, 3.0))
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.ZeroOne())
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Integer())
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semicontinuous(2.0, 3.0))
+    end
+    @testset "Semicontinuous" begin
+        model = LQOI.MockLinQuadOptimizer()
+        x = MOI.add_variable(model)
+        MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semicontinuous(2.0, 3.0))
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Interval(2.0, 3.0))
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.ZeroOne())
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Integer())
+        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semiinteger(2.0, 3.0))
+    end
+end
+
 @testset "SemiXXX variables" begin
     @testset "Semiinteger" begin
         model = LQOI.MockLinQuadOptimizer()
