@@ -92,6 +92,7 @@ function MOI.add_variable(model::LinQuadOptimizer)
     push!(model.variable_references, index)
     push!(model.variable_primal_solution, NaN)
     push!(model.variable_dual_solution, NaN)
+    model.variable_type[index] = Continuous
     return index
 end
 
@@ -115,6 +116,7 @@ function MOI.add_variables(model::LinQuadOptimizer, number_to_add::Int)
         push!(model.variable_references, index)
         push!(model.variable_primal_solution, NaN)
         push!(model.variable_dual_solution, NaN)
+        model.variable_type[index] = Continuous
     end
     return variable_indices
 end
@@ -143,6 +145,7 @@ function MOI.delete(model::LinQuadOptimizer, index::VarInd)
     delete_variables!(model, column, column)
     # delete from problem
     deleteat!(model.variable_references, column)
+    delete!(model.variable_type, index)
     deleteat!(model.variable_primal_solution, column)
     deleteat!(model.variable_dual_solution, column)
     deleteref!(model.variable_mapping, column, index)
