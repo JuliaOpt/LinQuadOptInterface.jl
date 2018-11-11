@@ -32,19 +32,32 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.VariableName, index::VarInd)
     end
 end
 
-function MOI.set(model::LinQuadOptimizer, ::MOI.VariableName, index::VarInd, name::String)
-    if haskey(model.variable_names_rev, name)
-        if model.variable_names_rev[name] != index
-            error("Duplicate variable name: $(name)")
-        end
-    elseif name != ""
-        if haskey(model.variable_names, index)
-            # we're renaming an existing variable
-            old_name = model.variable_names[index]
-            delete!(model.variable_names_rev, old_name)
-        end
+# The rules for MOI are:
+# - Allow setting duplicate variable names
+# - Throw an error on get if the name is a duplicate
+# So we need to store two things.
+# 1. a mapping from VariableIndex -> Name
+# 2. a reverse mapping from Name -> set of VariableIndex's with that name
+function MOI.set(model::LinQuadOptimizer,
+                 ::MOI.VariableName, index::VarInd, name::String)
+    if haskey(model.variable_names, index)
+        # This variable already has a name, we must be changing it.
+        current_name = model.variable_names[index]
+        # Remove `index` from the set of current name.
+        pop!(model.variable_names_rev[current_name], index)
+    end
+    if name != ""
+        # We're changing the name to something non-default, so store it.
         model.variable_names[index] = name
-        model.variable_names_rev[name] = index
+        if !haskey(model.variable_names_rev, name)
+            model.variable_names_rev[name] = Set{VarInd}()
+        end
+        push!(model.variable_names_rev[name], index)
+    else
+        # We're changing the name to the default, so we don't store it. Note
+        # that if `model.variable_names` doesn't have a key `index`, this does
+        # nothing.
+        delete!(model.variable_names, index)
     end
     return
 end
@@ -55,10 +68,14 @@ end
 
 function MOI.get(model::LinQuadOptimizer, ::Type{MOI.VariableIndex}, name::String)
     if haskey(model.variable_names_rev, name)
-        return model.variable_names_rev[name]
-    else
-        return nothing
+        variable_set = model.variable_names_rev[name]
+        if length(variable_set) == 1
+            return first(model.variable_names_rev[name])
+        elseif length(variable_set) > 1
+            error("Cannot get variable because the name $(name) is a duplicate.")
+        end
     end
+    return nothing
 end
 
 #=
