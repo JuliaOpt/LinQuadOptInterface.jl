@@ -231,8 +231,8 @@ macro LinQuadOptimizerBase(inner_model_type=Any)
     qconstraint_primal_solution::Vector{Float64}
     qconstraint_dual_solution::Vector{Float64}
 
-    constraint_names::Dict{CI, String}
-    constraint_names_rev::Dict{String, Set{CI}}
+    constraint_names::Dict{LinQuadOptInterface.CI, String}
+    constraint_names_rev::Dict{String, Set{LinQuadOptInterface.CI}}
 
     objective_constant::Float64
 
