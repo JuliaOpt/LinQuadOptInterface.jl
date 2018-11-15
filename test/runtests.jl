@@ -7,6 +7,16 @@ const MOIT = MathOptInterface.Test
 const MOIU = MathOptInterface.Utilities
 const LQOI = LinQuadOptInterface
 
+# Test that using LinQuadOptInterface passes without error. We have to do this
+# here because types can't be created in testsets. If it can be defined without
+# error, we're okay. This is most likely to error if fields are added to
+# @LinQuadOptimizerBase without proper module prefixes.
+using Compat  # For Nothing on v0.6
+mutable struct OptimizerTest <: LinQuadOptInterface.LinQuadOptimizer
+    LinQuadOptInterface.@LinQuadOptimizerBase
+    OptimizerTest() = new()
+end
+
 @testset "LinQuadOptInterface" begin
     solver = LQOI.MockLinQuadOptimizer()
 
