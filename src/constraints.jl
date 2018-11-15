@@ -9,12 +9,17 @@ function Base.getindex(model::LinQuadOptimizer, index::CI)
     return constrdict(model, index)[index]
 end
 
-function delete_constraint_name(model::LinQuadOptimizer, index)
+# Internal function: delete the constraint name.
+function delete_constraint_name(model::LinQuadOptimizer, index::CI)
     if haskey(model.constraint_names, index)
         name = model.constraint_names[index]
-        delete!(model.constraint_names_rev, name)
+        reverse_map = model.constraint_names_rev[name]
+        if index in reverse_map
+            pop!(reverse_map, index)
+        end
         delete!(model.constraint_names, index)
     end
+    return
 end
 
 """
@@ -99,30 +104,44 @@ end
     Get constraint names
 =#
 
-function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintName, index::MOI.ConstraintIndex)
+function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintName, index::CI)
     if haskey(model.constraint_names, index)
         return model.constraint_names[index]
     else
         return ""
     end
 end
-function MOI.supports(::LinQuadOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex})
+function MOI.supports(
+        ::LinQuadOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex})
     return true
 end
+
+# The rules for MOI are:
+# - Allow setting duplicate variable names
+# - Throw an error on get if the name is a duplicate
+# So we need to store two things.
+# 1. a mapping from ConstraintIndex -> Name
+# 2. a reverse mapping from Name -> set of ConstraintIndex's with that name
 function MOI.set(model::LinQuadOptimizer, ::MOI.ConstraintName,
                   index::MOI.ConstraintIndex, name::String)
-    if haskey(model.constraint_names_rev, name)
-        if model.constraint_names_rev[name] != index
-            error("Duplicate constraint name: $(name)")
-        end
-    elseif name != ""
-        if haskey(model.constraint_names, index)
-            # we're renaming an existing constraint
-            old_name = model.constraint_names[index]
-            delete!(model.constraint_names_rev, old_name)
-        end
+    if haskey(model.constraint_names, index)
+        # This constraint already has a name, we must be changing it.
+        current_name = model.constraint_names[index]
+        # Remove `index` from the set of current name.
+        pop!(model.constraint_names_rev[current_name], index)
+    end
+    if name != ""
+        # We're changing the name to something non-default, so store it.
         model.constraint_names[index] = name
-        model.constraint_names_rev[name] = index
+        if !haskey(model.constraint_names_rev, name)
+            model.constraint_names_rev[name] = Set{MOI.ConstraintIndex}()
+        end
+        push!(model.constraint_names_rev[name], index)
+    else
+        # We're changing the name to the default, so we don't store it. Note
+        # that if `model.constraint_names` doesn't have a key `index`, this does
+        # nothing.
+        delete!(model.constraint_names, index)
     end
     return
 end
@@ -131,24 +150,32 @@ end
     Get constraint by name
 =#
 
-function MOI.get(model::LinQuadOptimizer, ::Type{<:MOI.ConstraintIndex}, 
-                 name::String)
+function MOI.get(
+        model::LinQuadOptimizer, ::Type{<:MOI.ConstraintIndex}, name::String)
     if haskey(model.constraint_names_rev, name)
-        return model.constraint_names_rev[name]
-    else
-        return nothing
+        if length(model.constraint_names_rev[name]) == 1
+            return first(model.constraint_names_rev[name])
+        elseif length(model.constraint_names_rev[name]) > 1
+            error("Cannot get constraint because the name $(name) is a duplicate.")
+        end
     end
+    return nothing
 end
 
 # this covers the type-stable get(m, ConstraintIndex{F,S}, name)::CI{F,S} case
-function MOI.get(model::LinQuadOptimizer, ::Type{MOI.ConstraintIndex{F,S}}, 
+function MOI.get(model::LinQuadOptimizer, ::Type{MOI.ConstraintIndex{F,S}},
                  name::String) where F where S
-    if haskey(model.constraint_names_rev, name) && 
-            isa(model.constraint_names_rev[name], MOI.ConstraintIndex{F,S})
-        return model.constraint_names_rev[name]::MOI.ConstraintIndex{F,S}
-    else
-        return nothing
+    if haskey(model.constraint_names_rev, name)
+        if length(model.constraint_names_rev[name]) == 1
+            index = first(model.constraint_names_rev[name])
+            if isa(index, MOI.ConstraintIndex{F, S})
+                return index::MOI.ConstraintIndex{F, S}
+            end
+        elseif length(model.constraint_names_rev[name]) > 1
+            error("Cannot get constraint because the name $(name) is a duplicate.")
+        end
     end
+    return nothing
 end
 
 

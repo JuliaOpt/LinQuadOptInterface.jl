@@ -214,7 +214,7 @@ macro LinQuadOptimizerBase(inner_model_type=Any)
     last_variable_reference::UInt64
     variable_mapping::Dict{MOI.VariableIndex, Int}
     variable_names::Dict{MOI.VariableIndex, String}
-    variable_names_rev::Dict{String, MOI.VariableIndex}
+    variable_names_rev::Dict{String, Set{MOI.VariableIndex}}
     variable_references::Vector{MOI.VariableIndex}
     variable_type::Dict{MOI.VariableIndex, LinQuadOptInterface.VariableType}
 
@@ -231,9 +231,8 @@ macro LinQuadOptimizerBase(inner_model_type=Any)
     qconstraint_primal_solution::Vector{Float64}
     qconstraint_dual_solution::Vector{Float64}
 
-    # TODO(odow): temp hack for constraint names
-    constraint_names::Dict{Any, String}
-    constraint_names_rev::Dict{String, Any}
+    constraint_names::Dict{CI, String}
+    constraint_names_rev::Dict{String, Set{CI}}
 
     objective_constant::Float64
 
@@ -293,7 +292,7 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.last_variable_reference = 0
     m.variable_mapping = Dict{MathOptInterface.VariableIndex, Int}()
     m.variable_names = Dict{MathOptInterface.VariableIndex, String}()
-    m.variable_names_rev = Dict{String, MathOptInterface.VariableIndex}()
+    m.variable_names_rev = Dict{String, Set{MathOptInterface.VariableIndex}}()
     m.variable_references = MathOptInterface.VariableIndex[]
     m.variable_type = Dict{MathOptInterface.VariableIndex, VariableType}()
     m.variable_primal_solution = Float64[]
@@ -309,8 +308,8 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.qconstraint_primal_solution = Float64[]
     m.qconstraint_dual_solution = Float64[]
 
-    m.constraint_names = Dict{Any, String}()
-    m.constraint_names_rev = Dict{String, Any}()
+    m.constraint_names = Dict{CI, String}()
+    m.constraint_names_rev = Dict{String, Set{CI}}()
 
     m.objective_constant = 0.0
 
