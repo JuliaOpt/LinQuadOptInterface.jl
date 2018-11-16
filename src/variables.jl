@@ -200,12 +200,16 @@ end
 #=
     MIP starts
 =#
-function MOI.supports(::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::Type{VarInd})
+function MOI.supports(
+        ::LinQuadOptimizer, ::MOI.VariablePrimalStart, ::Type{VarInd})
     return false
 end
 
 function MOI.set(model::LinQuadOptimizer, ::MOI.VariablePrimalStart,
                   indices::Vector{VarInd}, values::Vector{Float64})
+    if !MOI.supports(model, MOI.VariablePrimalStart(), MOI.VariableIndex)
+        throw(MOI.UnsupportedAttribute(MOI.VariablePrimalStart()))
+    end
     add_mip_starts!(model, get_column.(Ref(model), indices), values)
 end
 

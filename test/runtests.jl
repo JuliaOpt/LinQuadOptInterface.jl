@@ -451,3 +451,9 @@ end
         @test model.inner.vartype[1] == Cchar('C')
     end
 end
+
+@testset "VariablePrimalStart" begin
+    model = LQOI.MockLinQuadOptimizer()
+    x = MOI.add_variable(model)
+    @test_throws MOI.UnsupportedAttribute MOI.set(model, MOI.VariablePrimalStart(), x, 1.0)
+end

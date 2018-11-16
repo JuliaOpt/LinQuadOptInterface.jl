@@ -605,6 +605,10 @@ function delete_variables! end
 """
     add_mip_starts!(m, cols::Vector{Int}, x::Vector{Float64})::Nothing
 
-Add the MIP start `x` for the variables in the columns `cols` of the model `m`.
+Add a primal start `x` for the variables in the columns `cols` of the model `m`.
+
+Note that if this method is implemented, solvers of type `M` must also declare
+that they support VariablePrimalStarts by overloading the following method:
+    MOI.supports(m::M, ::MOI.VariablePrimalStart, ::Type{VariableIndex}) = true
 """
 function add_mip_starts! end
