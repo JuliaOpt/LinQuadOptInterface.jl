@@ -129,10 +129,9 @@ end
 
     @testset "ModelLike tests" begin
         config = MOIT.TestConfig(solve=false)
-        # TODO(odow): re-enable once MOI v0.6.3+ is tagged.
-        # @testset "nametest" begin
-        #     MOIT.nametest(LQOI.MockLinQuadOptimizer())
-        # end
+        @testset "nametest" begin
+            MOIT.nametest(LQOI.MockLinQuadOptimizer())
+        end
         @testset "validtest" begin
             MOIT.validtest(LQOI.MockLinQuadOptimizer())
         end
