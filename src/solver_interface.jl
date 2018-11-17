@@ -603,8 +603,17 @@ Delete the columns `start_col`, `start_col+1`, ..., `end_col` from the model `m`
 function delete_variables! end
 
 """
-    add_mip_starts!(m, cols::Vector{Int}, x::Vector{Float64})::Nothing
+    add_mip_starts!(model::M, cols::Vector{Int}, x::Vector{Float64})::Nothing
 
-Add the MIP start `x` for the variables in the columns `cols` of the model `m`.
+Add a primal start `x` for the variables in the columns `cols` of `model`.
+
+Note that if this method is implemented, solvers of type `M` must also declare
+that they support VariablePrimalStarts by overloading the following method:
+
+    function MOI.supports(model::M,
+                          ::MOI.VariablePrimalStart,
+                          ::Type{MOI.VariableIndex})
+        return true
+    end
 """
 function add_mip_starts! end
