@@ -199,6 +199,12 @@ end
 # Abstract + macro
 abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
 
+function Base.show(io::IO, model::LinQuadOptimizer)
+    println(io, "A LinQuadOptInterface model with backend:")
+    Base.show(io, model.inner)
+    return
+end
+
 @enum(VariableType, Continuous, Binary, Integer, Semiinteger, Semicontinuous)
 
 macro LinQuadOptimizerBase(inner_model_type=Any)
