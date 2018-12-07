@@ -20,6 +20,12 @@ end
 @testset "LinQuadOptInterface" begin
     solver = LQOI.MockLinQuadOptimizer()
 
+    @testset "Printing" begin
+        @test sprint(show, solver) == "A LinQuadOptInterface model with " *
+            "backend:\nMockLinQuadModel\n    Sense       minimize\n    " *
+            "Variables   0\n    Constraints 0\n"
+    end
+
     config = MOIT.TestConfig(solve=false)
 
     @testset "Unit Tests" begin

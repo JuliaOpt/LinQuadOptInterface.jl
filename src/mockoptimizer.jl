@@ -80,6 +80,14 @@ mutable struct MockLinQuadModel # <: LinQuadOptInterface.LinQuadOptimizer
     end
 end
 
+function Base.show(io::IO, model::MockLinQuadModel)
+    println(io, "MockLinQuadModel")
+    println(io, "    Sense       $(model.sense)")
+    println(io, "    Variables   $(length(model.lb))")
+    println(io, "    Constraints $(length(model.b))")
+    return
+end
+
 """
 Solution builder to create solutions for the mock solver.
 Should be called inside `MOI.optimize!(model::LinQuadOptimizer)` right before changing signs. This means that these solutions replicate the low-level solver output.
