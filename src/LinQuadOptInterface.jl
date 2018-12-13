@@ -205,6 +205,8 @@ function Base.show(io::IO, model::LinQuadOptimizer)
     return
 end
 
+MOIU.supports_default_copy_to(model::LinQuadOptimizer, copy_names::Bool) = true
+
 @enum(VariableType, Continuous, Binary, Integer, Semiinteger, Semicontinuous)
 
 macro LinQuadOptimizerBase(inner_model_type=Any)
@@ -277,9 +279,9 @@ function MOI.is_empty(m::LinQuadOptimizer)
     ret = ret && isempty(m.constraint_names)
     ret = ret && isempty(m.constraint_names_rev)
     ret = ret && m.objective_constant == 0.0
-    ret = ret && m.termination_status == MOI.OtherError
-    ret = ret && m.primal_status == MOI.UnknownResultStatus
-    ret = ret && m.dual_status == MOI.UnknownResultStatus
+    ret = ret && m.termination_status == MOI.OptimizeNotCalled
+    ret = ret && m.primal_status == MOI.NoSolution
+    ret = ret && m.dual_status == MOI.NoSolution
     ret = ret && m.primal_result_count == 0
     ret = ret && m.dual_result_count == 0
     ret = ret && m.solvetime == 0.0
@@ -319,9 +321,9 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
 
     m.objective_constant = 0.0
 
-    m.termination_status = MathOptInterface.OtherError
-    m.primal_status = MathOptInterface.UnknownResultStatus
-    m.dual_status = MathOptInterface.UnknownResultStatus
+    m.termination_status = MathOptInterface.OptimizeNotCalled
+    m.primal_status = MathOptInterface.NoSolution
+    m.dual_status = MathOptInterface.NoSolution
     m.primal_result_count = 0
     m.dual_result_count = 0
 

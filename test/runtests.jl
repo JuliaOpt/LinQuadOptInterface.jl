@@ -135,6 +135,12 @@ end
 
     @testset "ModelLike tests" begin
         config = MOIT.TestConfig(solve=false)
+        @testset "default_objective_test" begin
+            MOIT.default_objective_test(LQOI.MockLinQuadOptimizer())
+        end
+        @testset "default_status_test" begin
+            MOIT.default_status_test(LQOI.MockLinQuadOptimizer())
+        end
         @testset "nametest" begin
             MOIT.nametest(LQOI.MockLinQuadOptimizer())
         end
