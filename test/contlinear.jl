@@ -198,11 +198,9 @@ end
 function set_linear8atest_solutions!(solver)
     # SOLVE 1
     LQOI.set_solution!(solver,
-        termination_status = MOI.Success,
-        primal_status = MOI.UnknownResultStatus,
+        termination_status = MOI.Infeasible,
+        primal_status = MOI.NoSolution,
         dual_status = MOI.InfeasibilityCertificate,
-        variable_primal = [NaN, NaN],
-        constraint_primal = [NaN],
         variable_dual = [NaN, NaN],
         constraint_dual = [-0.5]
     )
@@ -212,13 +210,11 @@ end
 function set_linear8btest_solutions!(solver)
     # SOLVE 1
     LQOI.set_solution!(solver,
-        termination_status = MOI.Success,
+        termination_status = MOI.DualInfeasible,
         primal_status = MOI.InfeasibilityCertificate,
-        dual_status = MOI.UnknownResultStatus,
+        dual_status = MOI.NoSolution,
         variable_primal = [2.0, 1.0],
-        constraint_primal = [NaN],
-        variable_dual = [NaN, NaN],
-        constraint_dual = [NaN]
+        constraint_primal = [NaN]
     )
     return
 end
@@ -226,13 +222,11 @@ end
 function set_linear8ctest_solutions!(solver)
     # SOLVE 1
     LQOI.set_solution!(solver,
-        termination_status = MOI.Success,
+        termination_status = MOI.DualInfeasible,
         primal_status = MOI.InfeasibilityCertificate,
-        dual_status = MOI.UnknownResultStatus,
+        dual_status = MOI.NoSolution,
         variable_primal = [1.0, 1.0],
-        constraint_primal = [NaN],
-        variable_dual = [NaN, NaN],
-        constraint_dual = [NaN]
+        constraint_primal = [NaN]
     )
     return
 end
@@ -301,11 +295,9 @@ end
 function set_linear12test_solutions!(solver)
     # SOLVE 1
     LQOI.set_solution!(solver,
-        termination_status = MOI.Success,
-        primal_status = MOI.UnknownResultStatus,
+        termination_status = MOI.Infeasible,
+        primal_status = MOI.NoSolution,
         dual_status = MOI.InfeasibilityCertificate,
-        variable_primal = [NaN, NaN],
-        constraint_primal = [NaN, NaN],
         variable_dual = [2/3, 0.0],
         constraint_dual = [-1/3, -1.0]
     )

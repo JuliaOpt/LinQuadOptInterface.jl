@@ -15,8 +15,8 @@ function MOI.optimize!(model::LinQuadOptimizer)
     fill!(model.variable_dual_solution, NaN)
     fill!(model.constraint_primal_solution, NaN)
     fill!(model.constraint_dual_solution, NaN)
-    model.primal_status = MOI.UnknownResultStatus
-    model.dual_status   = MOI.UnknownResultStatus
+    model.primal_status = MOI.NoSolution
+    model.dual_status   = MOI.NoSolution
     model.primal_result_count = 0
     model.dual_result_count = 0
 

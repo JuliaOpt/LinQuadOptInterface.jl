@@ -63,9 +63,9 @@ mutable struct MockLinQuadModel # <: LinQuadOptInterface.LinQuadOptimizer
 
         m.sos = LinQuadSOS[]
 
-        m.termination_status = MOI.Success
-        m.primal_status = MOI.FeasiblePoint
-        m.dual_status = MOI.FeasiblePoint
+        m.termination_status = MOI.OptimizeNotCalled
+        m.primal_status = MOI.NoSolution
+        m.dual_status = MOI.NoSolution
 
         m.variable_primal_solution = zeros(0)
         m.variable_dual_solution = zeros(0)
@@ -288,7 +288,7 @@ function set_solution!(instance::MockLinQuadOptimizer;
     constraint_dual = Float64[],
     quadratic_primal = Float64[],
     quadratic_dual = Float64[],
-    termination_status = MOI.Success,
+    termination_status = MOI.Optimal,
     primal_status = MOI.FeasiblePoint,
     dual_status = MOI.FeasiblePoint
     )
