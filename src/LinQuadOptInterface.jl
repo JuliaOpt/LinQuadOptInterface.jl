@@ -226,7 +226,7 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet)
     return attributes
 end
 
-function MOI.get(::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet{F,S}) where {F, S}
+function MOI.get(::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet)
     return MOI.AbstractConstraintAttribute[]
 end
 
