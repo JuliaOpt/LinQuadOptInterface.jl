@@ -207,6 +207,29 @@ end
 
 MOIU.supports_default_copy_to(model::LinQuadOptimizer, copy_names::Bool) = true
 
+function MOI.copy_to(dest::LinQuadOptimizer, src::MOI.ModelLike; kwargs...)
+    return MOIU.automatic_copy_to(dest, src; kwargs...)
+end
+
+function MOI.get(::LinQuadOptimizer, ::MOI.ListOfVariableAttributesSet)
+    return MOI.AbstractVariableAttribute[]
+end
+
+function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet)
+    attributes = [
+        MOI.ObjectiveSense(),
+        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}()
+    ]
+    if MOI.get(model, MOI.Name()) != ""
+        push!(attributes, MOI.Name())
+    end
+    return attributes
+end
+
+function MOI.get(::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet{F,S}) where {F, S}
+    return MOI.AbstractConstraintAttribute[]
+end
+
 @enum(VariableType, Continuous, Binary, Integer, Semiinteger, Semicontinuous)
 
 macro LinQuadOptimizerBase(inner_model_type=Any)
@@ -362,7 +385,6 @@ include("variables.jl")
 include("constraints.jl")
 include("objective.jl")
 include("solve.jl")
-include("copy.jl")
 
 include("solver_interface.jl")
 
