@@ -63,9 +63,9 @@ mutable struct MockLinQuadModel # <: LinQuadOptInterface.LinQuadOptimizer
 
         m.sos = LinQuadSOS[]
 
-        m.termination_status = MOI.OptimizeNotCalled
-        m.primal_status = MOI.NoSolution
-        m.dual_status = MOI.NoSolution
+        m.termination_status = MOI.OPTIMIZE_NOT_CALLED
+        m.primal_status = MOI.NO_SOLUTION
+        m.dual_status = MOI.NO_SOLUTION
 
         m.variable_primal_solution = zeros(0)
         m.variable_dual_solution = zeros(0)
@@ -288,9 +288,9 @@ function set_solution!(instance::MockLinQuadOptimizer;
     constraint_dual = Float64[],
     quadratic_primal = Float64[],
     quadratic_dual = Float64[],
-    termination_status = MOI.Optimal,
-    primal_status = MOI.FeasiblePoint,
-    dual_status = MOI.FeasiblePoint
+    termination_status = MOI.OPTIMAL,
+    primal_status = MOI.FEASIBLE_POINT,
+    dual_status = MOI.FEASIBLE_POINT
     )
 
     set_variable_primal_solution!(instance, variable_primal)
@@ -670,9 +670,9 @@ end
 function LQOI.get_objectivesense(instance::MockLinQuadOptimizer)
     s = instance.inner.sense
     if s == :maximize
-        return MOI.MaxSense
+        return MOI.MAX_SENSE
     else
-        return MOI.MinSense
+        return MOI.MIN_SENSE
     end
 end
 

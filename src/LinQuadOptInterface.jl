@@ -283,7 +283,7 @@ function MOI.is_empty(m::LinQuadOptimizer)
     ret = ret && m.name == ""
     ret = ret && m.obj_type == AffineObjective
     ret = ret && isa(m.single_obj_var, Nothing)
-    ret = ret && m.obj_sense == MOI.MinSense
+    ret = ret && m.obj_sense == MOI.MIN_SENSE
     ret = ret && m.last_variable_reference == 0
     ret = ret && isempty(m.variable_mapping)
     ret = ret && isempty(m.variable_names)
@@ -302,9 +302,9 @@ function MOI.is_empty(m::LinQuadOptimizer)
     ret = ret && isempty(m.constraint_names)
     ret = ret && isempty(m.constraint_names_rev)
     ret = ret && m.objective_constant == 0.0
-    ret = ret && m.termination_status == MOI.OptimizeNotCalled
-    ret = ret && m.primal_status == MOI.NoSolution
-    ret = ret && m.dual_status == MOI.NoSolution
+    ret = ret && m.termination_status == MOI.OPTIMIZE_NOT_CALLED
+    ret = ret && m.primal_status == MOI.NO_SOLUTION
+    ret = ret && m.dual_status == MOI.NO_SOLUTION
     ret = ret && m.primal_result_count == 0
     ret = ret && m.dual_result_count == 0
     ret = ret && m.solvetime == 0.0
@@ -318,7 +318,7 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.obj_type = AffineObjective
     m.single_obj_var = nothing
     # we assume the default is minimization
-    m.obj_sense = MOI.MinSense
+    m.obj_sense = MOI.MIN_SENSE
 
     m.last_variable_reference = 0
     m.variable_mapping = Dict{MathOptInterface.VariableIndex, Int}()
@@ -344,9 +344,9 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
 
     m.objective_constant = 0.0
 
-    m.termination_status = MathOptInterface.OptimizeNotCalled
-    m.primal_status = MathOptInterface.NoSolution
-    m.dual_status = MathOptInterface.NoSolution
+    m.termination_status = MathOptInterface.OPTIMIZE_NOT_CALLED
+    m.primal_status = MathOptInterface.NO_SOLUTION
+    m.dual_status = MathOptInterface.NO_SOLUTION
     m.primal_result_count = 0
     m.dual_result_count = 0
 
