@@ -1,5 +1,5 @@
 function has_quadratic(model::LinQuadOptimizer)
-    return model.obj_type == QuadraticObjective ||
+    return model.obj_type == QUADRATIC_OBJECTIVE ||
         length(cmap(model).q_less_than) > 0 ||
         length(cmap(model).q_greater_than) > 0 ||
         length(cmap(model).q_equal_to) > 0

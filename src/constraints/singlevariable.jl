@@ -108,7 +108,7 @@ end
 function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::S) where S <: LinSets
     __assert_supported_constraint__(model, SinVar, S)
     variable_type = model.variable_type[variable.variable]
-    if !(variable_type == Continuous || variable_type == Integer)
+    if !(variable_type == CONTINUOUS || variable_type == INTEGER)
         error("Cannot set bounds because variable is of type: $(variable_type).")
     end
     set_variable_bound(model, variable, set)
@@ -124,7 +124,7 @@ function MOI.add_constraints(model::LinQuadOptimizer, variables::Vector{SinVar},
     __assert_supported_constraint__(model, SinVar, S)
     for variable in variables
         variable_type = model.variable_type[variable.variable]
-        if !(variable_type == Continuous || variable_type == Integer)
+        if !(variable_type == CONTINUOUS || variable_type == INTEGER)
             error("Cannot set bounds because variable is of type: $(variable_type).")
         end
     end
@@ -145,7 +145,7 @@ function MOI.delete(model::LinQuadOptimizer, index::SVCI{S}) where S <: LinSets
     delete_constraint_name(model, index)
     dict = constrdict(model, index)
     variable = dict[index]
-    model.variable_type[variable] = Continuous
+    model.variable_type[variable] = CONTINUOUS
     set_variable_bound(model, SinVar(variable), IV(-Inf, Inf))
     delete!(dict, index)
     return
@@ -197,10 +197,10 @@ user does.
 function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::MOI.ZeroOne)
     __assert_supported_constraint__(model, SinVar, MOI.ZeroOne)
     variable_type = model.variable_type[variable.variable]
-    if variable_type != Continuous
+    if variable_type != CONTINUOUS
         error("Cannot make variable binary because it is $(variable_type).")
     end
-    model.variable_type[variable.variable] = Binary
+    model.variable_type[variable.variable] = BINARY
     model.last_constraint_reference += 1
     index = SVCI{MOI.ZeroOne}(model.last_constraint_reference)
     column = get_column(model, variable)
@@ -223,7 +223,7 @@ function MOI.delete(model::LinQuadOptimizer, index::SVCI{MOI.ZeroOne})
     delete_constraint_name(model, index)
     dict = constrdict(model, index)
     (variable, lower, upper) = dict[index]
-    model.variable_type[variable] = Continuous
+    model.variable_type[variable] = CONTINUOUS
     column = get_column(model, variable)
     change_variable_types!(
         model, [column], [backend_type(model, Val{:Continuous}())])
@@ -254,10 +254,10 @@ end
 function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::MOI.Integer)
     __assert_supported_constraint__(model, SinVar, MOI.Integer)
     variable_type = model.variable_type[variable.variable]
-    if variable_type != Continuous
+    if variable_type != CONTINUOUS
         error("Cannot make variable integer because it is $(variable_type).")
     end
-    model.variable_type[variable.variable] = Integer
+    model.variable_type[variable.variable] = INTEGER
     change_variable_types!(model, [get_column(model, variable)],
                            [backend_type(model, set)])
     model.last_constraint_reference += 1
@@ -273,7 +273,7 @@ function MOI.delete(model::LinQuadOptimizer, index::SVCI{MOI.Integer})
     delete_constraint_name(model, index)
     dict = constrdict(model, index)
     variable = dict[index]
-    model.variable_type[variable] = Continuous
+    model.variable_type[variable] = CONTINUOUS
     change_variable_types!(model, [get_column(model, variable)],
                            [backend_type(model, Val{:Continuous}())])
     delete!(dict, index)
@@ -295,12 +295,12 @@ end
     Semicontinuous / Semiinteger constraints
 =#
 const SEMI_TYPES = Union{MOI.Semicontinuous{Float64}, MOI.Semiinteger{Float64}}
-variable_type_(::Type{<:MOI.Semicontinuous}) = Semicontinuous
-variable_type_(::Type{<:MOI.Semiinteger}) = Semiinteger
+variable_type_(::Type{<:MOI.Semicontinuous}) = SEMI_CONTINUOUS
+variable_type_(::Type{<:MOI.Semiinteger}) = SEMI_INTEGER
 function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::S) where S <: SEMI_TYPES
     __assert_supported_constraint__(model, SinVar, S)
     variable_type = model.variable_type[variable.variable]
-    if variable_type != Continuous
+    if variable_type != CONTINUOUS
         error("Cannot make variable $(S) because it is $(variable_type).")
     end
     model.variable_type[variable.variable] = variable_type_(S)
@@ -326,7 +326,7 @@ function MOI.delete(model::LinQuadOptimizer, index::SVCI{<:SEMI_TYPES})
     dict = constrdict(model, index)
     variable = dict[index]
     column = get_column(model, variable)
-    model.variable_type[variable] = Continuous
+    model.variable_type[variable] = CONTINUOUS
     change_variable_types!(model, [column], [backend_type(model, Val{:Continuous}())])
     change_variable_bounds!(model,
         [column, column],

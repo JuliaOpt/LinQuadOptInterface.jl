@@ -109,7 +109,7 @@ function MOI.add_variable(model::LinQuadOptimizer)
     push!(model.variable_references, index)
     push!(model.variable_primal_solution, NaN)
     push!(model.variable_dual_solution, NaN)
-    model.variable_type[index] = Continuous
+    model.variable_type[index] = CONTINUOUS
     return index
 end
 
@@ -133,7 +133,7 @@ function MOI.add_variables(model::LinQuadOptimizer, number_to_add::Int)
         push!(model.variable_references, index)
         push!(model.variable_primal_solution, NaN)
         push!(model.variable_dual_solution, NaN)
-        model.variable_type[index] = Continuous
+        model.variable_type[index] = CONTINUOUS
     end
     return variable_indices
 end
