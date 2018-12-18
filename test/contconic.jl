@@ -23,9 +23,9 @@ end
 function set_lin3test_solutions!(solver)
     # SOLVE 1
     LQOI.set_solution!(solver,
-        termination_status = MOI.Infeasible,
-        primal_status = MOI.NoSolution,
-        dual_status = MOI.InfeasibilityCertificate,
+        termination_status = MOI.INFEASIBLE,
+        primal_status = MOI.NO_SOLUTION,
+        dual_status = MOI.INFEASIBILITY_CERTIFICATE,
         variable_primal = [NaN],
         constraint_primal = [NaN, NaN],
         variable_dual = [NaN],

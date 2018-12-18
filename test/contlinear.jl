@@ -198,9 +198,9 @@ end
 function set_linear8atest_solutions!(solver)
     # SOLVE 1
     LQOI.set_solution!(solver,
-        termination_status = MOI.Infeasible,
-        primal_status = MOI.NoSolution,
-        dual_status = MOI.InfeasibilityCertificate,
+        termination_status = MOI.INFEASIBLE,
+        primal_status = MOI.NO_SOLUTION,
+        dual_status = MOI.INFEASIBILITY_CERTIFICATE,
         variable_dual = [NaN, NaN],
         constraint_dual = [-0.5]
     )
@@ -210,9 +210,9 @@ end
 function set_linear8btest_solutions!(solver)
     # SOLVE 1
     LQOI.set_solution!(solver,
-        termination_status = MOI.DualInfeasible,
-        primal_status = MOI.InfeasibilityCertificate,
-        dual_status = MOI.NoSolution,
+        termination_status = MOI.DUAL_INFEASIBLE,
+        primal_status = MOI.INFEASIBILITY_CERTIFICATE,
+        dual_status = MOI.NO_SOLUTION,
         variable_primal = [2.0, 1.0],
         constraint_primal = [NaN]
     )
@@ -222,9 +222,9 @@ end
 function set_linear8ctest_solutions!(solver)
     # SOLVE 1
     LQOI.set_solution!(solver,
-        termination_status = MOI.DualInfeasible,
-        primal_status = MOI.InfeasibilityCertificate,
-        dual_status = MOI.NoSolution,
+        termination_status = MOI.DUAL_INFEASIBLE,
+        primal_status = MOI.INFEASIBILITY_CERTIFICATE,
+        dual_status = MOI.NO_SOLUTION,
         variable_primal = [1.0, 1.0],
         constraint_primal = [NaN]
     )
@@ -295,9 +295,9 @@ end
 function set_linear12test_solutions!(solver)
     # SOLVE 1
     LQOI.set_solution!(solver,
-        termination_status = MOI.Infeasible,
-        primal_status = MOI.NoSolution,
-        dual_status = MOI.InfeasibilityCertificate,
+        termination_status = MOI.INFEASIBLE,
+        primal_status = MOI.NO_SOLUTION,
+        dual_status = MOI.INFEASIBILITY_CERTIFICATE,
         variable_dual = [2/3, 0.0],
         constraint_dual = [-1/3, -1.0]
     )

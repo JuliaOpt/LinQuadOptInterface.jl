@@ -33,7 +33,7 @@ for solver in solvers
     @test JuMP.hasresultvalues(m)
 
     @test JuMP.terminationstatus(m) == MOI.Success
-    @test JuMP.primalstatus(m) == MOI.FeasiblePoint
+    @test JuMP.primalstatus(m) == MOI.FEASIBLE_POINT
 
     JuMP.resultvalue(x)
     JuMP.resultvalue(y)

@@ -7,20 +7,20 @@ MOI.supports(::LinQuadOptimizer, ::MOI.ObjectiveSense) = true
 MOI.get(model::LinQuadOptimizer,::MOI.ObjectiveSense) = model.obj_sense
 function MOI.set(model::LinQuadOptimizer, ::MOI.ObjectiveSense,
                   sense::MOI.OptimizationSense)
-    if sense == MOI.MinSense
+    if sense == MOI.MIN_SENSE
         change_objective_sense!(model, :min)
-        model.obj_sense = MOI.MinSense
-    elseif sense == MOI.MaxSense
+        model.obj_sense = MOI.MIN_SENSE
+    elseif sense == MOI.MAX_SENSE
         change_objective_sense!(model, :max)
-        model.obj_sense = MOI.MaxSense
-    elseif sense == MOI.FeasibilitySense
+        model.obj_sense = MOI.MAX_SENSE
+    elseif sense == MOI.FEASIBILITY_SENSE
         # we set the objective sense to :min, and the objective to 0.0
         change_objective_sense!(model, :min)
         unsafe_set!(model, MOI.ObjectiveFunction{Linear}(),
                     MOI.ScalarAffineFunction(MOI.ScalarAffineTerm{Float64}[],
                     0.0))
         model.obj_type = AffineObjective
-        model.obj_sense = MOI.FeasibilitySense
+        model.obj_sense = MOI.FEASIBILITY_SENSE
     else
         throw(MOI.CannotSetAttribute(MOI.ObjectiveSense,
                                      "ObjectiveSense $(sense) not recognised."))
@@ -33,10 +33,10 @@ end
 
 function __assert_objective__(model::LinQuadOptimizer,
                               attribute::MOI.ObjectiveFunction{F}) where F
-    if MOI.get(model, MOI.ObjectiveSense()) == MOI.FeasibilitySense
+    if MOI.get(model, MOI.ObjectiveSense()) == MOI.FEASIBILITY_SENSE
         # it doesn't make sense to set an objective for a feasibility problem
         throw(MOI.CannotSetAttribute(attribute, "Cannot set $(attribute) when" *
-            " MOI.ObjectiveSense is MOI.FeasibilitySense."))
+            " MOI.ObjectiveSense is MOI.FEASIBILITY_SENSE."))
     elseif !(F in supported_objectives(model))
         throw(MOI.UnsupportedAttribute(attribute))
     end

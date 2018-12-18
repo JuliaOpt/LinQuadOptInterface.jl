@@ -15,8 +15,8 @@ function MOI.optimize!(model::LinQuadOptimizer)
     fill!(model.variable_dual_solution, NaN)
     fill!(model.constraint_primal_solution, NaN)
     fill!(model.constraint_dual_solution, NaN)
-    model.primal_status = MOI.NoSolution
-    model.dual_status   = MOI.NoSolution
+    model.primal_status = MOI.NO_SOLUTION
+    model.dual_status   = MOI.NO_SOLUTION
     model.primal_result_count = 0
     model.dual_result_count = 0
 
@@ -35,31 +35,31 @@ function MOI.optimize!(model::LinQuadOptimizer)
     model.primal_status = get_primal_status(model)
     model.dual_status = get_dual_status(model)
 
-    if model.primal_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
+    if model.primal_status in [MOI.FEASIBLE_POINT, MOI.INFEASIBLE_POINT]
         get_variable_primal_solution!(model, model.variable_primal_solution)
         get_linear_primal_solution!(model, model.constraint_primal_solution)
         if has_quadratic(model)
             get_quadratic_primal_solution!(model, model.qconstraint_primal_solution)
         end
         model.primal_result_count = 1
-    elseif model.primal_status == MOI.InfeasibilityCertificate
+    elseif model.primal_status == MOI.INFEASIBILITY_CERTIFICATE
         get_unbounded_ray!(model, model.variable_primal_solution)
         model.primal_result_count = 1
     end
-    if model.dual_status in [MOI.FeasiblePoint, MOI.InfeasiblePoint]
+    if model.dual_status in [MOI.FEASIBLE_POINT, MOI.INFEASIBLE_POINT]
         get_variable_dual_solution!(model, model.variable_dual_solution)
         get_linear_dual_solution!(model, model.constraint_dual_solution)
         if has_quadratic(model)
             get_quadratic_dual_solution!(model, model.qconstraint_dual_solution)
         end
         model.dual_result_count = 1
-    elseif model.dual_status == MOI.InfeasibilityCertificate
+    elseif model.dual_status == MOI.INFEASIBILITY_CERTIFICATE
         get_farkas_dual!(model, model.constraint_dual_solution)
         get_farkas_dual_bounds!(model, model.variable_dual_solution)
         model.dual_result_count = 1
     end
 
-    if MOI.get(model, MOI.ObjectiveSense()) == MOI.MaxSense
+    if MOI.get(model, MOI.ObjectiveSense()) == MOI.MAX_SENSE
         model.constraint_dual_solution *= -1
         model.variable_dual_solution *= -1
     end
@@ -151,7 +151,7 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintDual, index::SVCI{<: L
     column = get_column(model, model[index])
     # the variable reduced cost is only the constraint dual if the bound is active,
     # or it might be a dual ray
-    if model.dual_status == MOI.InfeasibilityCertificate
+    if model.dual_status == MOI.INFEASIBILITY_CERTIFICATE
         return model.variable_dual_solution[column]
     else
         set = MOI.get(model, MOI.ConstraintSet(), index)
