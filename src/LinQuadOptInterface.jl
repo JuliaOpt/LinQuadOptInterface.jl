@@ -192,9 +192,9 @@ function Base.isempty(map::ConstraintMapping)
 end
 
 @enum(ObjectiveType,
-      SingleVariableObjective,
-      AffineObjective,
-      QuadraticObjective)
+      SINGLE_VARIABLE_OBJECTIVE,
+      AFFINE_OBJECTIVE,
+      QUADRATIC_OBJECTIVE)
 
 # Abstract + macro
 abstract type LinQuadOptimizer <: MOI.AbstractOptimizer end
@@ -230,7 +230,7 @@ function MOI.get(::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet)
     return MOI.AbstractConstraintAttribute[]
 end
 
-@enum(VariableType, Continuous, Binary, Integer, Semiinteger, Semicontinuous)
+@enum(VariableType, CONTINUOUS, BINARY, INTEGER, SEMI_INTEGER, SEMI_CONTINUOUS)
 
 macro LinQuadOptimizerBase(inner_model_type=Any)
     esc(quote
@@ -281,7 +281,7 @@ end
 function MOI.is_empty(m::LinQuadOptimizer)
     ret = true
     ret = ret && m.name == ""
-    ret = ret && m.obj_type == AffineObjective
+    ret = ret && m.obj_type == AFFINE_OBJECTIVE
     ret = ret && isa(m.single_obj_var, Nothing)
     ret = ret && m.obj_sense == MOI.MIN_SENSE
     ret = ret && m.last_variable_reference == 0
@@ -315,7 +315,7 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.name = ""
     m.inner = LinearQuadraticModel(M,env)
 
-    m.obj_type = AffineObjective
+    m.obj_type = AFFINE_OBJECTIVE
     m.single_obj_var = nothing
     # we assume the default is minimization
     m.obj_sense = MOI.MIN_SENSE
