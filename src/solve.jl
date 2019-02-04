@@ -206,15 +206,9 @@ end
     Constraint Dual solution
 =#
 
-__assert_dual_sense__(::LCI{LE}, dual) = @assert dual <= 0.0
-__assert_dual_sense__(::LCI{GE}, dual) = @assert dual >= 0.0
-__assert_dual_sense__(::LCI{IV}, dual) = nothing
-__assert_dual_sense__(::LCI{EQ}, dual) = nothing
-
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintDual, index::LCI{<: LinSets})
     row = model[index]
     dual = model.constraint_dual_solution[row]
-    __assert_dual_sense__(index, dual)
     return dual
 end
 
