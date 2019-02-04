@@ -208,8 +208,7 @@ end
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintDual, index::LCI{<: LinSets})
     row = model[index]
-    dual = model.constraint_dual_solution[row]
-    return dual
+    return model.constraint_dual_solution[row]
 end
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintDual, index::QCI{<: LinSets})
