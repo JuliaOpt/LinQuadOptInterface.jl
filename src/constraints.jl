@@ -30,7 +30,7 @@ binary, integer, special ordered sets, semicontinuous, or semi-integer
 variables).
 """
 function has_integer(model::LinQuadOptimizer)
-    for (variable, cache) in model.variable_mapping
+    for (variable, cache) in model.variable_cache
         if cache.variable_type != CONTINUOUS
             return true
         end

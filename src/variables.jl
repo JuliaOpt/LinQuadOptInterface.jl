@@ -96,7 +96,7 @@ function MOI.add_variable(model::LinQuadOptimizer)
     add_variables!(model, 1)
     model.last_variable_reference += 1
     index = MOI.VariableIndex(model.last_variable_reference)
-    model.variable_mapping[index] = VariableCache(
+    model.variable_cache[index] = VariableCache(
         column = MOI.get(model, MOI.NumberOfVariables()),
         lower = -Inf,
         upper = Inf,
@@ -123,7 +123,7 @@ function MOI.add_variables(model::LinQuadOptimizer, number_to_add::Int)
         model.last_variable_reference += 1
         index = MOI.VariableIndex(model.last_variable_reference)
         push!(variable_indices, index)
-        model.variable_mapping[index] = VariableCache(
+        model.variable_cache[index] = VariableCache(
             column = previous_vars + i,
             lower = -Inf,
             upper = Inf,
@@ -143,7 +143,7 @@ end
 =#
 
 function MOI.is_valid(model::LinQuadOptimizer, index::MOI.VariableIndex)
-    return haskey(model.variable_mapping, index)
+    return haskey(model.variable_cache, index)
 end
 
 #=
@@ -163,10 +163,10 @@ function MOI.delete(model::LinQuadOptimizer, index::MOI.VariableIndex)
     deleteat!(model.variable_references, column)
     # Delete from reverse name dictionary.
     delete!(model.variable_names_rev, cache.name)
-    # Delete from variable_mapping.
-    delete!(model.variable_mapping, index)
+    # Delete from variable_cache.
+    delete!(model.variable_cache, index)
     # Decrement the column index of all other variables.
-    for (variable, cache_2) in model.variable_mapping
+    for (variable, cache_2) in model.variable_cache
         if cache_2.column > column
             cache_2.column -= 1
         end

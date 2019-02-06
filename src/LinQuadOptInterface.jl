@@ -237,7 +237,7 @@ macro LinQuadOptimizerBase(inner_model_type=Any)
     obj_sense::MOI.OptimizationSense
 
     last_variable_reference::UInt64
-    variable_mapping::Dict{MOI.VariableIndex, LinQuadOptInterface.VariableCache}
+    variable_cache::Dict{MOI.VariableIndex, LinQuadOptInterface.VariableCache}
     variable_names_rev::Dict{String, Set{MOI.VariableIndex}}
     variable_references::Vector{MOI.VariableIndex}
     variable_primal_solution::Vector{Float64}
@@ -276,7 +276,7 @@ function MOI.is_empty(m::LinQuadOptimizer)
     ret = ret && isa(m.single_obj_var, Nothing)
     ret = ret && m.obj_sense == MOI.MIN_SENSE
     ret = ret && m.last_variable_reference == 0
-    ret = ret && isempty(m.variable_mapping)
+    ret = ret && isempty(m.variable_cache)
     ret = ret && isempty(m.variable_names_rev)
     ret = ret && isempty(m.variable_references)
     ret = ret && isempty(m.variable_primal_solution)
@@ -309,7 +309,7 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.obj_sense = MOI.MIN_SENSE
 
     m.last_variable_reference = 0
-    m.variable_mapping = Dict{MathOptInterface.VariableIndex, VariableCache}()
+    m.variable_cache = Dict{MathOptInterface.VariableIndex, VariableCache}()
     m.variable_names_rev = Dict{String, Set{MathOptInterface.VariableIndex}}()
     m.variable_references = MathOptInterface.VariableIndex[]
     m.variable_primal_solution = Float64[]

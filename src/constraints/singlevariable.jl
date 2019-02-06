@@ -65,7 +65,7 @@ function constraint_index(variable::MOI.SingleVariable, set::S) where {S}
 end
 
 function variable_cache(model::LinQuadOptimizer, index::MOI.VariableIndex)
-    return model.variable_mapping[index]
+    return model.variable_cache[index]
 end
 
 function variable_cache(model::LinQuadOptimizer, index::SVCI)
@@ -88,7 +88,7 @@ end
 # TODO(odow): we could cache this. It seems very inefficient.
 function MOI.get(model::LinQuadOptimizer, ::MOI.NumberOfConstraints{MOI.SingleVariable, S}) where {S}
     num = 0
-    for (index, cache) in model.variable_mapping
+    for (index, cache) in model.variable_cache
         if has_constraint_filter(cache, S)
             num += 1
         end
