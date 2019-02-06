@@ -212,6 +212,9 @@ mutable struct VariableCache
     variable_type::VariableType
     bound_type::VariableBoundType
     name::String
+    # These are used when setting ZeroOne constraints
+    lower_old::Float64
+    upper_old::Float64
     function VariableCache(;
         column,
         lower = -Inf,
@@ -219,7 +222,7 @@ mutable struct VariableCache
         variable_type = CONTINUOUS,
         bound_type = FREE,
         name = "")
-        return new(column, lower, upper, variable_type, bound_type, name)
+        return new(column, lower, upper, variable_type, bound_type, name, NaN, NaN)
     end
 end
 

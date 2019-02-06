@@ -356,17 +356,18 @@ end
 ###
 ### Conflicts with Integer, Semicontinuous, and Semiinteger constraints.
 ###
-### Note: some solvers may have unusual behaviour with variable bounds and
-### binary variables. LQOI will happily change the variable type to Binary if
-### there are bounds present; it's up to the solver to decide whether to respect
-### the existing bounds, and whether to restore them when this constraint is
-### deleted.
+### Note: we cache existing bounds.
 
 function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::MOI.ZeroOne)
     __assert_supported_constraint__(model, SinVar, MOI.ZeroOne)
     cache = variable_cache(model, variable)
     check_conflicting_constraint(cache, set)
     cache.variable_type = BINARY
+    cache.lower_old = cache.lower
+    cache.upper_old = cache.upper
+    cache.lower = max(0.0, cache.lower)
+    cache.upper = min(1.0, cache.upper)
+    set_variable_bound(model, variable, MOI.Interval(cache.lower, cache.upper))
     change_variable_types!(model, [cache.column], [backend_type(model, set)])
     make_problem_type_integer(model)
     return constraint_index(variable, set)
@@ -376,6 +377,9 @@ function MOI.delete(model::LinQuadOptimizer, index::SVCI{MOI.ZeroOne})
     __assert_valid__(model, index)
     cache = variable_cache(model, index)
     cache.variable_type = CONTINUOUS
+    cache.lower = cache.lower_old
+    cache.upper = cache.upper_old
+    set_variable_bound(model, single_variable(index), MOI.Interval(cache.lower, cache.upper))
     change_variable_types!(
         model, [cache.column], [backend_type(model, Val{:Continuous}())])
     if !has_integer(model)
