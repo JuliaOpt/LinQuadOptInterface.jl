@@ -30,13 +30,13 @@ binary, integer, special ordered sets, semicontinuous, or semi-integer
 variables).
 """
 function has_integer(model::LinQuadOptimizer)
+    for (variable, cache) in model.variable_mapping
+        if cache.variable_type != CONTINUOUS
+            return true
+        end
+    end
     constraint_map = cmap(model)
-    return length(constraint_map.integer) > 0 ||
-        length(constraint_map.binary) > 0 ||
-        length(constraint_map.sos1) > 0 ||
-        length(constraint_map.sos2) > 0 ||
-        length(constraint_map.semicontinuous) > 0 ||
-        length(constraint_map.semiinteger) > 0
+    return length(constraint_map.sos1) > 0 || length(constraint_map.sos2) > 0
 end
 
 #=

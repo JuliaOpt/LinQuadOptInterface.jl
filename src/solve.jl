@@ -148,9 +148,10 @@ is_binding(set::EQ, value::Float64) = isapprox(set.value, value)
 is_binding(set::IV, value::Float64) = isapprox(set.lower, value) || isapprox(set.upper, value)
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintDual, index::SVCI{<: LinSets})
-    column = get_column(model, model[index])
-    # the variable reduced cost is only the constraint dual if the bound is active,
-    # or it might be a dual ray
+    cache = variable_cache(model, index)
+    column = cache.column
+    # The variable reduced cost is only the constraint dual if the bound is
+    # active, or it might be a dual ray.
     if model.dual_status == MOI.INFEASIBILITY_CERTIFICATE
         return model.variable_dual_solution[column]
     else
@@ -173,8 +174,8 @@ end
 =#
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintPrimal, index::SVCI{<: LinSets})
-    column = get_column(model, model[index])
-    return model.variable_primal_solution[column]
+    cache = variable_cache(model, index)
+    return model.variable_primal_solution[cache.column]
 end
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ConstraintPrimal,

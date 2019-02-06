@@ -112,7 +112,7 @@ of this function.
 """
 function _replace_with_matching_sparsity!(model::LinQuadOptimizer, previous::VecLin, replacement::VecLin, constraint_indices)
     rows = [constraint_indices[t.output_index] for t in previous.terms]
-    cols = [model.variable_mapping[t.scalar_term.variable_index] for t in previous.terms]
+    cols = [get_column(model, t.scalar_term.variable_index) for t in previous.terms]
     coefs = MOI.coefficient.(replacement.terms)
     change_matrix_coefficients!(model, rows, cols, coefs)
 end
@@ -137,13 +137,13 @@ the sparsity patterns match, the zeroing-out step can be skipped.
 function _replace_with_different_sparsity!(model::LinQuadOptimizer, previous::VecLin, replacement::VecLin, constraint_indices)
     # First, zero out the old constraint function terms
     rows = [constraint_indices[t.output_index] for t in previous.terms]
-    cols = [model.variable_mapping[t.scalar_term.variable_index] for t in previous.terms]
+    cols = [get_column(model, t.scalar_term.variable_index) for t in previous.terms]
     coefs = fill(0.0, length(previous.terms))
     change_matrix_coefficients!(model, rows, cols, coefs)
 
     # Next, set the new constraint function terms
     rows = [constraint_indices[t.output_index] for t in replacement.terms]
-    cols = [model.variable_mapping[t.scalar_term.variable_index] for t in replacement.terms]
+    cols = [get_column(model, t.scalar_term.variable_index) for t in replacement.terms]
     coefs = MOI.coefficient.(replacement.terms)
     change_matrix_coefficients!(model, rows, cols, coefs)
 end

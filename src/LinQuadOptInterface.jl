@@ -1,4 +1,3 @@
-__precompile__()
 module LinQuadOptInterface
 
 using Compat
@@ -53,28 +52,13 @@ struct ConstraintMapping
     q_greater_than::Dict{QCI{GE}, Int}
     q_equal_to::Dict{QCI{EQ}, Int}
 
-    # references to variable
-    upper_bound::Dict{SVCI{LE}, VarInd}
-    lower_bound::Dict{SVCI{GE}, VarInd}
-    fixed_bound::Dict{SVCI{EQ}, VarInd}
-    interval_bound::Dict{SVCI{IV}, VarInd}
-
     # vectors of rows in constraint matrix
     vv_nonnegatives::Dict{VVCI{MOI.Nonnegatives}, Vector{Int}}
     vv_nonpositives::Dict{VVCI{MOI.Nonpositives}, Vector{Int}}
     vv_zeros::Dict{VVCI{MOI.Zeros}, Vector{Int}}
 
-    integer::Dict{SVCI{MOI.Integer}, VarInd}
-    #=
-     for some reason CPLEX doesn't respect bounds on a binary variable, so we
-     should store the previous bounds so that if we delete the binary constraint
-     we can revert to the old bounds
-    =#
-    binary::Dict{SVCI{MOI.ZeroOne}, Tuple{VarInd, Float64, Float64}}
     sos1::Dict{VVCI{SOS1}, Int}
     sos2::Dict{VVCI{SOS2}, Int}
-    semicontinuous::Dict{SVCI{MOI.Semicontinuous{Float64}}, VarInd}
-    semiinteger::Dict{SVCI{MOI.Semiinteger{Float64}}, VarInd}
 
 end
 ConstraintMapping() = ConstraintMapping(
@@ -88,19 +72,11 @@ ConstraintMapping() = ConstraintMapping(
     Dict{QCI{LE}, Int}(),
     Dict{QCI{GE}, Int}(),
     Dict{QCI{EQ}, Int}(),
-    Dict{SVCI{LE}, VarInd}(),
-    Dict{SVCI{GE}, VarInd}(),
-    Dict{SVCI{EQ}, VarInd}(),
-    Dict{SVCI{IV}, VarInd}(),
     Dict{VVCI{MOI.Nonnegatives}, Vector{Int}}(),
     Dict{VVCI{MOI.Nonpositives}, Vector{Int}}(),
     Dict{VVCI{MOI.Zeros}, Vector{Int}}(),
-    Dict{SVCI{MOI.Integer}, VarInd}(),
-    Dict{SVCI{MOI.ZeroOne}, Tuple{VarInd, Float64, Float64}}(),
     Dict{VVCI{SOS1}, Int}(),
     Dict{VVCI{SOS2}, Int}(),
-    Dict{SVCI{MOI.Semicontinuous{Float64}}, VarInd}(),
-    Dict{SVCI{MOI.Semiinteger{Float64}}, VarInd}()
 )
 
 """
@@ -162,7 +138,6 @@ function shift_references_after_delete_quadratic!(m, row)
 end
 
 function Base.isempty(map::ConstraintMapping)
-
     ret = true
     ret = ret && isempty(map.less_than)
     ret = ret && isempty(map.greater_than)
@@ -174,20 +149,11 @@ function Base.isempty(map::ConstraintMapping)
     ret = ret && isempty(map.q_greater_than)
     ret = ret && isempty(map.q_greater_than)
     ret = ret && isempty(map.q_equal_to)
-    ret = ret && isempty(map.upper_bound)
-    ret = ret && isempty(map.lower_bound)
-    ret = ret && isempty(map.fixed_bound)
-    ret = ret && isempty(map.interval_bound)
     ret = ret && isempty(map.vv_nonnegatives)
     ret = ret && isempty(map.vv_nonpositives)
     ret = ret && isempty(map.vv_zeros)
-    ret = ret && isempty(map.integer)
-    ret = ret && isempty(map.binary)
     ret = ret && isempty(map.sos1)
     ret = ret && isempty(map.sos2)
-    ret = ret && isempty(map.semiinteger)
-    ret = ret && isempty(map.semicontinuous)
-
     return ret
 end
 
@@ -232,6 +198,31 @@ end
 
 @enum(VariableType, CONTINUOUS, BINARY, INTEGER, SEMI_INTEGER, SEMI_CONTINUOUS)
 
+"""
+    VariableBoundType
+"""
+@enum(VariableBoundType,
+    FREE, ONLY_LESS_THAN, ONLY_GREATER_THAN, LESS_AND_GREATER_THAN, INTERVAL,
+    EQUAL_TO)
+
+mutable struct VariableCache
+    column::Int
+    lower::Float64
+    upper::Float64
+    variable_type::VariableType
+    bound_type::VariableBoundType
+    name::String
+    function VariableCache(;
+        column,
+        lower = -Inf,
+        upper = Inf,
+        variable_type = CONTINUOUS,
+        bound_type = FREE,
+        name = "")
+        return new(column, lower, upper, variable_type, bound_type, name)
+    end
+end
+
 macro LinQuadOptimizerBase(inner_model_type=Any)
     esc(quote
     inner::$inner_model_type
@@ -243,12 +234,9 @@ macro LinQuadOptimizerBase(inner_model_type=Any)
     obj_sense::MOI.OptimizationSense
 
     last_variable_reference::UInt64
-    variable_mapping::Dict{MOI.VariableIndex, Int}
-    variable_names::Dict{MOI.VariableIndex, String}
+    variable_mapping::Dict{MOI.VariableIndex, LinQuadOptInterface.VariableCache}
     variable_names_rev::Dict{String, Set{MOI.VariableIndex}}
     variable_references::Vector{MOI.VariableIndex}
-    variable_type::Dict{MOI.VariableIndex, LinQuadOptInterface.VariableType}
-
     variable_primal_solution::Vector{Float64}
     variable_dual_solution::Vector{Float64}
 
@@ -286,10 +274,8 @@ function MOI.is_empty(m::LinQuadOptimizer)
     ret = ret && m.obj_sense == MOI.MIN_SENSE
     ret = ret && m.last_variable_reference == 0
     ret = ret && isempty(m.variable_mapping)
-    ret = ret && isempty(m.variable_names)
     ret = ret && isempty(m.variable_names_rev)
     ret = ret && isempty(m.variable_references)
-    ret = ret && isempty(m.variable_type)
     ret = ret && isempty(m.variable_primal_solution)
     ret = ret && isempty(m.variable_dual_solution)
     ret = ret && m.last_constraint_reference == 0
@@ -308,12 +294,11 @@ function MOI.is_empty(m::LinQuadOptimizer)
     ret = ret && m.primal_result_count == 0
     ret = ret && m.dual_result_count == 0
     ret = ret && m.solvetime == 0.0
-
     return ret
 end
 function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.name = ""
-    m.inner = LinearQuadraticModel(M,env)
+    m.inner = LinearQuadraticModel(M, env)
 
     m.obj_type = AFFINE_OBJECTIVE
     m.single_obj_var = nothing
@@ -321,11 +306,9 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.obj_sense = MOI.MIN_SENSE
 
     m.last_variable_reference = 0
-    m.variable_mapping = Dict{MathOptInterface.VariableIndex, Int}()
-    m.variable_names = Dict{MathOptInterface.VariableIndex, String}()
+    m.variable_mapping = Dict{MathOptInterface.VariableIndex, VariableCache}()
     m.variable_names_rev = Dict{String, Set{MathOptInterface.VariableIndex}}()
     m.variable_references = MathOptInterface.VariableIndex[]
-    m.variable_type = Dict{MathOptInterface.VariableIndex, VariableType}()
     m.variable_primal_solution = Float64[]
     m.variable_dual_solution = Float64[]
 
@@ -352,7 +335,7 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
 
     m.solvetime = 0.0
 
-    nothing
+    return
 end
 
 function MOI.get(m::LinQuadOptimizer, ::MOI.Name)
