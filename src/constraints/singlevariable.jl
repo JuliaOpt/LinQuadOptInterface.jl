@@ -124,7 +124,7 @@ function MOI.add_constraints(model::LinQuadOptimizer, variables::Vector{SinVar},
     __assert_supported_constraint__(model, SinVar, S)
     for variable in variables
         variable_type = model.variable_type[variable.variable]
-        if !(variable_type == CONTINUOUS || variable_type == INTEGER)
+        if !(variable_type == CONTINUOUS || variable_type == INTEGER || variable_type == BINARY)
             error("Cannot set bounds because variable is of type: $(variable_type).")
         end
     end
