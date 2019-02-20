@@ -41,7 +41,7 @@ end
 
     @testset "Linear tests" begin
         config = MOIT.TestConfig(solve=false)
-        MOIT.contlineartest(solver, config)
+        MOIT.contlineartest(MOIU.UniversalFallback(solver), config)
         config = MOIT.TestConfig()
         include("contlinear.jl")
         set_linear1test_solutions!(solver)
@@ -468,4 +468,19 @@ end
     model = LQOI.MockLinQuadOptimizer()
     x = MOI.add_variable(model)
     @test_throws MOI.UnsupportedAttribute MOI.set(model, MOI.VariablePrimalStart(), x, 1.0)
+end
+
+@testset "Copy names" begin
+    model = LQOI.MockLinQuadOptimizer()
+    x = MOI.add_variable(model)
+    MOI.set(model, MOI.VariableName(), x, "x")
+    @test MOI.get(model, MOI.VariableName(), x) == "x"
+    c = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.ZeroOne())
+    MOI.set(model, MOI.ConstraintName(), c, "c")
+    @test MOI.get(model, MOI.ConstraintName(), c) == "c"
+
+    model2 = LQOI.MockLinQuadOptimizer()
+    copy_map = MOI.copy_to(model2, model)
+    @test MOI.get(model2, MOI.VariableName(), copy_map.varmap[x]) == "x"
+    @test MOI.get(model2, MOI.ConstraintName(), copy_map.conmap[c]) == "c"
 end
