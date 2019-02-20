@@ -126,15 +126,15 @@ function MOI.get(
         model::LinQuadOptimizer, ::Type{<:MOI.ConstraintIndex}, name::String)
     if model.name_to_constraint === nothing
         model.name_to_constraint = Dict{String, MOI.ConstraintIndex}()
-        for (constr, name) in model.constraint_to_name
-            name == "" && continue
-            if haskey(model.name_to_constraint, name)
-                duuplicate_con = model.name_to_constraint[name]
+        for (constr, c_name) in model.constraint_to_name
+            c_name == "" && continue
+            if haskey(model.name_to_constraint, c_name)
+                duuplicate_con = model.name_to_constraint[c_name]
                 model.name_to_constraint = nothing
                 error("Constraints $(constr) and $(duuplicate_con) have the ",
-                      "same name: ", name)
+                      "same name: ", c_name)
             else
-                model.name_to_constraint[name] = constr
+                model.name_to_constraint[c_name] = constr
             end
         end
     end
