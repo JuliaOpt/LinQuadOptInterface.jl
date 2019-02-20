@@ -50,9 +50,10 @@ function MOI.get(model::LinQuadOptimizer, ::Type{MOI.VariableIndex}, name::Strin
         for (var, name) in model.variable_to_name
             name == "" && continue
             if haskey(model.name_to_variable, name)
+                duplicate_var = model.name_to_variable[name]
                 model.name_to_variable = nothing
-                error("Variable $(var) and $(model.name_to_variable[name]) ",
-                      "have the same name: $(name).")
+                error("Variable $(var) and $(duplicate_var) have the same ",
+                      "name: $(name)")
             else
                 model.name_to_variable[name] = var
             end
