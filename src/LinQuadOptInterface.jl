@@ -211,8 +211,12 @@ function MOI.copy_to(dest::LinQuadOptimizer, src::MOI.ModelLike; kwargs...)
     return MOIU.automatic_copy_to(dest, src; kwargs...)
 end
 
-function MOI.get(::LinQuadOptimizer, ::MOI.ListOfVariableAttributesSet)
-    return MOI.AbstractVariableAttribute[MOI.VariableName()]
+function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfVariableAttributesSet)
+    if length(model.variable_names) > 0
+        return MOI.AbstractVariableAttribute[MOI.VariableName()]
+    else
+        return MOI.AbstractVariableAttribute[]
+    end
 end
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet)
@@ -226,8 +230,12 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet)
     return attributes
 end
 
-function MOI.get(::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet)
-    return MOI.AbstractConstraintAttribute[MOI.ConstraintName()]
+function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet)
+    if length(model.constraint_names) > 0
+        return MOI.AbstractConstraintAttribute[MOI.ConstraintName()]
+    else
+        return MOI.AbstractConstraintAttribute[]
+    end
 end
 
 @enum(VariableType, CONTINUOUS, BINARY, INTEGER, SEMI_INTEGER, SEMI_CONTINUOUS)
