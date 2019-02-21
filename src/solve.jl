@@ -105,17 +105,7 @@ end
 
 function MOI.get(model::LinQuadOptimizer, attr::MOI.ObjectiveValue)
     if attr.resultindex == 1
-        # Note: we add m.objective_constant here to account for any constant
-        # term which was not passed to the solver itself (and which therefore
-        # would not be accounted for in `get_objective_value(m)`. We do *not*
-        # call `get_constant_objective(m)` because that would also pull any
-        # constants which were passed to the solver, resulting those constants
-        # being counted twice. This confusion will be alleviated when all LQOI
-        # solvers implement `get_constant_objective()` and
-        # `set_constant_objective!()` by actually passing the relevant constants
-        # to the solvers, at which point we can just get rid of
-        # m.objective_constant entirely.
-        return get_objective_value(model) + model.objective_constant
+        return get_objective_value(model)
     else
         error("Unable to access multiple objective values")
     end

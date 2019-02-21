@@ -341,10 +341,7 @@ value.
 Solver interfaces that overload this behavior (e.g. to pass that constant
 objective to the solver itself) must also overload `get_constant_objective(m)`.
 """
-function set_constant_objective!(m::LinQuadOptimizer, value)
-    m.objective_constant = value
-    return
-end
+function set_constant_objective! end
 
 """
     set_quadratic_objective!(m, I::Vector{Int}, J::Vector{Int}, V::Vector{Float64})::Nothing
@@ -390,7 +387,7 @@ function change_objective_sense! end
 
 Return the constant (i.e. offset) component of the objective.
 """
-get_constant_objective(m::LinQuadOptimizer) = m.objective_constant
+function get_constant_objective end
 
 """
     get_linear_objective!(m, x::Vector{Float64})

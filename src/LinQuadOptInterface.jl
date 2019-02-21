@@ -265,8 +265,6 @@ macro LinQuadOptimizerBase(inner_model_type=Any)
     constraint_names::Dict{LinQuadOptInterface.CI, String}
     constraint_names_rev::Dict{String, Set{LinQuadOptInterface.CI}}
 
-    objective_constant::Float64
-
     termination_status::MOI.TerminationStatusCode
     primal_status::MOI.ResultStatusCode
     dual_status::MOI.ResultStatusCode
@@ -301,7 +299,6 @@ function MOI.is_empty(m::LinQuadOptimizer)
     ret = ret && isempty(m.qconstraint_dual_solution)
     ret = ret && isempty(m.constraint_names)
     ret = ret && isempty(m.constraint_names_rev)
-    ret = ret && m.objective_constant == 0.0
     ret = ret && m.termination_status == MOI.OPTIMIZE_NOT_CALLED
     ret = ret && m.primal_status == MOI.NO_SOLUTION
     ret = ret && m.dual_status == MOI.NO_SOLUTION
@@ -341,8 +338,6 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
 
     m.constraint_names = Dict{CI, String}()
     m.constraint_names_rev = Dict{String, Set{CI}}()
-
-    m.objective_constant = 0.0
 
     m.termination_status = MathOptInterface.OPTIMIZE_NOT_CALLED
     m.primal_status = MathOptInterface.NO_SOLUTION

@@ -16,7 +16,7 @@ mutable struct MockLinQuadModel # <: LinQuadOptInterface.LinQuadOptimizer
     b::Vector{Float64}
     c::Vector{Float64}
     Qobj::Matrix{Float64}
-
+    objective_constant::Float64
     range::Vector{Float64} # constraint UB for range
 
     lb::Vector{Float64}
@@ -42,7 +42,7 @@ mutable struct MockLinQuadModel # <: LinQuadOptInterface.LinQuadOptimizer
     quadratic_primal_solution::Vector{Float64}
     quadratic_dual_solution::Vector{Float64}
 
-    function MockLinQuadModel(env::Nothing,str::String="defaultname")
+    function MockLinQuadModel(env::Nothing, str::String = "defaultname")
         m = new()
 
         m.sense = :minimize
@@ -52,6 +52,7 @@ mutable struct MockLinQuadModel # <: LinQuadOptInterface.LinQuadOptimizer
         m.b = zeros(0)
         m.c = zeros(0)
         m.Qobj = zeros(0,0)
+        m.objective_constant = 0.0
 
         m.range = zeros(0)
 
@@ -637,6 +638,15 @@ function LQOI.set_linear_objective!(instance::MockLinQuadOptimizer, colvec, coef
     return
 end
 
+function LQOI.set_constant_objective!(model::MockLinQuadOptimizer, value)
+    model.inner.objective_constant = value
+    return
+end
+
+function LQOI.get_constant_objective(model::MockLinQuadOptimizer)
+    return model.inner.objective_constant
+end
+
 function LQOI.change_objective_sense!(instance::MockLinQuadOptimizer, symbol)
     if symbol == :min
         instance.inner.sense = :minimize
@@ -823,7 +833,7 @@ function get_objval(inner::MockLinQuadModel)
         Q = Matrix(Symmetric(inner.Qobj, :U))
         obj += (0.5) * x' * Q * x
     end
-    return obj
+    return obj + inner.objective_constant
 end
 
 LQOI.get_objective_value(instance::MockLinQuadOptimizer) = get_objval(instance.inner)
