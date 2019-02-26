@@ -127,7 +127,8 @@ function shift_references_after_delete_affine!(m, row)
 
 end
 
-# The following two functions depend on the implementation of Dict having the field vals
+# This functions loops through the hidden `.vals` field of the `scalar`
+# dictionary and  decreases the value by 1 if it is greater than `row`.
 function _shift_references_after_delete_scalar!(scalar::Dict, row)
     vals = scalar.vals
     for n in 1:length(vals)
@@ -135,6 +136,9 @@ function _shift_references_after_delete_scalar!(scalar::Dict, row)
     end
 end
 
+# This functions loops through the hidden `.vals` field of the `vector`
+# dictionary and for each value of the array decreases the value by 1 if it is
+# greater than `row`.
 function _shift_references_after_delete_vector!(vector::Dict, row)
     vals = vector.vals
     for n in 1:length(vals)
