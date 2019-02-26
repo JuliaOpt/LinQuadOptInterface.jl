@@ -127,7 +127,7 @@ function shift_references_after_delete_affine!(m, row)
 
 end
 
-# The following two functions depend on the implimentation of Dict having the field vals
+# The following two functions depend on the implementation of Dict having the field vals
 function _shift_references_after_delete_scalar!(scalar::Dict, row)
     vals = scalar.vals
     # This function checks if the value is greater the than row which is being deleted
