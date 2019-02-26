@@ -130,6 +130,9 @@ end
 # This functions loops through the hidden `.vals` field of the `scalar`
 # dictionary and  decreases the value by 1 if it is greater than `row`.
 function _shift_references_after_delete_scalar!(scalar::Dict, row)
+    # If this assertion fails it means that the Dict type has change its implementation.
+    # In julia v1.2 this should be changed to @assert hasfield(Dict,:vals).
+    @assert isdefined(scalar,:vals)
     vals = scalar.vals
     for n in 1:length(vals)
         @inbounds vals[n] = vals[n] > row ? vals[n] - 1 : vals[n]
@@ -140,6 +143,9 @@ end
 # dictionary and for each value of the array decreases the value by 1 if it is
 # greater than `row`.
 function _shift_references_after_delete_vector!(vector::Dict, row)
+    # If this assertion fails it means that the Dict type has change its implementation.
+    # In julia v1.2 this should be changed to @assert hasfield(Dict,:vals).
+    @assert isdefined(vector,:vals)
     vals = vector.vals
     for n in 1:length(vals)
         if isassigned(vals,n)
