@@ -127,18 +127,37 @@ function shift_references_after_delete_affine!(m, row)
 
 end
 
-# The following two functions d
+# The following two functions depend on the implimentation of Dict having the field vals
 function _shift_references_after_delete_scalar!(scalar::Dict, row)
     vals = scalar.vals
+    # This function checks if the value is greater the than row which is being deleted
+    # If it is it shift the value down by one.
     f(v,r)= v > r ? v - 1 : v
+
+    ## The broadcast! below is equivilent to the following for loop
+    # for n in 1:length(vals)
+    #     vals[n]=f(vals[n],row)
+    # end
+    ## Further more broadcast!(f, vals, vals, row) is the nonallocating version
+    ## of vals[:]. = f.(vals[:], row)
     broadcast!(f, vals, vals, row)
+
+
 end
 
 function _shift_references_after_delete_vector!(vector::Dict, row)
     vals = vector.vals
+    # This function checks if the value is greater the than row which is being deleted
+    # If it is it shift the value down by one.
     f(v,r)= v > r ? v - 1 : v
     for n in 1:length(vals)
         if isassigned(vals,n)
+            ## The broadcast! below is equivilent to the following for loop
+            # for i in 1:length(vals[n])
+            #     vals[n][i] = f(vals[n][i], row)
+            # end
+            ## Further more broadcast!(f, vals[n], vals[n], row) is the nonallocating version
+            ## of vals[n][:] .= f.(vals[n][:], row)
             broadcast!(f, vals[n], vals[n], row)
         end
     end
