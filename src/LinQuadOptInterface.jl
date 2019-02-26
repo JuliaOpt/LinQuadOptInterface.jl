@@ -110,36 +110,40 @@ This function updates all of the references in `m`
 after we have deleted row `row` in the affine constraint matrix.
 """
 function shift_references_after_delete_affine!(m, row)
-    for scalar_affine in [
-            cmap(m).less_than,
-            cmap(m).greater_than,
-            cmap(m).equal_to,
-            cmap(m).interval
-        ]
-        for (key, val) in scalar_affine
-            if val > row
-                scalar_affine[key] -= 1
-            end
-        end
-    end
 
-    for vector_affine in [
-            cmap(m).nonnegatives,
-            cmap(m).nonpositives,
-            cmap(m).zeros,
-            cmap(m).vv_nonnegatives,
-            cmap(m).vv_nonpositives,
-            cmap(m).vv_zeros
-        ]
-        for (key, vals) in vector_affine
-            for (i, val) in enumerate(vals)
-                if val > row
-                    vector_affine[key][i] -= 1
-                end
-            end
+    cmap_m = cmap(m)
+    _shift_references_after_delete_scalar!(cmap_m.less_than, row)
+    _shift_references_after_delete_scalar!(cmap_m.greater_than, row)
+    _shift_references_after_delete_scalar!(cmap_m.equal_to, row)
+    _shift_references_after_delete_scalar!(cmap_m.interval, row)
+
+
+    _shift_references_after_delete_vector!(cmap_m.nonnegatives, row)
+    _shift_references_after_delete_vector!(cmap_m.nonpositives, row)
+    _shift_references_after_delete_vector!(cmap_m.zeros, row)
+    _shift_references_after_delete_vector!(cmap_m.vv_nonnegatives, row)
+    _shift_references_after_delete_vector!(cmap_m.vv_nonpositives, row)
+    _shift_references_after_delete_vector!(cmap_m.vv_zeros, row)
+
+end
+
+# The following two functions d
+function _shift_references_after_delete_scalar!(scalar::Dict, row)
+    vals = scalar.vals
+    f(v,r)= v > r ? v - 1 : v
+    broadcast!(f, vals, vals, row)
+end
+
+function _shift_references_after_delete_vector!(vector::Dict, row)
+    vals = vector.vals
+    f(v,r)= v > r ? v - 1 : v
+    for n in 1:length(vals)
+        if isassigned(vals,n)
+            broadcast!(f, vals[n], vals[n], row)
         end
     end
 end
+
 
 """
     shift_references_after_delete_quadratic!(m, row)
@@ -148,17 +152,10 @@ This function updates all of the references in `m`
 after we have deleted row `row` in the quadratic constraint matrix.
 """
 function shift_references_after_delete_quadratic!(m, row)
-    for scalar_quadratic in [
-            cmap(m).q_less_than,
-            cmap(m).q_greater_than,
-            cmap(m).q_equal_to
-        ]
-        for (key, val) in scalar_quadratic
-            if val > row
-                scalar_quadratic[key] -= 1
-            end
-        end
-    end
+    cmap_m = cmap(m)
+    _shift_references_after_delete_scalar!(cmap_m.less_than, row)
+    _shift_references_after_delete_scalar!(cmap_m.greater_than, row)
+    _shift_references_after_delete_scalar!(cmap_m.equal_to, row)
 end
 
 function Base.isempty(map::ConstraintMapping)
@@ -373,11 +370,8 @@ end
 
 # a useful helper function
 function deleteref!(dict::Dict, i::Int, ref)
-    for (key, val) in dict
-        if val > i
-            dict[key] -= 1
-        end
-    end
+    f(v,r) = v > r ? v - 1 : v
+    broadcast!(f, dict.vals, dict.vals, i)
     delete!(dict, ref)
 end
 
