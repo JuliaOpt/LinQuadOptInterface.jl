@@ -130,35 +130,19 @@ end
 # The following two functions depend on the implementation of Dict having the field vals
 function _shift_references_after_delete_scalar!(scalar::Dict, row)
     vals = scalar.vals
-    # This function checks if the value is greater the than row which is being deleted
-    # If it is it shift the value down by one.
-    f(v,r)= v > r ? v - 1 : v
-
-    ## The broadcast! below is equivilent to the following for loop
-    # for n in 1:length(vals)
-    #     vals[n]=f(vals[n],row)
-    # end
-    ## Further more broadcast!(f, vals, vals, row) is the nonallocating version
-    ## of vals[:]. = f.(vals[:], row)
-    broadcast!(f, vals, vals, row)
-
-
+    for n in 1:length(vals)
+        @inbounds vals[n] = vals[n] > row ? vals[n] - 1 : vals[n]
+    end
 end
 
 function _shift_references_after_delete_vector!(vector::Dict, row)
     vals = vector.vals
-    # This function checks if the value is greater the than row which is being deleted
-    # If it is it shift the value down by one.
-    f(v,r)= v > r ? v - 1 : v
     for n in 1:length(vals)
         if isassigned(vals,n)
-            ## The broadcast! below is equivilent to the following for loop
-            # for i in 1:length(vals[n])
-            #     vals[n][i] = f(vals[n][i], row)
-            # end
-            ## Further more broadcast!(f, vals[n], vals[n], row) is the nonallocating version
-            ## of vals[n][:] .= f.(vals[n][:], row)
-            broadcast!(f, vals[n], vals[n], row)
+            vec=vals[n]
+            for n in 1:length(vec)
+                @inbounds vec[n] = vec[n] > row ? vec[n] - 1 : vec[n]
+            end
         end
     end
 end
