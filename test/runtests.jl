@@ -41,7 +41,11 @@ end
 
     @testset "Linear tests" begin
         config = MOIT.TestConfig(solve=false)
-        MOIT.contlineartest(solver, config)
+        MOIT.contlineartest(solver, config, [
+            # partial_start requires VariablePrimalStart to be implemented by the
+            # solver.
+            "partial_start"
+        ])
         config = MOIT.TestConfig()
         include("contlinear.jl")
         set_linear1test_solutions!(solver)
