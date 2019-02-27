@@ -41,8 +41,8 @@ end
 
     @testset "Linear tests" begin
         config = MOIT.TestConfig(solve=false)
-        # Universal fallback for partial start test.
-        MOIT.contlineartest(MOIU.UniversalFallback(solver), config)
+        # VariablePrimalStart not supported.
+        MOIT.contlineartest(solver, config, exclude = ["partial_start"])
         config = MOIT.TestConfig()
         include("contlinear.jl")
         set_linear1test_solutions!(solver)
