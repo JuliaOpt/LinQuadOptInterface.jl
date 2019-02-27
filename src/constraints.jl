@@ -121,22 +121,27 @@ end
 #=
     Get constraint by name. Rebuild the lazy reverse-lookup if required.
 =#
+            
+function _rebuild_name_to_constraint(model::LinQuadOptimizer)
+    model.name_to_constraint = Dict{String, MOI.ConstraintIndex}()
+    for (constr, c_name) in model.constraint_to_name
+        c_name == "" && continue
+        if haskey(model.name_to_constraint, c_name)
+            duuplicate_con = model.name_to_constraint[c_name]
+            model.name_to_constraint = nothing
+            error("Constraints $(constr) and $(duuplicate_con) have the ",
+                  "same name: ", c_name)
+        else
+            model.name_to_constraint[c_name] = constr
+        end
+    end
+    return                
+end
 
 function MOI.get(
         model::LinQuadOptimizer, ::Type{<:MOI.ConstraintIndex}, name::String)
     if model.name_to_constraint === nothing
-        model.name_to_constraint = Dict{String, MOI.ConstraintIndex}()
-        for (constr, c_name) in model.constraint_to_name
-            c_name == "" && continue
-            if haskey(model.name_to_constraint, c_name)
-                duuplicate_con = model.name_to_constraint[c_name]
-                model.name_to_constraint = nothing
-                error("Constraints $(constr) and $(duuplicate_con) have the ",
-                      "same name: ", c_name)
-            else
-                model.name_to_constraint[c_name] = constr
-            end
-        end
+        _rebuild_name_to_constraint(model)
     end
     return get(model.name_to_constraint, name, nothing)
 end
