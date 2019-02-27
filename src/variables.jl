@@ -44,20 +44,25 @@ end
     Get variable by name. Rebuild the lazy reverse-lookup if required.
 =#
 
+function _rebuild_name_to_variable(model::LinQuadOptimizer)
+    model.name_to_variable = Dict{String, MOI.VariableIndex}()
+    for (var, v_name) in model.variable_to_name
+        v_name == "" && continue
+        if haskey(model.name_to_variable, v_name)
+            duplicate_var = model.name_to_variable[v_name]
+            model.name_to_variable = nothing
+            error("Variable $(var) and $(duplicate_var) have the same ",
+                  "name: $(v_name)")
+        else
+            model.name_to_variable[v_name] = var
+        end
+    end
+    return    
+end
+
 function MOI.get(model::LinQuadOptimizer, ::Type{MOI.VariableIndex}, name::String)
     if model.name_to_variable === nothing
-        model.name_to_variable = Dict{String, MOI.VariableIndex}()
-        for (var, v_name) in model.variable_to_name
-            v_name == "" && continue
-            if haskey(model.name_to_variable, v_name)
-                duplicate_var = model.name_to_variable[v_name]
-                model.name_to_variable = nothing
-                error("Variable $(var) and $(duplicate_var) have the same ",
-                      "name: $(v_name)")
-            else
-                model.name_to_variable[v_name] = var
-            end
-        end
+        _rebuild_name_to_variable(model)
     end
     return get(model.name_to_variable, name, nothing)
 end
