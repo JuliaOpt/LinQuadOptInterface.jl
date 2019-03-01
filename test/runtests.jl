@@ -406,10 +406,13 @@ end
         model = LQOI.MockLinQuadOptimizer()
         x = MOI.add_variable(model)
         MOI.add_constraint(model, MOI.SingleVariable(x), MOI.ZeroOne())
-        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Interval(2.0, 3.0))
         @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Integer())
         @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semiinteger(2.0, 3.0))
         @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semicontinuous(2.0, 3.0))
+        c1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(0.5))
+        c2 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.LessThan(0.5))
+        @test MOI.is_valid(model, c1)
+        @test MOI.is_valid(model, c2)
     end
     @testset "Integer" begin
         model = LQOI.MockLinQuadOptimizer()
