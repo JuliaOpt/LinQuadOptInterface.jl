@@ -212,7 +212,7 @@ function MOI.copy_to(dest::LinQuadOptimizer, src::MOI.ModelLike; kwargs...)
 end
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfVariableAttributesSet)
-    if length(model.variable_names) > 0
+    if length(model.variable_to_name) > 0
         return MOI.AbstractVariableAttribute[MOI.VariableName()]
     else
         return MOI.AbstractVariableAttribute[]
