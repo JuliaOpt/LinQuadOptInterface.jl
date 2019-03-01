@@ -231,7 +231,7 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet)
 end
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet)
-    if length(model.constraint_names) > 0
+    if length(model.constraint_to_name) > 0
         return MOI.AbstractConstraintAttribute[MOI.ConstraintName()]
     else
         return MOI.AbstractConstraintAttribute[]
