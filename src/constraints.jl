@@ -187,25 +187,39 @@ Matrix given in compressed sparse row (CSR) format.
 `CSRMatrix` is analgous to the structure in Julia's `SparseMatrixCSC` but with
 the rows and columns flipped. It contains three vectors:
  - `row_pointers` is a vector pointing to the start of each row in
-    `columns` and `coefficients`;
+    `columns` and `coefficients` this should end with a `length(coefficients)+1`;
  - `columns` is a vector of column numbers; and
  - `coefficients` is a vector of corresponding nonzero values.
 
-The length of `row_pointers` is the number of rows in the matrix.
+The length of `row_pointers` is the number of rows in the matrix + 1.
 
 This struct is not a subtype of `AbstractSparseMatrix` as it is intended to be a
-collection of the three vectors as they are required by solvers such as Gurobi.
+collection of the three vectors as they are required by some solvers.
+Solvers such as Gurobi may need to trim the last index off of row_pointers.
 It is not intended to be used for general computation.
 """
 struct CSRMatrix{T}
+    # This whole definition should really be replaced by and Adjoint{SparseMatrixCSC}
     row_pointers::Vector{Int}
     columns::Vector{Int}
     coefficients::Vector{T}
     function CSRMatrix{T}(row_pointers, columns, coefficients) where T
         @assert length(columns) == length(coefficients)
+        @assert length(columns) + 1 == row_pointers[end]
         new(row_pointers, columns, coefficients)
     end
 end
+
+#   Move access to an interface so that if we want to change type definition we can.
+colvals(mat::CSRMatrix) = mat.columns
+row_pointers(mat::CSRMatrix) = mat.row_pointers
+row_nonzeros(mat::CSRMatrix) = mat.coefficients
+
+# Lets also depreciate that use of direct property access
+@deprecate getproperty(mat::CSRMatrix, :row_pointers) row_pointers(mat) false
+@deprecate getproperty(mat::CSRMatrix, :columns) colvals(mat) false
+@deprecate getproperty(mat::CSRMatrix, :coefficients) row_nonzeros(mat) false
+
 
 #=
     Below we add constraints.

@@ -35,7 +35,7 @@ end
 function add_linear_constraint(model::LinQuadOptimizer, func::Linear, set::IV)
     columns = [get_column(model, term.variable_index) for term in func.terms]
     coefficients = [term.coefficient for term in func.terms]
-    A = CSRMatrix{Float64}([1], columns, coefficients)
+    A = CSRMatrix{Float64}([1,length(coefficients)+1], columns, coefficients)
     add_ranged_constraints!(model, A, [set.lower], [set.upper])
 end
 
@@ -45,7 +45,7 @@ function add_linear_constraint(model::LinQuadOptimizer, func::Linear, sense, rhs
     end
     columns = [get_column(model, term.variable_index) for term in func.terms]
     coefficients = [term.coefficient for term in func.terms]
-    A = CSRMatrix{Float64}([1], columns, coefficients)
+    A = CSRMatrix{Float64}([1,length(coefficients)+1], columns, coefficients)
     add_linear_constraints!(model, A, [sense], [rhs - func.constant])
 end
 
@@ -99,7 +99,7 @@ function functions_to_CSRMatrix(model::LinQuadOptimizer, functions::Vector{Linea
     # row (i - 1), storing the result in r[i]. Then we perform a cumsum on r,
     # storing the result back in r.
     num_rows = length(functions)
-    row_pointers = fill(0, num_rows)
+    row_pointers = fill(0, num_rows+1)
     row_pointers[1] = 1
     non_zero_index = 0
     for (row, func) in enumerate(functions)
@@ -117,6 +117,7 @@ function functions_to_CSRMatrix(model::LinQuadOptimizer, functions::Vector{Linea
         end
     end
     cumsum!(row_pointers, row_pointers)
+    row_pointers[end]=length(coefficients)+1
     return CSRMatrix{Float64}(row_pointers, columns, coefficients)
 end
 
