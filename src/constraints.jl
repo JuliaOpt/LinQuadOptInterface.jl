@@ -215,10 +215,12 @@ colvals(mat::CSRMatrix) = mat.columns
 row_pointers(mat::CSRMatrix) = mat.row_pointers
 row_nonzeros(mat::CSRMatrix) = mat.coefficients
 
+sparse(m::CSRMatrix{T}) where T =sparse(
+    SparseMatrixCSC{Int,T}(maximum(m.columns), length(m.row_pointers)-1, m.row_pointers, m.columns, m.coefficients)'
+    )
+
+
 # Lets also depreciate that use of direct property access
-@deprecate getproperty(mat::CSRMatrix, :row_pointers) row_pointers(mat) false
-@deprecate getproperty(mat::CSRMatrix, :columns) colvals(mat) false
-@deprecate getproperty(mat::CSRMatrix, :coefficients) row_nonzeros(mat) false
 
 
 #=
