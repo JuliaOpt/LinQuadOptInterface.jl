@@ -215,8 +215,9 @@ colvals(mat::CSRMatrix) = mat.columns
 row_pointers(mat::CSRMatrix) = mat.row_pointers
 row_nonzeros(mat::CSRMatrix) = mat.coefficients
 
+import SparseArrays: sparse
 sparse(m::CSRMatrix{T}) where T =sparse(
-    SparseMatrixCSC{Int,T}(maximum(m.columns), length(m.row_pointers)-1, m.row_pointers, m.columns, m.coefficients)'
+    SparseMatrixCSC{T,Int}(maximum(m.columns), length(m.row_pointers)-1, m.row_pointers, m.columns, m.coefficients)'
     )
 
 
