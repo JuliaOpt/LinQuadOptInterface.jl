@@ -198,30 +198,34 @@ collection of the three vectors as they are required by some solvers.
 Solvers such as Gurobi may need to trim the last index off of row_pointers.
 It is not intended to be used for general computation.
 """
-struct CSRMatrix{T}
-    # This whole definition should really be replaced by and Adjoint{SparseMatrixCSC}
-    row_pointers::Vector{Int}
-    columns::Vector{Int}
-    coefficients::Vector{T}
-    function CSRMatrix{T}(row_pointers, columns, coefficients) where T
-        @assert length(columns) == length(coefficients)
-        @assert length(columns) + 1 == row_pointers[end]
-        new(row_pointers, columns, coefficients)
-    end
+
+const CSRMatrix{T} = Adjoint{T,SparseMatrixCSC{T,Int}} where T
+
+# struct CSRMatrix{T}
+#     # This whole definition should really be replaced by and Adjoint{SparseMatrixCSC}
+#     row_pointers::Vector{Int}
+#     columns::Vector{Int}
+#     coefficients::Vector{T}
+#     function CSRMatrix{T}(row_pointers, columns, coefficients) where T
+#         @assert length(columns) == length(coefficients)
+#         @assert length(columns) + 1 == row_pointers[end]
+#         new(row_pointers, columns, coefficients)
+#     end
+# end
+
+function CSRMatrix{T}(row_pointers, columns, coefficients) where T
+    @assert length(columns) == length(coefficients)
+    @assert length(columns) + 1 == row_pointers[end]
+    SparseMatrixCSC{T,Int}(maximum(columns), length(row_pointers)-1, row_pointers, columns, coefficients)'
 end
 
+
 #   Move access to an interface so that if we want to change type definition we can.
-colvals(mat::CSRMatrix) = mat.columns
-row_pointers(mat::CSRMatrix) = mat.row_pointers
-row_nonzeros(mat::CSRMatrix) = mat.coefficients
-
-import SparseArrays: sparse
-sparse(m::CSRMatrix{T}) where T =sparse(
-    SparseMatrixCSC{T,Int}(maximum(m.columns), length(m.row_pointers)-1, m.row_pointers, m.columns, m.coefficients)'
-    )
+colvals(mat::CSRMatrix) = rowvals(mat')
+row_pointers(mat::CSRMatrix) = mat'.colptr  # This is the only way to get at colptrs without recreating it
+row_nonzeros(mat::CSRMatrix) = nonzeros(mat')
 
 
-# Lets also depreciate that use of direct property access
 
 
 #=
