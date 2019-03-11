@@ -201,18 +201,6 @@ It is not intended to be used for general computation.
 
 const CSRMatrix{T} = Adjoint{T,SparseMatrixCSC{T,Int}} where T
 
-# struct CSRMatrix{T}
-#     # This whole definition should really be replaced by and Adjoint{SparseMatrixCSC}
-#     row_pointers::Vector{Int}
-#     columns::Vector{Int}
-#     coefficients::Vector{T}
-#     function CSRMatrix{T}(row_pointers, columns, coefficients) where T
-#         @assert length(columns) == length(coefficients)
-#         @assert length(columns) + 1 == row_pointers[end]
-#         new(row_pointers, columns, coefficients)
-#     end
-# end
-
 function CSRMatrix{T}(row_pointers, columns, coefficients) where T
     @assert length(columns) == length(coefficients)
     @assert length(columns) + 1 == row_pointers[end]
@@ -224,8 +212,6 @@ end
 colvals(mat::CSRMatrix) = rowvals(mat')
 row_pointers(mat::CSRMatrix) = mat'.colptr  # This is the only way to get at colptrs without recreating it
 row_nonzeros(mat::CSRMatrix) = nonzeros(mat')
-
-
 
 
 #=
