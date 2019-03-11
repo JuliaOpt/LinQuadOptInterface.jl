@@ -182,21 +182,14 @@ end
 """
     CSRMatrix{T}
 
-Matrix given in compressed sparse row (CSR) format.
+Type alias for Adjoint{T,SparseMatrixCSC{T,Int}} where T, whichc allows for the
+    efficient storage of CSR sparse matrix
 
-`CSRMatrix` is analgous to the structure in Julia's `SparseMatrixCSC` but with
-the rows and columns flipped. It contains three vectors:
- - `row_pointers` is a vector pointing to the start of each row in
-    `columns` and `coefficients` this should end with a `length(coefficients)+1`;
- - `columns` is a vector of column numbers; and
- - `coefficients` is a vector of corresponding nonzero values.
-
-The length of `row_pointers` is the number of rows in the matrix + 1.
-
-This struct is not a subtype of `AbstractSparseMatrix` as it is intended to be a
-collection of the three vectors as they are required by some solvers.
-Solvers such as Gurobi may need to trim the last index off of row_pointers.
-It is not intended to be used for general computation.
+Please use the following interface to access this data incase model is changed in future
+ - `row_pointers(mat)` returns that sparse row_pointer vector see description
+    which has a length of rows+1
+ - `colvals` this is the column version of rowvals(SparseMatrixCSC)
+ - `coefficients` this is the equivilent to nonzeros(SparseMatrixCSC)
 """
 
 const CSRMatrix{T} = Adjoint{T,SparseMatrixCSC{T,Int}} where T
@@ -207,12 +200,10 @@ function CSRMatrix{T}(row_pointers, columns, coefficients) where T
     SparseMatrixCSC{T,Int}(maximum(columns), length(row_pointers)-1, row_pointers, columns, coefficients)'
 end
 
-
 #   Move access to an interface so that if we want to change type definition we can.
 colvals(mat::CSRMatrix) = rowvals(mat')
 row_pointers(mat::CSRMatrix) = mat'.colptr  # This is the only way to get at colptrs without recreating it
 row_nonzeros(mat::CSRMatrix) = nonzeros(mat')
-
 
 #=
     Below we add constraints.
