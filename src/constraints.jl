@@ -182,14 +182,14 @@ end
 """
     CSRMatrix{T}
 
-Type alias for Adjoint{T,SparseMatrixCSC{T,Int}} where T, whichc allows for the
-    efficient storage of CSR sparse matrix
+Type alias for `Adjoint{T,SparseMatrixCSC{T,Int}} where T`, which allows for the
+    efficient storage of compressed sparse row (CSR) sparse matrix
 
 Please use the following interface to access this data incase model is changed in future
  - `row_pointers(mat)` returns that sparse row_pointer vector see description
     which has a length of rows+1
- - `colvals` this is the column version of rowvals(SparseMatrixCSC)
- - `coefficients` this is the equivilent to nonzeros(SparseMatrixCSC)
+ - `colvals` this is the column version of `rowvals(SparseMatrixCSC)`
+ - `row_nonzeros` this is the equivilent to `nonzeros(SparseMatrixCSC)`
 """
 
 const CSRMatrix{T} = Adjoint{T,SparseMatrixCSC{T,Int}} where T
