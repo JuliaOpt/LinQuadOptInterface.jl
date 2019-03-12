@@ -182,7 +182,7 @@ end
 """
     CSRMatrix{T}
 
-Type alias for `Adjoint{T,SparseMatrixCSC{T,Int}} where T`, which allows for the
+Type alias for `Transpose{T,SparseMatrixCSC{T,Int}} where T`, which allows for the
     efficient storage of compressed sparse row (CSR) sparse matrix
 
 Please use the following interface to access this data incase model is changed in future
@@ -192,18 +192,18 @@ Please use the following interface to access this data incase model is changed i
  - `row_nonzeros` this is the equivilent to `nonzeros(SparseMatrixCSC)`
 """
 
-const CSRMatrix{T} = Adjoint{T,SparseMatrixCSC{T,Int}} where T
+const CSRMatrix{T} = Transpose{T,SparseMatrixCSC{T,Int}} where T
 
 function CSRMatrix{T}(row_pointers, columns, coefficients) where T
     @assert length(columns) == length(coefficients)
     @assert length(columns) + 1 == row_pointers[end]
-    SparseMatrixCSC{T,Int}(maximum(columns), length(row_pointers)-1, row_pointers, columns, coefficients)'
+    transpose(SparseMatrixCSC{T,Int}(maximum(columns), length(row_pointers)-1, row_pointers, columns, coefficients))
 end
 
 #   Move access to an interface so that if we want to change type definition we can.
-colvals(mat::CSRMatrix) = rowvals(mat')
-row_pointers(mat::CSRMatrix) = mat'.colptr  # This is the only way to get at colptrs without recreating it
-row_nonzeros(mat::CSRMatrix) = nonzeros(mat')
+colvals(mat::CSRMatrix) = rowvals(transpose(mat))
+row_pointers(mat::CSRMatrix) = transpose(mat).colptr  # This is the only way to get at colptrs without recreating it
+row_nonzeros(mat::CSRMatrix) = nonzeros(transpose(mat))
 
 #=
     Below we add constraints.
