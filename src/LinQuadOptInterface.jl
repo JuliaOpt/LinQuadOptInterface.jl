@@ -127,34 +127,33 @@ function shift_references_after_delete_affine!(m, row)
 
 end
 
-# This functions loops through the hidden `.vals` field of the `scalar`
-# dictionary and  decreases the value by 1 if it is greater than `row`.
-function _shift_references_after_delete_scalar!(scalar::Dict, row)
-    # If this assertion fails it means that the Dict type has change its implementation.
-    # In julia v1.2 this should be changed to @assert hasfield(Dict,:vals).
-    @assert isdefined(scalar,:vals)
-    vals = scalar.vals
-    for n in 1:length(vals)
-        @inbounds vals[n] = vals[n] > row ? vals[n] - 1 : vals[n]
+
+# TODO:  This has been added to mirror functionality that was merged into
+# Julia/master in  PR #31223 it will likely be in release v1.2.
+# This code should be removed once support is droped for anything less than v1.2
+if !(hasmethod(Base.map!,Tuple{Any,Base.ValueIterator{<:Dict}}))
+    function Base.map!(f, iter::Base.ValueIterator{<:Dict})
+        dict = iter.dict
+        vals = dict.vals
+        # @inbounds is here so the it gets propigated to isslotfiled
+        @inbounds for i = dict.idxfloor:Base.lastindex(vals)
+            if Base.isslotfilled(dict, i)
+                vals[i] = f(vals[i])
+            end
+        end
+        return iter
     end
 end
 
-# This functions loops through the hidden `.vals` field of the `vector`
-# dictionary and for each value of the array decreases the value by 1 if it is
-# greater than `row`.
+
+function _shift_references_after_delete_scalar!(scalar::Dict, row)
+    map!(v -> v > row ? v-1 : v, values(scalar))
+end
+
+
 function _shift_references_after_delete_vector!(vector::Dict, row)
-    # If this assertion fails it means that the Dict type has change its implementation.
-    # In julia v1.2 this should be changed to @assert hasfield(Dict,:vals).
-    @assert isdefined(vector,:vals)
-    vals = vector.vals
-    for n in 1:length(vals)
-        if isassigned(vals,n)
-            vec=vals[n]
-            for n in 1:length(vec)
-                @inbounds vec[n] = vec[n] > row ? vec[n] - 1 : vec[n]
-            end
-        end
-    end
+    # This is slightly confusions but it is similar to the above function but with an inner map on a vector
+    map!(vec -> map!(v -> v > row ? v-1 : v, vec, vec), values(vector))
 end
 
 
