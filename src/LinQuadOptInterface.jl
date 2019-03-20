@@ -220,8 +220,12 @@ function MOI.copy_to(dest::LinQuadOptimizer, src::MOI.ModelLike; kwargs...)
     return MOIU.automatic_copy_to(dest, src; kwargs...)
 end
 
-function MOI.get(::LinQuadOptimizer, ::MOI.ListOfVariableAttributesSet)
-    return MOI.AbstractVariableAttribute[]
+function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfVariableAttributesSet)
+    if length(model.variable_to_name) > 0
+        return MOI.AbstractVariableAttribute[MOI.VariableName()]
+    else
+        return MOI.AbstractVariableAttribute[]
+    end
 end
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet)
@@ -235,8 +239,12 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet)
     return attributes
 end
 
-function MOI.get(::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet)
-    return MOI.AbstractConstraintAttribute[]
+function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet)
+    if length(model.constraint_to_name) > 0
+        return MOI.AbstractConstraintAttribute[MOI.ConstraintName()]
+    else
+        return MOI.AbstractConstraintAttribute[]
+    end
 end
 
 @enum(VariableType, CONTINUOUS, BINARY, INTEGER, SEMI_INTEGER, SEMI_CONTINUOUS)
@@ -253,8 +261,8 @@ macro LinQuadOptimizerBase(inner_model_type=Any)
 
     last_variable_reference::UInt64
     variable_mapping::Dict{MOI.VariableIndex, Int}
-    variable_names::Dict{MOI.VariableIndex, String}
-    variable_names_rev::Dict{String, Set{MOI.VariableIndex}}
+    variable_to_name::Dict{MOI.VariableIndex, String}
+    name_to_variable::Union{Nothing, Dict{String, MOI.VariableIndex}}
     variable_references::Vector{MOI.VariableIndex}
     variable_type::Dict{MOI.VariableIndex, LinQuadOptInterface.VariableType}
 
@@ -271,8 +279,8 @@ macro LinQuadOptimizerBase(inner_model_type=Any)
     qconstraint_primal_solution::Vector{Float64}
     qconstraint_dual_solution::Vector{Float64}
 
-    constraint_names::Dict{LinQuadOptInterface.CI, String}
-    constraint_names_rev::Dict{String, Set{LinQuadOptInterface.CI}}
+    constraint_to_name::Dict{LinQuadOptInterface.CI, String}
+    name_to_constraint::Union{Nothing, Dict{String, LinQuadOptInterface.CI}}
 
     objective_constant::Float64
 
@@ -295,8 +303,8 @@ function MOI.is_empty(m::LinQuadOptimizer)
     ret = ret && m.obj_sense == MOI.MIN_SENSE
     ret = ret && m.last_variable_reference == 0
     ret = ret && isempty(m.variable_mapping)
-    ret = ret && isempty(m.variable_names)
-    ret = ret && isempty(m.variable_names_rev)
+    ret = ret && isempty(m.variable_to_name)
+    ret = ret && m.name_to_variable === nothing
     ret = ret && isempty(m.variable_references)
     ret = ret && isempty(m.variable_type)
     ret = ret && isempty(m.variable_primal_solution)
@@ -308,8 +316,8 @@ function MOI.is_empty(m::LinQuadOptimizer)
     ret = ret && isempty(m.constraint_dual_solution)
     ret = ret && isempty(m.qconstraint_primal_solution)
     ret = ret && isempty(m.qconstraint_dual_solution)
-    ret = ret && isempty(m.constraint_names)
-    ret = ret && isempty(m.constraint_names_rev)
+    ret = ret && isempty(m.constraint_to_name)
+    ret = ret && m.name_to_constraint === nothing
     ret = ret && m.objective_constant == 0.0
     ret = ret && m.termination_status == MOI.OPTIMIZE_NOT_CALLED
     ret = ret && m.primal_status == MOI.NO_SOLUTION
@@ -331,8 +339,8 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
 
     m.last_variable_reference = 0
     m.variable_mapping = Dict{MathOptInterface.VariableIndex, Int}()
-    m.variable_names = Dict{MathOptInterface.VariableIndex, String}()
-    m.variable_names_rev = Dict{String, Set{MathOptInterface.VariableIndex}}()
+    m.variable_to_name = Dict{MathOptInterface.VariableIndex, String}()
+    m.name_to_variable = nothing
     m.variable_references = MathOptInterface.VariableIndex[]
     m.variable_type = Dict{MathOptInterface.VariableIndex, VariableType}()
     m.variable_primal_solution = Float64[]
@@ -348,8 +356,8 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.qconstraint_primal_solution = Float64[]
     m.qconstraint_dual_solution = Float64[]
 
-    m.constraint_names = Dict{CI, String}()
-    m.constraint_names_rev = Dict{String, Set{CI}}()
+    m.constraint_to_name = Dict{CI, String}()
+    m.name_to_constraint = nothing
 
     m.objective_constant = 0.0
 

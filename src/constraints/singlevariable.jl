@@ -108,7 +108,7 @@ end
 function MOI.add_constraint(model::LinQuadOptimizer, variable::SinVar, set::S) where S <: LinSets
     __assert_supported_constraint__(model, SinVar, S)
     variable_type = model.variable_type[variable.variable]
-    if !(variable_type == CONTINUOUS || variable_type == INTEGER)
+    if variable_type == SEMI_CONTINUOUS || variable_type == SEMI_INTEGER
         error("Cannot set bounds because variable is of type: $(variable_type).")
     end
     set_variable_bound(model, variable, set)
@@ -124,7 +124,7 @@ function MOI.add_constraints(model::LinQuadOptimizer, variables::Vector{SinVar},
     __assert_supported_constraint__(model, SinVar, S)
     for variable in variables
         variable_type = model.variable_type[variable.variable]
-        if !(variable_type == CONTINUOUS || variable_type == INTEGER)
+        if variable_type == SEMI_CONTINUOUS || variable_type == SEMI_INTEGER
             error("Cannot set bounds because variable is of type: $(variable_type).")
         end
     end

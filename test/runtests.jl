@@ -406,10 +406,13 @@ end
         model = LQOI.MockLinQuadOptimizer()
         x = MOI.add_variable(model)
         MOI.add_constraint(model, MOI.SingleVariable(x), MOI.ZeroOne())
-        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Interval(2.0, 3.0))
         @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Integer())
         @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semiinteger(2.0, 3.0))
         @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semicontinuous(2.0, 3.0))
+        c1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(0.5))
+        c2 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.LessThan(0.5))
+        @test MOI.is_valid(model, c1)
+        @test MOI.is_valid(model, c2)
     end
     @testset "Integer" begin
         model = LQOI.MockLinQuadOptimizer()
@@ -469,4 +472,19 @@ end
     model = LQOI.MockLinQuadOptimizer()
     x = MOI.add_variable(model)
     @test_throws MOI.UnsupportedAttribute MOI.set(model, MOI.VariablePrimalStart(), x, 1.0)
+end
+
+@testset "Copy names" begin
+    model = LQOI.MockLinQuadOptimizer()
+    x = MOI.add_variable(model)
+    MOI.set(model, MOI.VariableName(), x, "x")
+    @test MOI.get(model, MOI.VariableName(), x) == "x"
+    c = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.ZeroOne())
+    MOI.set(model, MOI.ConstraintName(), c, "c")
+    @test MOI.get(model, MOI.ConstraintName(), c) == "c"
+
+    model2 = LQOI.MockLinQuadOptimizer()
+    copy_map = MOI.copy_to(model2, model)
+    @test MOI.get(model2, MOI.VariableName(), copy_map.varmap[x]) == "x"
+    @test MOI.get(model2, MOI.ConstraintName(), copy_map.conmap[c]) == "c"
 end
