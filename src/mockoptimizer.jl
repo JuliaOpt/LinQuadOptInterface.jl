@@ -407,7 +407,6 @@ function LQOI.add_linear_constraints!(instance::MockLinQuadOptimizer, A::CSRMatr
 
     rows = length(rhsvec)
     cols = size(instance.inner.A)[2]
-    # push!(rowvec,length(colvec)+1)
 
     An = Array(SparseMatrixCSC(cols,rows,rowvec,colvec,coefvec)')
 
@@ -433,10 +432,7 @@ function LQOI.add_ranged_constraints!(instance::MockLinQuadOptimizer, A::CSRMatr
     rowvec, colvec, coefvec = row_pointers(A), colvals(A), row_nonzeros(A)
     rows = length(lowerbound)
     cols = size(instance.inner.A)[2]
-    # push!(rowvec,length(colvec)+1)
 
-    # An = Array(sparse(rowvec,colvec,coefvec,rows,cols))
-    # @show cols,rows,rowvec,colvec,coefvec
     An = Array(SparseMatrixCSC(cols,rows,rowvec,colvec,coefvec)')
 
     instance.inner.A = vcat(instance.inner.A,An)
