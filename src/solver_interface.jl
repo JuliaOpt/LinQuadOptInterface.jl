@@ -216,7 +216,7 @@ By default, this method just calls
 some solver interfaces may offer more efficient implementations.
 """
 function change_matrix_coefficients!(m, rows, cols, coefs)
-    @boundscheck((Compat.axes(rows) == Compat.axes(cols) == Compat.axes(coefs)) || throw(DimensionMismatch()))
+    @boundscheck((axes(rows) == axes(cols) == axes(coefs)) || throw(DimensionMismatch()))
     for i in eachindex(rows)
         change_matrix_coefficient!(m, rows[i], cols[i], coefs[i])
     end

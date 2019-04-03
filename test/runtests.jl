@@ -1,4 +1,4 @@
-using Compat.Test, MathOptInterface
+using Test, MathOptInterface
 using LinQuadOptInterface
 
 const MOI = MathOptInterface
@@ -11,7 +11,6 @@ const LQOI = LinQuadOptInterface
 # here because types can't be created in testsets. If it can be defined without
 # error, we're okay. This is most likely to error if fields are added to
 # @LinQuadOptimizerBase without proper module prefixes.
-using Compat  # For Nothing on v0.6
 mutable struct OptimizerTest <: LinQuadOptInterface.LinQuadOptimizer
     LinQuadOptInterface.@LinQuadOptimizerBase
     OptimizerTest() = new()
