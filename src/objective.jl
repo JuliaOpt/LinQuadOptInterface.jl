@@ -112,22 +112,14 @@ end
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ObjectiveFunction{MOI.SingleVariable})
     if model.obj_type != SINGLE_VARIABLE_OBJECTIVE
-        if VERSION >= v"0.7-"
-            throw(InexactError(:convert, SINGLE_VARIABLE_OBJECTIVE, model.obj_type))
-        else
-            throw(InexactError())
-        end
+        throw(InexactError(:convert, SINGLE_VARIABLE_OBJECTIVE, model.obj_type))
     end
     return MOI.SingleVariable(model.single_obj_var::MOI.VariableIndex)
 end
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ObjectiveFunction{Linear})
     if model.obj_type == QUADRATIC_OBJECTIVE
-        if VERSION >= v"0.7-"
-            throw(InexactError(:convert, AFFINE_OBJECTIVE, model.obj_type))
-        else
-            throw(InexactError())
-        end
+        throw(InexactError(:convert, AFFINE_OBJECTIVE, model.obj_type))
     end
     variable_coefficients = zeros(length(model.variable_references))
     get_linear_objective!(model, variable_coefficients)
