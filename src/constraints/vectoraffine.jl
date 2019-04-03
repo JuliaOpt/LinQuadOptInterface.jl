@@ -89,8 +89,8 @@ w.r.t. their constraint rows and columns. Assumes both functions are already
 in canonical form.
 """
 function _matching_sparsity_pattern(f1::T, f2::T) where {T <: Union{Linear, VecLin}}
-    Compat.axes(f1.terms) == Compat.axes(f2.terms) || return false
-    Compat.axes(_constant(f1)) == Compat.axes(_constant(f2)) || return false
+    axes(f1.terms) == axes(f2.terms) || return false
+    axes(_constant(f1)) == axes(_constant(f2)) || return false
     for i in eachindex(f1.terms)
         MOI.term_indices(f1.terms[i]) == MOI.term_indices(f2.terms[i]) || return false
     end

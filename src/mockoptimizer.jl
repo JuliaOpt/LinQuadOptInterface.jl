@@ -219,11 +219,11 @@ Used in `fakesolve`.
 function unload(from, default, warn = true)
     if !isempty(from)
         out = from[1]
-        Compat.popfirst!(from)
+        popfirst!(from)
         return out
     else
         if warn
-            Compat.@warn("No data in the input vector, returning default.")
+            @warn("No data in the input vector, returning default.")
         end
         return default
     end

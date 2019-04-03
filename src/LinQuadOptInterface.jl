@@ -1,9 +1,8 @@
 __precompile__()
 module LinQuadOptInterface
 
-using Compat
-using Compat.SparseArrays, Compat.LinearAlgebra
-
+using SparseArrays
+using LinearAlgebra
 using MathOptInterface
 using MathOptInterface.Utilities
 
