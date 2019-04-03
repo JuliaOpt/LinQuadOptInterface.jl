@@ -41,7 +41,7 @@ function add_linear_constraint(model::LinQuadOptimizer, func::VecLin, sense::Cch
     # row (i - 1), storing the result in r[i]. Then we perform a cumsum on r,
     # storing the result back in r.
     num_rows = length(func.constants)
-    row_pointers = fill(0, num_rows)
+    row_pointers = fill(0, num_rows+1)
     row_pointers[1] = 1
     for term in func.terms
         row = term.output_index
@@ -53,7 +53,7 @@ function add_linear_constraint(model::LinQuadOptimizer, func::VecLin, sense::Cch
         end
     end
     cumsum!(row_pointers, row_pointers)
-
+    row_pointers[end]=length(coefficients)+1
     A = CSRMatrix{Float64}(row_pointers, columns, coefficients)
     add_linear_constraints!(model, A, fill(sense, num_rows), -func.constants)
 end

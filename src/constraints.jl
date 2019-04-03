@@ -160,30 +160,28 @@ end
 """
     CSRMatrix{T}
 
-Matrix given in compressed sparse row (CSR) format.
+Type alias for `Transpose{T,SparseMatrixCSC{T,Int}} where T`, which allows for the
+    efficient storage of compressed sparse row (CSR) sparse matrix
 
-`CSRMatrix` is analgous to the structure in Julia's `SparseMatrixCSC` but with
-the rows and columns flipped. It contains three vectors:
- - `row_pointers` is a vector pointing to the start of each row in
-    `columns` and `coefficients`;
- - `columns` is a vector of column numbers; and
- - `coefficients` is a vector of corresponding nonzero values.
-
-The length of `row_pointers` is the number of rows in the matrix.
-
-This struct is not a subtype of `AbstractSparseMatrix` as it is intended to be a
-collection of the three vectors as they are required by solvers such as Gurobi.
-It is not intended to be used for general computation.
+Please use the following interface to access this data incase model is changed in future
+ - `row_pointers(mat)` returns that sparse row_pointer vector see description
+    which has a length of rows+1
+ - `colvals` this is the column version of `rowvals(SparseMatrixCSC)`
+ - `row_nonzeros` this is the equivilent to `nonzeros(SparseMatrixCSC)`
 """
-struct CSRMatrix{T}
-    row_pointers::Vector{Int}
-    columns::Vector{Int}
-    coefficients::Vector{T}
-    function CSRMatrix{T}(row_pointers, columns, coefficients) where T
-        @assert length(columns) == length(coefficients)
-        new(row_pointers, columns, coefficients)
-    end
+
+const CSRMatrix{T} = Transpose{T,SparseMatrixCSC{T,Int}} where T
+
+function CSRMatrix{T}(row_pointers, columns, coefficients) where T
+    @assert length(columns) == length(coefficients)
+    @assert length(columns) + 1 == row_pointers[end]
+    transpose(SparseMatrixCSC{T,Int}(maximum(columns), length(row_pointers)-1, row_pointers, columns, coefficients))
 end
+
+#   Move access to an interface so that if we want to change type definition we can.
+colvals(mat::CSRMatrix) = rowvals(transpose(mat))
+row_pointers(mat::CSRMatrix) = transpose(mat).colptr  # This is the only way to get at colptrs without recreating it
+row_nonzeros(mat::CSRMatrix) = nonzeros(transpose(mat))
 
 #=
     Below we add constraints.
