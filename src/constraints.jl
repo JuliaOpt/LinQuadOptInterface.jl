@@ -163,7 +163,7 @@ end
 Type alias for `Transpose{T,SparseMatrixCSC{T,Int}} where T`, which allows for the
     efficient storage of compressed sparse row (CSR) sparse matrix
 
-Please use the following interface to access this data incase model is changed in future
+Please use the following interface to access this data in case model is changed in future
  - `row_pointers(mat)` returns that sparse row_pointer vector see description
     which has a length of rows+1
  - `colvals` this is the column version of `rowvals(SparseMatrixCSC)`
