@@ -61,12 +61,12 @@ get_constraint_type(instance::DataLinQuadOptimizer) = instance.inner.contype
 get_variable_lower_bound(instance::DataLinQuadOptimizer) = instance.inner.lb
 get_variable_upper_bound(instance::DataLinQuadOptimizer) = instance.inner.ub
 get_variable_type(instance::DataLinQuadOptimizer) = instance.inner.vartype
-get_sos_constraints(instance::DataLinQuadOptimizer) = instance.inner.contype
+get_sos_constraints(instance::DataLinQuadOptimizer) = instance.inner.sos
 
 function load_solution(instance::DataLinQuadOptimizer,
     solution::DataLinQuadOptimizerSolution)
     for field in fieldnames(DataLinQuadOptimizerSolution)
-        setfield!(instance, field, getfield(solution, field))
+        setfield!(instance.inner, field, getfield(solution, field))
     end
     return
 end
