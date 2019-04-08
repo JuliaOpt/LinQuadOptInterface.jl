@@ -22,7 +22,7 @@ end
 
     @testset "Printing" begin
         @test sprint(show, solver) == "A LinQuadOptInterface model with " *
-            "backend:\nMockLinQuadModel\n    Sense       minimize\n    " *
+            "backend:\nGenericLinQuadModel\n    Sense       minimize\n    " *
             "Variables   0\n    Constraints 0\n"
     end
 

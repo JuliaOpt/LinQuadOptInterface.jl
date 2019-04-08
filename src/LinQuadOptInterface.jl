@@ -321,7 +321,7 @@ function MOI.is_empty(m::LinQuadOptimizer)
 end
 function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.name = ""
-    m.inner = LinearQuadraticModel(M,env)
+    m.inner = LinearQuadraticModel(M, env)
 
     m.obj_type = AFFINE_OBJECTIVE
     m.single_obj_var = nothing
@@ -396,6 +396,8 @@ include("solve.jl")
 
 include("solver_interface.jl")
 
+include("generic_model.jl")
+include("generic_optimizer.jl")
 include("mockoptimizer.jl")
 
 end
