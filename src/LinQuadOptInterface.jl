@@ -146,11 +146,14 @@ if !(hasmethod(Base.map!,Tuple{Any,Base.ValueIterator{<:Dict}}))
 end
 
 
+# This function takes the Dict which provides a map to the matrix row and shifts
+# every row index that is greater than the deleted row down by one
 function _shift_references_after_delete_scalar!(scalar::Dict, row)
     map!(v -> v > row ? v-1 : v, values(scalar))
 end
 
-
+# This is the same as the function above but because the Dict points to vectors
+# of indexes we have to modify the function to account for that 
 function _shift_references_after_delete_vector!(vector::Dict, row)
     # This is slightly confusions but it is similar to the above function but with an inner map on a vector
     map!(vec -> map!(v -> v > row ? v-1 : v, vec, vec), values(vector))
@@ -390,8 +393,7 @@ end
 
 # a useful helper function
 function deleteref!(dict::Dict, i::Int, ref)
-    f(v,r) = v > r ? v - 1 : v
-    broadcast!(f, dict.vals, dict.vals, i)
+    map!(v -> v > i ? v - 1 : v, values(dict))
     delete!(dict, ref)
 end
 
