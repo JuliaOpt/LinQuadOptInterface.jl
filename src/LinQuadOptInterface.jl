@@ -1,9 +1,8 @@
 __precompile__()
 module LinQuadOptInterface
 
-using Compat
-using Compat.SparseArrays, Compat.LinearAlgebra
-
+using SparseArrays
+using LinearAlgebra
 using MathOptInterface
 using MathOptInterface.Utilities
 
@@ -110,36 +109,55 @@ This function updates all of the references in `m`
 after we have deleted row `row` in the affine constraint matrix.
 """
 function shift_references_after_delete_affine!(m, row)
-    for scalar_affine in [
-            cmap(m).less_than,
-            cmap(m).greater_than,
-            cmap(m).equal_to,
-            cmap(m).interval
-        ]
-        for (key, val) in scalar_affine
-            if val > row
-                scalar_affine[key] -= 1
-            end
-        end
-    end
 
-    for vector_affine in [
-            cmap(m).nonnegatives,
-            cmap(m).nonpositives,
-            cmap(m).zeros,
-            cmap(m).vv_nonnegatives,
-            cmap(m).vv_nonpositives,
-            cmap(m).vv_zeros
-        ]
-        for (key, vals) in vector_affine
-            for (i, val) in enumerate(vals)
-                if val > row
-                    vector_affine[key][i] -= 1
-                end
+    cmap_m = cmap(m)
+    _shift_references_after_delete_scalar!(cmap_m.less_than, row)
+    _shift_references_after_delete_scalar!(cmap_m.greater_than, row)
+    _shift_references_after_delete_scalar!(cmap_m.equal_to, row)
+    _shift_references_after_delete_scalar!(cmap_m.interval, row)
+
+
+    _shift_references_after_delete_vector!(cmap_m.nonnegatives, row)
+    _shift_references_after_delete_vector!(cmap_m.nonpositives, row)
+    _shift_references_after_delete_vector!(cmap_m.zeros, row)
+    _shift_references_after_delete_vector!(cmap_m.vv_nonnegatives, row)
+    _shift_references_after_delete_vector!(cmap_m.vv_nonpositives, row)
+    _shift_references_after_delete_vector!(cmap_m.vv_zeros, row)
+
+end
+
+
+# TODO:  This has been added to mirror functionality that was merged into
+# Julia/master in  PR #31223 it will likely be in release v1.2.
+# This code should be removed once support is droped for anything less than v1.2
+if !(hasmethod(Base.map!,Tuple{Any,Base.ValueIterator{<:Dict}}))
+    function Base.map!(f, iter::Base.ValueIterator{<:Dict})
+        dict = iter.dict
+        vals = dict.vals
+        # @inbounds is here so the it gets propigated to isslotfiled
+        @inbounds for i = dict.idxfloor:Base.lastindex(vals)
+            if Base.isslotfilled(dict, i)
+                vals[i] = f(vals[i])
             end
         end
+        return iter
     end
 end
+
+
+# This function takes the Dict which provides a map to the matrix row and shifts
+# every row index that is greater than the deleted row down by one
+function _shift_references_after_delete_scalar!(scalar::Dict, row)
+    map!(v -> v > row ? v-1 : v, values(scalar))
+end
+
+# This is the same as the function above but because the Dict points to vectors
+# of indexes we have to modify the function to account for that 
+function _shift_references_after_delete_vector!(vector::Dict, row)
+    # This is slightly confusions but it is similar to the above function but with an inner map on a vector
+    map!(vec -> map!(v -> v > row ? v-1 : v, vec, vec), values(vector))
+end
+
 
 """
     shift_references_after_delete_quadratic!(m, row)
@@ -148,17 +166,10 @@ This function updates all of the references in `m`
 after we have deleted row `row` in the quadratic constraint matrix.
 """
 function shift_references_after_delete_quadratic!(m, row)
-    for scalar_quadratic in [
-            cmap(m).q_less_than,
-            cmap(m).q_greater_than,
-            cmap(m).q_equal_to
-        ]
-        for (key, val) in scalar_quadratic
-            if val > row
-                scalar_quadratic[key] -= 1
-            end
-        end
-    end
+    cmap_m = cmap(m)
+    _shift_references_after_delete_scalar!(cmap_m.less_than, row)
+    _shift_references_after_delete_scalar!(cmap_m.greater_than, row)
+    _shift_references_after_delete_scalar!(cmap_m.equal_to, row)
 end
 
 function Base.isempty(map::ConstraintMapping)
@@ -212,7 +223,7 @@ function MOI.copy_to(dest::LinQuadOptimizer, src::MOI.ModelLike; kwargs...)
 end
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfVariableAttributesSet)
-    if length(model.variable_names) > 0
+    if length(model.variable_to_name) > 0
         return MOI.AbstractVariableAttribute[MOI.VariableName()]
     else
         return MOI.AbstractVariableAttribute[]
@@ -231,7 +242,7 @@ function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfModelAttributesSet)
 end
 
 function MOI.get(model::LinQuadOptimizer, ::MOI.ListOfConstraintAttributesSet)
-    if length(model.constraint_names) > 0
+    if length(model.constraint_to_name) > 0
         return MOI.AbstractConstraintAttribute[MOI.ConstraintName()]
     else
         return MOI.AbstractConstraintAttribute[]
@@ -252,8 +263,8 @@ macro LinQuadOptimizerBase(inner_model_type=Any)
 
     last_variable_reference::UInt64
     variable_mapping::Dict{MOI.VariableIndex, Int}
-    variable_names::Dict{MOI.VariableIndex, String}
-    variable_names_rev::Dict{String, Set{MOI.VariableIndex}}
+    variable_to_name::Dict{MOI.VariableIndex, String}
+    name_to_variable::Union{Nothing, Dict{String, MOI.VariableIndex}}
     variable_references::Vector{MOI.VariableIndex}
     variable_type::Dict{MOI.VariableIndex, LinQuadOptInterface.VariableType}
 
@@ -270,8 +281,8 @@ macro LinQuadOptimizerBase(inner_model_type=Any)
     qconstraint_primal_solution::Vector{Float64}
     qconstraint_dual_solution::Vector{Float64}
 
-    constraint_names::Dict{LinQuadOptInterface.CI, String}
-    constraint_names_rev::Dict{String, Set{LinQuadOptInterface.CI}}
+    constraint_to_name::Dict{LinQuadOptInterface.CI, String}
+    name_to_constraint::Union{Nothing, Dict{String, LinQuadOptInterface.CI}}
 
     termination_status::MOI.TerminationStatusCode
     primal_status::MOI.ResultStatusCode
@@ -292,8 +303,8 @@ function MOI.is_empty(m::LinQuadOptimizer)
     ret = ret && m.obj_sense == MOI.MIN_SENSE
     ret = ret && m.last_variable_reference == 0
     ret = ret && isempty(m.variable_mapping)
-    ret = ret && isempty(m.variable_names)
-    ret = ret && isempty(m.variable_names_rev)
+    ret = ret && isempty(m.variable_to_name)
+    ret = ret && m.name_to_variable === nothing
     ret = ret && isempty(m.variable_references)
     ret = ret && isempty(m.variable_type)
     ret = ret && isempty(m.variable_primal_solution)
@@ -305,8 +316,9 @@ function MOI.is_empty(m::LinQuadOptimizer)
     ret = ret && isempty(m.constraint_dual_solution)
     ret = ret && isempty(m.qconstraint_primal_solution)
     ret = ret && isempty(m.qconstraint_dual_solution)
-    ret = ret && isempty(m.constraint_names)
-    ret = ret && isempty(m.constraint_names_rev)
+    ret = ret && isempty(m.constraint_to_name)
+    ret = ret && m.name_to_constraint === nothing
+    ret = ret && m.objective_constant == 0.0
     ret = ret && m.termination_status == MOI.OPTIMIZE_NOT_CALLED
     ret = ret && m.primal_status == MOI.NO_SOLUTION
     ret = ret && m.dual_status == MOI.NO_SOLUTION
@@ -327,8 +339,8 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
 
     m.last_variable_reference = 0
     m.variable_mapping = Dict{MathOptInterface.VariableIndex, Int}()
-    m.variable_names = Dict{MathOptInterface.VariableIndex, String}()
-    m.variable_names_rev = Dict{String, Set{MathOptInterface.VariableIndex}}()
+    m.variable_to_name = Dict{MathOptInterface.VariableIndex, String}()
+    m.name_to_variable = nothing
     m.variable_references = MathOptInterface.VariableIndex[]
     m.variable_type = Dict{MathOptInterface.VariableIndex, VariableType}()
     m.variable_primal_solution = Float64[]
@@ -344,8 +356,8 @@ function MOI.empty!(m::M, env = nothing) where M<:LinQuadOptimizer
     m.qconstraint_primal_solution = Float64[]
     m.qconstraint_dual_solution = Float64[]
 
-    m.constraint_names = Dict{CI, String}()
-    m.constraint_names_rev = Dict{String, Set{CI}}()
+    m.constraint_to_name = Dict{CI, String}()
+    m.name_to_constraint = nothing
 
     m.termination_status = MathOptInterface.OPTIMIZE_NOT_CALLED
     m.primal_status = MathOptInterface.NO_SOLUTION
@@ -376,11 +388,7 @@ end
 
 # a useful helper function
 function deleteref!(dict::Dict, i::Int, ref)
-    for (key, val) in dict
-        if val > i
-            dict[key] -= 1
-        end
-    end
+    map!(v -> v > i ? v - 1 : v, values(dict))
     delete!(dict, ref)
 end
 

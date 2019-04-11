@@ -1,4 +1,4 @@
-using Compat.Test, MathOptInterface
+using Test, MathOptInterface
 using LinQuadOptInterface
 
 const MOI = MathOptInterface
@@ -11,7 +11,6 @@ const LQOI = LinQuadOptInterface
 # here because types can't be created in testsets. If it can be defined without
 # error, we're okay. This is most likely to error if fields are added to
 # @LinQuadOptimizerBase without proper module prefixes.
-using Compat  # For Nothing on v0.6
 mutable struct OptimizerTest <: LinQuadOptInterface.LinQuadOptimizer
     LinQuadOptInterface.@LinQuadOptimizerBase
     OptimizerTest() = new()
@@ -406,10 +405,13 @@ end
         model = LQOI.MockLinQuadOptimizer()
         x = MOI.add_variable(model)
         MOI.add_constraint(model, MOI.SingleVariable(x), MOI.ZeroOne())
-        @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Interval(2.0, 3.0))
         @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Integer())
         @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semiinteger(2.0, 3.0))
         @test_throws Exception MOI.add_constraint(model, MOI.SingleVariable(x), MOI.Semicontinuous(2.0, 3.0))
+        c1 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.GreaterThan(0.5))
+        c2 = MOI.add_constraint(model, MOI.SingleVariable(x), MOI.LessThan(0.5))
+        @test MOI.is_valid(model, c1)
+        @test MOI.is_valid(model, c2)
     end
     @testset "Integer" begin
         model = LQOI.MockLinQuadOptimizer()
