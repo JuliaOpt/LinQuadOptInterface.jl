@@ -84,7 +84,7 @@ end
 
 function add_quadratic_constraint(model::LinQuadOptimizer, func::Quad, sense, rhs::Float64)
     if abs(func.constant) > 0
-        Compat.@warn("Constant in quadratic function. Moving into set")
+        @warn("Constant in quadratic function. Moving into set")
     end
     (aff_cols, aff_coeffs, I, J, V) = canonical_reduction(model, func)
     add_quadratic_constraint!(model, aff_cols, aff_coeffs, rhs - func.constant,

@@ -41,7 +41,7 @@ end
 
 function add_linear_constraint(model::LinQuadOptimizer, func::Linear, sense, rhs::Float64)
     if abs(func.constant) > eps(Float64)
-        Compat.@warn("Constant in scalar function moved into set.")
+        @warn("Constant in scalar function moved into set.")
     end
     columns = [get_column(model, term.variable_index) for term in func.terms]
     coefficients = [term.coefficient for term in func.terms]
@@ -127,7 +127,7 @@ function add_linear_constraints(model::LinQuadOptimizer, functions::Vector{Linea
     num_non_zeros = 0
     for (i, func) in enumerate(functions)
         if abs(func.constant) > eps(Float64)
-            Compat.@warn("Constant in scalar function moved into set.")
+            @warn("Constant in scalar function moved into set.")
             lower_bounds[i] -= func.constant
             upper_bounds[i] -= func.constant
         end
@@ -143,7 +143,7 @@ function add_linear_constraints(model::LinQuadOptimizer, functions::Vector{Linea
     nnz = 0
     for (i, func) in enumerate(functions)
         if abs(func.constant) > eps(Float64)
-            Compat.@warn("Constant in scalar function moved into set.")
+            @warn("Constant in scalar function moved into set.")
             right_hand_sides[i] -= func.constant
         end
         nnz += length(func.terms)

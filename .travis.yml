@@ -3,9 +3,8 @@ language: julia
 os:
   - linux
 julia:
-  - 0.6
-  - 0.7
   - 1.0
+  - 1.1
   - nightly
 matrix:
   allow_failures:
@@ -25,5 +24,4 @@ notifications:
     on_start: never     # options: [always|never|change] default: always
 
 after_success:
- - julia -e 'if VERSION >= v"0.7-"; using Pkg; else; cd(Pkg.dir("LinQuadOptInterface")); end; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
- 
+ - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
