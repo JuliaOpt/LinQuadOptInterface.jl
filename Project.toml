@@ -1,0 +1,19 @@
+name = "LinQuadOptInterface"
+uuid = "f8899e07-120b-5979-ab1d-7b97bb9e1a48"
+repo = "https://github.com/JuliaOpt/LinQuadOptInterface.jl"
+version = "0.6.1"
+
+[deps]
+MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+
+[compat]
+MathOptInterface = "~0.8.0"
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
