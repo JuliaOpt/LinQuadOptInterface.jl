@@ -1,3 +1,10 @@
+**Warning!!! This package is deprecated. All solvers relying on it have been updated to pure MOI wrappers. Do not use this as an intermediate layer when constructing new solver wrappers.**
+
+
+
+
+
+
 # LinQuadOptInterface.jl
 
 | **Build Status** | **Social** |
